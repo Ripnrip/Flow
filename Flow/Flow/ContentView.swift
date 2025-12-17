@@ -21,6 +21,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(TaskService.self) private var taskService: TaskService
     @Environment(ExternalIntegrationService.self) private var integrationService: ExternalIntegrationService
+    @Environment(TodoistService.self) private var todoistService: TodoistService
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
 
     @State private var isAddingTask = false
@@ -46,8 +47,8 @@ struct ContentView: View {
         } content: {
             switch selection {
             case .inbox:
-                List {
-                    ForEach(items) { item in
+            List {
+                ForEach(items) { item in
                         TaskRow(item: item)
                             .swipeActions(edge: .leading) {
                                 Button {
@@ -62,7 +63,7 @@ struct ContentView: View {
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button(role: .destructive) {
                                     modelContext.delete(item)
-                                } label: {
+                    } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
                             }
@@ -75,17 +76,17 @@ struct ContentView: View {
                             Task {
                                 await integrationService.inhaleCalendarEvents()
                                 await integrationService.inhaleReminders()
+                                await todoistService.inhaleTasks()
                             }
                         } label: {
-                            Label("Sync External", systemImage: "arrow.triangle.2.circlepath")
+                            Label("Sync All", systemImage: "arrow.triangle.2.circlepath.circle.fill")
                         }
-                        .disabled(!integrationService.isAuthorized)
                     }
 
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        EditButton()
-                    }
-                    ToolbarItem {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    EditButton()
+                }
+                ToolbarItem {
                         Button {
                             isAddingTask = true
                         } label: {
@@ -234,11 +235,19 @@ struct TaskRow: View {
 
     var body: some View {
         HStack(spacing: 15) {
-            Text(item.emoji)
-                .font(.title2)
-                .padding(8)
-                .background(styleColor.opacity(0.1))
-                .clipShape(Circle())
+            if item.emoji.hasPrefix("sf:") {
+                Image(systemName: String(item.emoji.dropFirst(3)))
+                    .font(.title2)
+                    .padding(8)
+                    .background(styleColor.opacity(0.1))
+                    .clipShape(Circle())
+            } else {
+                Text(item.emoji)
+                    .font(.title2)
+                    .padding(8)
+                    .background(styleColor.opacity(0.1))
+                    .clipShape(Circle())
+            }
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {

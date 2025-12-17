@@ -31,3 +31,7 @@
 - [x] **Kinetic Motion: "The Fluid Wave"** 🌊
 - [x] **The Great Integration: Calendar & Reminders Inhalation** 🌐
 - [x] **Auto-Prioritization Alchemy** 🔮
+- [x] **Todoist Integration**: Cloud-based task inhalation.
+- [x] **Advanced SF Symbol Animations**: Interactive `.symbolEffect` integration.
+- [x] **Cosmic Particle Systems**: Native SwiftUI particles for atmosphere.
+- [x] **macOS MenuBar Presence**: Persistent "NotchDrop" style utility.

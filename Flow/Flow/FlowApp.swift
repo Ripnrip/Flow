@@ -18,6 +18,7 @@ struct FlowApp: App {
 
     @State private var taskService: TaskService
     @State private var integrationService: ExternalIntegrationService
+    @State private var todoistService: TodoistService
 
     init() {
         print("🌐 ✨ FLOW APP AWAKENS!")
@@ -42,6 +43,7 @@ struct FlowApp: App {
             // 🧙‍♂️ Services initialized with the main context
             self._taskService = State(initialValue: TaskService(modelContext: context))
             self._integrationService = State(initialValue: ExternalIntegrationService(modelContext: context))
+            self._todoistService = State(initialValue: TodoistService(modelContext: context))
             print("✅ ✨ MODEL CONTAINER CRYSTALLIZED!")
         } catch {
             print("🌩️ CRITICAL FAILURE: Could not create ModelContainer: \(error)")
@@ -54,6 +56,7 @@ struct FlowApp: App {
             ContentView()
                 .environment(taskService)
                 .environment(integrationService)
+                .environment(todoistService)
                 .onAppear {
                     // 🔔 ✨ REQUESTING THE GIFT OF NOTIFICATIONS
                     requestNotificationPermissions()
@@ -64,10 +67,32 @@ struct FlowApp: App {
                             await integrationService.inhaleCalendarEvents()
                             await integrationService.inhaleReminders()
                         }
+                        await todoistService.inhaleTasks()
                     }
                 }
         }
         .modelContainer(sharedModelContainer)
+
+        #if os(macOS)
+        MenuBarExtra("Focus Flow", systemImage: "target") {
+            VStack {
+                Text("Focus Flow")
+                    .font(.headline)
+                Divider()
+                Button("Sync All") {
+                    Task {
+                        await integrationService.inhaleCalendarEvents()
+                        await integrationService.inhaleReminders()
+                        await todoistService.inhaleTasks()
+                    }
+                }
+                Divider()
+                Button("Quit") {
+                    NSApplication.shared.terminate(nil)
+                }
+            }
+        }
+        #endif
     }
 
     // 🔔 The Ritual of Permission - Seeking the user's blessing for awareness

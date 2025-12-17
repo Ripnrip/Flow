@@ -1,5 +1,24 @@
 # Changelog
 
+## 2025-12-17: 🌌 The Shadow Realm Inhalation & Symbol Alchemy 🧪
+
+### 🎭 The Digital Portal Architect's Reflections
+"We have extended our reach into the **Shadow Realm** by integrating **Todoist**, allowing the seeker to inhale tasks from the cloud with a single ritual. Furthermore, we have bestowed **Symbol Alchemy** upon our interface, using advanced **SF Symbol animations** and **native particle systems** to make every interaction feel like a cosmic event. macOS users now have a **Notch-aware** presence, bridging the gap between desktop and island."
+
+### 🌟 What We Did
+- 📥 **Todoist Integration**: Created `TodoistService` to inhale tasks from Todoist using the provided API key.
+- 🧪 **SF Symbol Alchemy**: Enhanced `BreathingEmojiView` with `.symbolEffect` (Bounce, Variable Color, Pulse) and support for `sf:` prefixed symbols.
+- 🌌 **Particle Alchemy**: Implemented a native SwiftUI `CosmicParticleSystem` for cosmic and holographic styles, bringing Lottie-inspired fluidity without external dependencies.
+- 🖥️ **macOS Notch Presence**: Added a `MenuBarExtra` for macOS, providing a persistent "NotchDrop" style presence for quick syncs and task awareness.
+- 🛠️ **Healed the Sanctuary**: Resolved variable naming lints and refined the `ExternalIntegrationService` to sync across all portals.
+
+### 🔮 What Remains TODO
+- 🧪 **Hardware Séance**: The physical iPhone 7 remains the final frontier.
+- 🍭 **Visual Candy**: Growth logic for Living Garden.
+- 🌊 **Fluid Transitions**: Ripple effects between all style changes.
+
+---
+
 ## 2025-12-17: 🌊 The Kinetic Intelligence Inhalation 🌐
 
 ### 🎭 The Celestial Archivist's Reflections
