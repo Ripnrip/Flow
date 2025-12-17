@@ -71,7 +71,8 @@ struct ContentView: View {
                 }
                 .navigationTitle("Your Intents")
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
+                    // Replaced .navigationBarLeading with .navigation
+                    ToolbarItem(placement: .navigation) {
                         Button {
                             Task {
                                 await integrationService.inhaleCalendarEvents()
@@ -83,10 +84,13 @@ struct ContentView: View {
                         }
                     }
 
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
+                    // Replaced .navigationBarTrailing with .primaryAction and made EditButton iOS/visionOS only
+                    ToolbarItem(placement: .primaryAction) {
+                        #if os(iOS) || os(visionOS)
+                        EditButton()
+                        #endif
+                    }
+                ToolbarItem(placement: .primaryAction) {
                         Button {
                             isAddingTask = true
                         } label: {

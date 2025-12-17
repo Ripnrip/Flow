@@ -9,35 +9,63 @@
 			<key>orderHint</key>
 			<integer>3</integer>
 		</dict>
-		<key>Flow-Intents-Extension.xcscheme_^#shared#^_</key>
-		<dict>
-			<key>orderHint</key>
-			<integer>2</integer>
-		</dict>
 		<key>Flow-Intents-ExtensionUI.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>6</integer>
 		</dict>
-		<key>Flow-Intents-Stickers.xcscheme_^#shared#^_</key>
+		<key>Flow.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
-		<key>Flow-Intents-Widgets-ExtensionExtension.xcscheme_^#shared#^_</key>
-		<dict>
-			<key>orderHint</key>
-			<integer>4</integer>
-		</dict>
-		<key>Flow-Intents.xcscheme_^#shared#^_</key>
-		<dict>
-			<key>orderHint</key>
-			<integer>5</integer>
-		</dict>
-		<key>Flow.xcscheme_^#shared#^_</key>
+		<key>FlowTests.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>1</integer>
+		</dict>
+		<key>WidgetsExtension.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>84AD77222EF30E1A00FCC179</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>84AD77332EF30E1D00FCC179</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>84AD773D2EF30E1D00FCC179</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>84AD77552EF3107900FCC179</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>84AD77682EF3109A00FCC179</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>84AD77A52EF310D400FCC179</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>84AD77C12EF3110F00FCC179</key>
+		<dict>
+			<key>primary</key>
+			<true/>
 		</dict>
 	</dict>
 </dict>

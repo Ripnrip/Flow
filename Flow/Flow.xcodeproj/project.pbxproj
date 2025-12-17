@@ -7,16 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		84AD775F2EF3107900FCC179 /* Flow-Intents.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = 84AD77562EF3107900FCC179 /* Flow-Intents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		84AD776C2EF3109B00FCC179 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84AD776B2EF3109A00FCC179 /* Intents.framework */; };
-		84AD77842EF3109B00FCC179 /* Flow-Intents-Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 84AD77692EF3109A00FCC179 /* Flow-Intents-Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		84AD77A82EF310D400FCC179 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84AD77A72EF310D400FCC179 /* WidgetKit.framework */; };
-		84AD77AA2EF310D400FCC179 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84AD77A92EF310D400FCC179 /* SwiftUI.framework */; };
-		84AD77BB2EF310D600FCC179 /* Flow-Intents-Widgets-ExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 84AD77A62EF310D400FCC179 /* Flow-Intents-Widgets-ExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		84AD77C92EF3111100FCC179 /* Flow-Intents-Stickers.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 84AD77C22EF3110F00FCC179 /* Flow-Intents-Stickers.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8476DDFD2EF36CB900949AE5 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84AD77A72EF310D400FCC179 /* WidgetKit.framework */; };
+		8476DDFE2EF36CB900949AE5 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84AD77A92EF310D400FCC179 /* SwiftUI.framework */; };
+		8476DE0F2EF36CBE00949AE5 /* WidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8476DDFC2EF36CB900949AE5 /* WidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		8476DE0D2EF36CBE00949AE5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 84AD771B2EF30E1A00FCC179 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8476DDFB2EF36CB900949AE5;
+			remoteInfo = WidgetsExtension;
+		};
 		84AD77352EF30E1D00FCC179 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 84AD771B2EF30E1A00FCC179 /* Project object */;
@@ -31,34 +34,6 @@
 			remoteGlobalIDString = 84AD77222EF30E1A00FCC179;
 			remoteInfo = Flow;
 		};
-		84AD775D2EF3107900FCC179 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 84AD771B2EF30E1A00FCC179 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 84AD77552EF3107900FCC179;
-			remoteInfo = "Flow-Intents";
-		};
-		84AD77822EF3109B00FCC179 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 84AD771B2EF30E1A00FCC179 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 84AD77682EF3109A00FCC179;
-			remoteInfo = "Flow-Intents-Extension";
-		};
-		84AD77B92EF310D600FCC179 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 84AD771B2EF30E1A00FCC179 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 84AD77A52EF310D400FCC179;
-			remoteInfo = "Flow-Intents-Widgets-ExtensionExtension";
-		};
-		84AD77C72EF3111100FCC179 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 84AD771B2EF30E1A00FCC179 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 84AD77C12EF3110F00FCC179;
-			remoteInfo = "Flow-Intents-Stickers";
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -68,7 +43,6 @@
 			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
 			dstSubfolderSpec = 16;
 			files = (
-				84AD775F2EF3107900FCC179 /* Flow-Intents.appex in Embed ExtensionKit Extensions */,
 			);
 			name = "Embed ExtensionKit Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -79,9 +53,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				84AD77842EF3109B00FCC179 /* Flow-Intents-Extension.appex in Embed Foundation Extensions */,
-				84AD77BB2EF310D600FCC179 /* Flow-Intents-Widgets-ExtensionExtension.appex in Embed Foundation Extensions */,
-				84AD77C92EF3111100FCC179 /* Flow-Intents-Stickers.appex in Embed Foundation Extensions */,
+				8476DE0F2EF36CBE00949AE5 /* WidgetsExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -89,20 +61,24 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8476DDFC2EF36CB900949AE5 /* WidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		84AD77232EF30E1A00FCC179 /* Flow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Flow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		84AD77342EF30E1D00FCC179 /* FlowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FlowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		84AD773E2EF30E1D00FCC179 /* FlowUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FlowUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		84AD77562EF3107900FCC179 /* Flow-Intents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = "Flow-Intents.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
-		84AD77692EF3109A00FCC179 /* Flow-Intents-Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Flow-Intents-Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		84AD776B2EF3109A00FCC179 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		84AD77762EF3109B00FCC179 /* IntentsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IntentsUI.framework; path = System/Library/Frameworks/IntentsUI.framework; sourceTree = SDKROOT; };
-		84AD77A62EF310D400FCC179 /* Flow-Intents-Widgets-ExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Flow-Intents-Widgets-ExtensionExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		84AD77A72EF310D400FCC179 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		84AD77A92EF310D400FCC179 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		84AD77C22EF3110F00FCC179 /* Flow-Intents-Stickers.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Flow-Intents-Stickers.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8476DE132EF36CBE00949AE5 /* Exceptions for "Widgets" folder in "WidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8476DDFB2EF36CB900949AE5 /* WidgetsExtension */;
+		};
 		84AD77462EF30E1D00FCC179 /* Exceptions for "Flow" folder in "Flow" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -110,41 +86,34 @@
 			);
 			target = 84AD77222EF30E1A00FCC179 /* Flow */;
 		};
-		84AD77632EF3107900FCC179 /* Exceptions for "Flow-Intents" folder in "Flow-Intents" target */ = {
+		84D8EA7D2EF3705700125721 /* Exceptions for "Flow" folder in "WidgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				CommonViews.swift,
+				Item.swift,
+				SharedModels.swift,
+				TaskLingeringActor.swift,
+				TaskService.swift,
+				TodoistService.swift,
 			);
-			target = 84AD77552EF3107900FCC179 /* Flow-Intents */;
-		};
-		84AD778C2EF3109B00FCC179 /* Exceptions for "Flow-Intents-Extension" folder in "Flow-Intents-Extension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 84AD77682EF3109A00FCC179 /* Flow-Intents-Extension */;
-		};
-		84AD77BF2EF310D600FCC179 /* Exceptions for "Flow-Intents-Widgets-Extension" folder in "Flow-Intents-Widgets-ExtensionExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 84AD77A52EF310D400FCC179 /* Flow-Intents-Widgets-ExtensionExtension */;
-		};
-		84AD77CD2EF3111100FCC179 /* Exceptions for "Flow-Intents-Stickers" folder in "Flow-Intents-Stickers" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 84AD77C12EF3110F00FCC179 /* Flow-Intents-Stickers */;
+			target = 8476DDFB2EF36CB900949AE5 /* WidgetsExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		8476DDFF2EF36CB900949AE5 /* Widgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8476DE132EF36CBE00949AE5 /* Exceptions for "Widgets" folder in "WidgetsExtension" target */,
+			);
+			path = Widgets;
+			sourceTree = "<group>";
+		};
 		84AD77252EF30E1A00FCC179 /* Flow */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				84AD77462EF30E1D00FCC179 /* Exceptions for "Flow" folder in "Flow" target */,
+				84D8EA7D2EF3705700125721 /* Exceptions for "Flow" folder in "WidgetsExtension" target */,
 			);
 			path = Flow;
 			sourceTree = "<group>";
@@ -159,41 +128,18 @@
 			path = FlowUITests;
 			sourceTree = "<group>";
 		};
-		84AD77572EF3107900FCC179 /* Flow-Intents */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				84AD77632EF3107900FCC179 /* Exceptions for "Flow-Intents" folder in "Flow-Intents" target */,
-			);
-			path = "Flow-Intents";
-			sourceTree = "<group>";
-		};
-		84AD776D2EF3109B00FCC179 /* Flow-Intents-Extension */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				84AD778C2EF3109B00FCC179 /* Exceptions for "Flow-Intents-Extension" folder in "Flow-Intents-Extension" target */,
-			);
-			path = "Flow-Intents-Extension";
-			sourceTree = "<group>";
-		};
-		84AD77AB2EF310D400FCC179 /* Flow-Intents-Widgets-Extension */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				84AD77BF2EF310D600FCC179 /* Exceptions for "Flow-Intents-Widgets-Extension" folder in "Flow-Intents-Widgets-ExtensionExtension" target */,
-			);
-			path = "Flow-Intents-Widgets-Extension";
-			sourceTree = "<group>";
-		};
-		84AD77C32EF3110F00FCC179 /* Flow-Intents-Stickers */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				84AD77CD2EF3111100FCC179 /* Exceptions for "Flow-Intents-Stickers" folder in "Flow-Intents-Stickers" target */,
-			);
-			path = "Flow-Intents-Stickers";
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		8476DDF92EF36CB900949AE5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8476DDFE2EF36CB900949AE5 /* SwiftUI.framework in Frameworks */,
+				8476DDFD2EF36CB900949AE5 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		84AD77202EF30E1A00FCC179 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -215,30 +161,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		84AD77532EF3107900FCC179 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		84AD77662EF3109A00FCC179 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				84AD776C2EF3109B00FCC179 /* Intents.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		84AD77A32EF310D400FCC179 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				84AD77AA2EF310D400FCC179 /* SwiftUI.framework in Frameworks */,
-				84AD77A82EF310D400FCC179 /* WidgetKit.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -248,10 +170,7 @@
 				84AD77252EF30E1A00FCC179 /* Flow */,
 				84AD77372EF30E1D00FCC179 /* FlowTests */,
 				84AD77412EF30E1D00FCC179 /* FlowUITests */,
-				84AD77572EF3107900FCC179 /* Flow-Intents */,
-				84AD776D2EF3109B00FCC179 /* Flow-Intents-Extension */,
-				84AD77AB2EF310D400FCC179 /* Flow-Intents-Widgets-Extension */,
-				84AD77C32EF3110F00FCC179 /* Flow-Intents-Stickers */,
+				8476DDFF2EF36CB900949AE5 /* Widgets */,
 				84AD776A2EF3109A00FCC179 /* Frameworks */,
 				84AD77242EF30E1A00FCC179 /* Products */,
 			);
@@ -263,10 +182,7 @@
 				84AD77232EF30E1A00FCC179 /* Flow.app */,
 				84AD77342EF30E1D00FCC179 /* FlowTests.xctest */,
 				84AD773E2EF30E1D00FCC179 /* FlowUITests.xctest */,
-				84AD77562EF3107900FCC179 /* Flow-Intents.appex */,
-				84AD77692EF3109A00FCC179 /* Flow-Intents-Extension.appex */,
-				84AD77A62EF310D400FCC179 /* Flow-Intents-Widgets-ExtensionExtension.appex */,
-				84AD77C22EF3110F00FCC179 /* Flow-Intents-Stickers.appex */,
+				8476DDFC2EF36CB900949AE5 /* WidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -285,6 +201,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		8476DDFB2EF36CB900949AE5 /* WidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8476DE102EF36CBE00949AE5 /* Build configuration list for PBXNativeTarget "WidgetsExtension" */;
+			buildPhases = (
+				8476DDF82EF36CB900949AE5 /* Sources */,
+				8476DDF92EF36CB900949AE5 /* Frameworks */,
+				8476DDFA2EF36CB900949AE5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8476DDFF2EF36CB900949AE5 /* Widgets */,
+			);
+			name = WidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = WidgetsExtension;
+			productReference = 8476DDFC2EF36CB900949AE5 /* WidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		84AD77222EF30E1A00FCC179 /* Flow */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 84AD77472EF30E1D00FCC179 /* Build configuration list for PBXNativeTarget "Flow" */;
@@ -298,10 +236,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				84AD775E2EF3107900FCC179 /* PBXTargetDependency */,
-				84AD77832EF3109B00FCC179 /* PBXTargetDependency */,
-				84AD77BA2EF310D600FCC179 /* PBXTargetDependency */,
-				84AD77C82EF3111100FCC179 /* PBXTargetDependency */,
+				8476DE0E2EF36CBE00949AE5 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				84AD77252EF30E1A00FCC179 /* Flow */,
@@ -359,92 +294,6 @@
 			productReference = 84AD773E2EF30E1D00FCC179 /* FlowUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		84AD77552EF3107900FCC179 /* Flow-Intents */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 84AD77602EF3107900FCC179 /* Build configuration list for PBXNativeTarget "Flow-Intents" */;
-			buildPhases = (
-				84AD77522EF3107900FCC179 /* Sources */,
-				84AD77532EF3107900FCC179 /* Frameworks */,
-				84AD77542EF3107900FCC179 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				84AD77572EF3107900FCC179 /* Flow-Intents */,
-			);
-			name = "Flow-Intents";
-			packageProductDependencies = (
-			);
-			productName = "Flow-Intents";
-			productReference = 84AD77562EF3107900FCC179 /* Flow-Intents.appex */;
-			productType = "com.apple.product-type.extensionkit-extension";
-		};
-		84AD77682EF3109A00FCC179 /* Flow-Intents-Extension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 84AD77892EF3109B00FCC179 /* Build configuration list for PBXNativeTarget "Flow-Intents-Extension" */;
-			buildPhases = (
-				84AD77652EF3109A00FCC179 /* Sources */,
-				84AD77662EF3109A00FCC179 /* Frameworks */,
-				84AD77672EF3109A00FCC179 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				84AD776D2EF3109B00FCC179 /* Flow-Intents-Extension */,
-			);
-			name = "Flow-Intents-Extension";
-			packageProductDependencies = (
-			);
-			productName = "Flow-Intents-Extension";
-			productReference = 84AD77692EF3109A00FCC179 /* Flow-Intents-Extension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
-		84AD77A52EF310D400FCC179 /* Flow-Intents-Widgets-ExtensionExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 84AD77BC2EF310D600FCC179 /* Build configuration list for PBXNativeTarget "Flow-Intents-Widgets-ExtensionExtension" */;
-			buildPhases = (
-				84AD77A22EF310D400FCC179 /* Sources */,
-				84AD77A32EF310D400FCC179 /* Frameworks */,
-				84AD77A42EF310D400FCC179 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				84AD77AB2EF310D400FCC179 /* Flow-Intents-Widgets-Extension */,
-			);
-			name = "Flow-Intents-Widgets-ExtensionExtension";
-			packageProductDependencies = (
-			);
-			productName = "Flow-Intents-Widgets-ExtensionExtension";
-			productReference = 84AD77A62EF310D400FCC179 /* Flow-Intents-Widgets-ExtensionExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
-		84AD77C12EF3110F00FCC179 /* Flow-Intents-Stickers */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 84AD77CA2EF3111100FCC179 /* Build configuration list for PBXNativeTarget "Flow-Intents-Stickers" */;
-			buildPhases = (
-				84AD77C02EF3110F00FCC179 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				84AD77C32EF3110F00FCC179 /* Flow-Intents-Stickers */,
-			);
-			name = "Flow-Intents-Stickers";
-			packageProductDependencies = (
-			);
-			productName = "Flow-Intents-Stickers";
-			productReference = 84AD77C22EF3110F00FCC179 /* Flow-Intents-Stickers.appex */;
-			productType = "com.apple.product-type.app-extension.messages-sticker-pack";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -455,6 +304,9 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					8476DDFB2EF36CB900949AE5 = {
+						CreatedOnToolsVersion = 26.0;
+					};
 					84AD77222EF30E1A00FCC179 = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -465,18 +317,6 @@
 					84AD773D2EF30E1D00FCC179 = {
 						CreatedOnToolsVersion = 26.0;
 						TestTargetID = 84AD77222EF30E1A00FCC179;
-					};
-					84AD77552EF3107900FCC179 = {
-						CreatedOnToolsVersion = 26.0;
-					};
-					84AD77682EF3109A00FCC179 = {
-						CreatedOnToolsVersion = 26.0;
-					};
-					84AD77A52EF310D400FCC179 = {
-						CreatedOnToolsVersion = 26.0;
-					};
-					84AD77C12EF3110F00FCC179 = {
-						CreatedOnToolsVersion = 26.0;
 					};
 				};
 			};
@@ -497,15 +337,19 @@
 				84AD77222EF30E1A00FCC179 /* Flow */,
 				84AD77332EF30E1D00FCC179 /* FlowTests */,
 				84AD773D2EF30E1D00FCC179 /* FlowUITests */,
-				84AD77552EF3107900FCC179 /* Flow-Intents */,
-				84AD77682EF3109A00FCC179 /* Flow-Intents-Extension */,
-				84AD77A52EF310D400FCC179 /* Flow-Intents-Widgets-ExtensionExtension */,
-				84AD77C12EF3110F00FCC179 /* Flow-Intents-Stickers */,
+				8476DDFB2EF36CB900949AE5 /* WidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		8476DDFA2EF36CB900949AE5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		84AD77212EF30E1A00FCC179 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -527,37 +371,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		84AD77542EF3107900FCC179 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		84AD77672EF3109A00FCC179 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		84AD77A42EF310D400FCC179 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		84AD77C02EF3110F00FCC179 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8476DDF82EF36CB900949AE5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		84AD771F2EF30E1A00FCC179 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -579,30 +402,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		84AD77522EF3107900FCC179 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		84AD77652EF3109A00FCC179 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		84AD77A22EF310D400FCC179 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		8476DE0E2EF36CBE00949AE5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8476DDFB2EF36CB900949AE5 /* WidgetsExtension */;
+			targetProxy = 8476DE0D2EF36CBE00949AE5 /* PBXContainerItemProxy */;
+		};
 		84AD77362EF30E1D00FCC179 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 84AD77222EF30E1A00FCC179 /* Flow */;
@@ -613,29 +420,69 @@
 			target = 84AD77222EF30E1A00FCC179 /* Flow */;
 			targetProxy = 84AD773F2EF30E1D00FCC179 /* PBXContainerItemProxy */;
 		};
-		84AD775E2EF3107900FCC179 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 84AD77552EF3107900FCC179 /* Flow-Intents */;
-			targetProxy = 84AD775D2EF3107900FCC179 /* PBXContainerItemProxy */;
-		};
-		84AD77832EF3109B00FCC179 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 84AD77682EF3109A00FCC179 /* Flow-Intents-Extension */;
-			targetProxy = 84AD77822EF3109B00FCC179 /* PBXContainerItemProxy */;
-		};
-		84AD77BA2EF310D600FCC179 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 84AD77A52EF310D400FCC179 /* Flow-Intents-Widgets-ExtensionExtension */;
-			targetProxy = 84AD77B92EF310D600FCC179 /* PBXContainerItemProxy */;
-		};
-		84AD77C82EF3111100FCC179 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 84AD77C12EF3110F00FCC179 /* Flow-Intents-Stickers */;
-			targetProxy = 84AD77C72EF3111100FCC179 /* PBXContainerItemProxy */;
-		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		8476DE112EF36CBE00949AE5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Widgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Widgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.binarybros.Flow.Widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8476DE122EF36CBE00949AE5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Widgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Widgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.binarybros.Flow.Widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		84AD77482EF30E1D00FCC179 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -645,12 +492,21 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Flow/Info.plist;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Sync Calendar with Flow";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "Focus Flow needs access to your calendar to automatically prioritize your scheduled tasks. 📅✨";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Connect Flow with Location";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "Focus Flow needs access to your reminders to sync your tasks and give them a visual soul. 📝✨";
 				INFOPLIST_KEY_NSSiriUsageDescription = "Connect Flow with Siri";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -660,10 +516,15 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.binarybros.Flow;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -682,12 +543,21 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Flow/Info.plist;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Sync Calendar with Flow";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "Focus Flow needs access to your calendar to automatically prioritize your scheduled tasks. 📅✨";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Connect Flow with Location";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "Focus Flow needs access to your reminders to sync your tasks and give them a visual soul. 📝✨";
 				INFOPLIST_KEY_NSSiriUsageDescription = "Connect Flow with Siri";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -697,10 +567,15 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.binarybros.Flow;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -915,221 +790,18 @@
 			};
 			name = Release;
 		};
-		84AD77612EF3107900FCC179 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Flow-Intents/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Flow-Intents";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.binarybros.Flow.Flow-Intents";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		84AD77622EF3107900FCC179 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Flow-Intents/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Flow-Intents";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.binarybros.Flow.Flow-Intents";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		84AD778A2EF3109B00FCC179 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Flow-Intents-Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Flow-Intents-Extension";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.binarybros.Flow.Flow-Intents-Extension";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		84AD778B2EF3109B00FCC179 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Flow-Intents-Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Flow-Intents-Extension";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.binarybros.Flow.Flow-Intents-Extension";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		84AD77BD2EF310D600FCC179 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Flow-Intents-Widgets-Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Flow-Intents-Widgets-Extension";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.binarybros.Flow.Flow-Intents-Widgets-Extension";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		84AD77BE2EF310D600FCC179 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Flow-Intents-Widgets-Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Flow-Intents-Widgets-Extension";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.binarybros.Flow.Flow-Intents-Widgets-Extension";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		84AD77CB2EF3111100FCC179 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Flow-Intents-Stickers/Info.plist";
-				INFOPLIST_KEY_NSStickerSharingLevel = OS;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.binarybros.Flow.Flow-Intents-Stickers";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		84AD77CC2EF3111100FCC179 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5Y7NBCKHJP;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Flow-Intents-Stickers/Info.plist";
-				INFOPLIST_KEY_NSStickerSharingLevel = OS;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.binarybros.Flow.Flow-Intents-Stickers";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		8476DE102EF36CBE00949AE5 /* Build configuration list for PBXNativeTarget "WidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8476DE112EF36CBE00949AE5 /* Debug */,
+				8476DE122EF36CBE00949AE5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		84AD771E2EF30E1A00FCC179 /* Build configuration list for PBXProject "Flow" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1162,42 +834,6 @@
 			buildConfigurations = (
 				84AD77502EF30E1D00FCC179 /* Debug */,
 				84AD77512EF30E1D00FCC179 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		84AD77602EF3107900FCC179 /* Build configuration list for PBXNativeTarget "Flow-Intents" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				84AD77612EF3107900FCC179 /* Debug */,
-				84AD77622EF3107900FCC179 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		84AD77892EF3109B00FCC179 /* Build configuration list for PBXNativeTarget "Flow-Intents-Extension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				84AD778A2EF3109B00FCC179 /* Debug */,
-				84AD778B2EF3109B00FCC179 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		84AD77BC2EF310D600FCC179 /* Build configuration list for PBXNativeTarget "Flow-Intents-Widgets-ExtensionExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				84AD77BD2EF310D600FCC179 /* Debug */,
-				84AD77BE2EF310D600FCC179 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		84AD77CA2EF3111100FCC179 /* Build configuration list for PBXNativeTarget "Flow-Intents-Stickers" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				84AD77CB2EF3111100FCC179 /* Debug */,
-				84AD77CC2EF3111100FCC179 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

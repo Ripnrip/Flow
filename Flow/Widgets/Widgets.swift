@@ -1,6 +1,6 @@
 //
-//  Flow_Intents_Widgets_Extension.swift
-//  Flow-Intents-Widgets-Extension
+//  Widgets.swift
+//  Widgets
 //
 //  Created by admin on 12/17/25.
 //
@@ -16,7 +16,7 @@ struct Provider: AppIntentTimelineProvider {
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
         SimpleEntry(date: Date(), configuration: configuration)
     }
-
+    
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
         var entries: [SimpleEntry] = []
 
@@ -41,7 +41,7 @@ struct SimpleEntry: TimelineEntry {
     let configuration: ConfigurationAppIntent
 }
 
-struct Flow_Intents_Widgets_ExtensionEntryView : View {
+struct WidgetsEntryView : View {
     var entry: Provider.Entry
 
     var body: some View {
@@ -55,12 +55,12 @@ struct Flow_Intents_Widgets_ExtensionEntryView : View {
     }
 }
 
-struct Flow_Intents_Widgets_Extension: Widget {
-    let kind: String = "Flow_Intents_Widgets_Extension"
+struct Widgets: Widget {
+    let kind: String = "Widgets"
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
-            Flow_Intents_Widgets_ExtensionEntryView(entry: entry)
+            WidgetsEntryView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
     }
@@ -72,7 +72,7 @@ extension ConfigurationAppIntent {
         intent.favoriteEmoji = "😀"
         return intent
     }
-
+    
     fileprivate static var starEyes: ConfigurationAppIntent {
         let intent = ConfigurationAppIntent()
         intent.favoriteEmoji = "🤩"
@@ -81,7 +81,7 @@ extension ConfigurationAppIntent {
 }
 
 #Preview(as: .systemSmall) {
-    Flow_Intents_Widgets_Extension()
+    Widgets()
 } timeline: {
     SimpleEntry(date: .now, configuration: .smiley)
     SimpleEntry(date: .now, configuration: .starEyes)

@@ -44,3 +44,4 @@
 - [x] **Dynamic Island Preview**: Interactive preview with theme switching, state cycling, and properly sized buttons.
 - [x] **Advanced Resonance Waves**: Multi-layered kinetic ripples during style transitions.
 - [x] **Organic Particle Alchemy**: Custom fireflies and deep-sea glows for natural styles.
+- [x] **SwiftData Persistence Fix**: Resolved enum casting issues by using computed properties with String storage for reliable SwiftData persistence.

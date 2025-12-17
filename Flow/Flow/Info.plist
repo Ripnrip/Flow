@@ -24,6 +24,8 @@
 		<string>MKDirectionsModeTaxi</string>
 		<string>MKDirectionsModeTrain</string>
 	</array>
+	<key>MusicHapticsSupported</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
@@ -32,9 +34,5 @@
 		<string>fetch</string>
 		<string>audio</string>
 	</array>
-	<key>NSCalendarsUsageDescription</key>
-	<string>Focus Flow needs access to your calendar to automatically prioritize your scheduled tasks. 📅✨</string>
-	<key>NSRemindersUsageDescription</key>
-	<string>Focus Flow needs access to your reminders to sync your tasks and give them a visual soul. 📝✨</string>
 </dict>
 </plist>

@@ -1,6 +1,6 @@
 //
-//  Flow_Intents_Widgets_ExtensionControl.swift
-//  Flow-Intents-Widgets-Extension
+//  WidgetsControl.swift
+//  Widgets
 //
 //  Created by admin on 12/17/25.
 //
@@ -9,8 +9,8 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-struct Flow_Intents_Widgets_ExtensionControl: ControlWidget {
-    static let kind: String = "com.binarybros.Flow.Flow-Intents-Widgets-Extension"
+struct WidgetsControl: ControlWidget {
+    static let kind: String = "com.binarybros.Flow.Widgets"
 
     var body: some ControlWidgetConfiguration {
         AppIntentControlConfiguration(
@@ -30,7 +30,7 @@ struct Flow_Intents_Widgets_ExtensionControl: ControlWidget {
     }
 }
 
-extension Flow_Intents_Widgets_ExtensionControl {
+extension WidgetsControl {
     struct Value {
         var isRunning: Bool
         var name: String
@@ -38,12 +38,12 @@ extension Flow_Intents_Widgets_ExtensionControl {
 
     struct Provider: AppIntentControlValueProvider {
         func previewValue(configuration: TimerConfiguration) -> Value {
-            Flow_Intents_Widgets_ExtensionControl.Value(isRunning: false, name: configuration.timerName)
+            WidgetsControl.Value(isRunning: false, name: configuration.timerName)
         }
 
         func currentValue(configuration: TimerConfiguration) async throws -> Value {
             let isRunning = true // Check if the timer is running
-            return Flow_Intents_Widgets_ExtensionControl.Value(isRunning: isRunning, name: configuration.timerName)
+            return WidgetsControl.Value(isRunning: isRunning, name: configuration.timerName)
         }
     }
 }

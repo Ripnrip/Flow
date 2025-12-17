@@ -16,7 +16,19 @@ final class Item: TaskProtocol {
     var id: UUID = UUID()
     var title: String
     var emoji: String = "🎯"
-    var style: TaskStyle = TaskStyle.sleekModern
+
+    // 🎨 Style stored as String for SwiftData compatibility, accessed via computed property
+    var styleRawValue: String = TaskStyle.sleekModern.rawValue
+
+    var style: TaskStyle {
+        get {
+            TaskStyle(rawValue: styleRawValue) ?? .sleekModern
+        }
+        set {
+            styleRawValue = newValue.rawValue
+        }
+    }
+
     var timestamp: Date
     var isCompleted: Bool = false
 
@@ -46,11 +58,11 @@ final class Item: TaskProtocol {
     init(title: String = "New Task", emoji: String = "🎯", style: TaskStyle = .sleekModern, timestamp: Date = .now) {
         self.title = title
         self.emoji = emoji
-        self.style = style
+        self.styleRawValue = style.rawValue
         self.timestamp = timestamp
         self.creationDate = .now
         self.lastInteractionDate = .now
-        print("🌟 ✨ NEW ITEM CRYSTALLIZED: \(title) [\(style.rawValue)]")
+        print("🌟 ✨ NEW ITEM CRYSTALLIZED: \(title) [\(self.style.rawValue)]")
     }
 
     // 🌟 The Alchemy of Postponement - When a task is snoozed

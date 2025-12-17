@@ -2,8 +2,8 @@
  * 🎭 The Style Gallery - The Grand Exhibition
  * 
  * "A curated collection of every visual resonance we have crystallized.
- * Here, the seeker of wisdom can witness the full spectrum of our digital alchemy
- * in a format fit for the grandest of canvases."
+ * Here, the seeker of wisdom organizes their worldly duties, we pull the threads of intent
+ * and weave them into the Flow."
  * 
  * - The Cosmic Gallery Curator
  */
@@ -52,7 +52,7 @@ struct StyleCard: View {
                             .strokeBorder(style.themeForegroundColor().opacity(0.1), lineWidth: 1)
                     )
                 
-                BreathingEmojiView(emoji: styleEmoji(for: style), style: style, growthLevel: growthLevel)
+                BreathingEmojiView(emoji: styleEmoji(for: style), style: style, compact: false, growthLevel: growthLevel)
             }
             
             VStack(alignment: .leading, spacing: 5) {
@@ -195,20 +195,6 @@ struct StyleCard: View {
     }
 }
 
-struct CompactStateBadge: View {
-    let style: TaskStyle
-    let label: String
-    
-    var body: some View {
-        Text(label)
-            .font(.system(size: 10, weight: .bold))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(style.themeAccentColor().opacity(0.15))
-            .foregroundStyle(style.themeAccentColor())
-            .clipShape(Capsule())
-    }
-}
 
 // MARK: - 🧪 Gallery Previews
 
@@ -217,4 +203,3 @@ struct CompactStateBadge: View {
         StyleGalleryView()
     }
 }
-

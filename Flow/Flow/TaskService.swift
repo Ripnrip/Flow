@@ -27,6 +27,48 @@ class TaskService {
         print("🎭 ✨ TASK SERVICE INITIALIZED!")
     }
 
+    // New Function: Restores or starts an active Live Activity session
+    func restoreActiveFocusSession() async {
+#if os(iOS)
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            print("🌩️ ⚠️ Live Activities are not enabled for this realm.")
+            return
+        }
+
+        // 1. Check if any activity is already running from a previous launch
+        let runningActivities = Activity<FlowAttributes>.activities
+        if !runningActivities.isEmpty {
+            print("🎉 ✨ Found \(runningActivities.count) existing Live Activities. Assuming continuity.")
+            // Also need to ensure background time tracking is restarted for the tracked item
+            if let firstActivity = runningActivities.first {
+                let taskId = firstActivity.attributes.taskId
+                if let uuid = UUID(uuidString: taskId) {
+                    await lingeringActor.startTracking(taskId: uuid)
+                }
+            }
+            return
+        }
+#endif
+
+        // 2. If no activities are running, find an uncompleted task to focus on (the most recent one)
+        do {
+            let descriptor = FetchDescriptor<Item>(
+                predicate: #Predicate { $0.isCompleted == false },
+                sortBy: [SortDescriptor(\Item.timestamp, order: .reverse)]
+            )
+            
+            if let taskToFocus = try modelContext.fetch(descriptor).first {
+                print("🌟 🔄 Restoring focus on task: [\(taskToFocus.title)]")
+                // Start a new Live Activity for this task
+                await startFocusSession(for: taskToFocus)
+            } else {
+                print("🌙 ⚠️ No uncompleted tasks found to restore focus session.")
+            }
+        } catch {
+            print("💥 😭 Error restoring focus session: \(error.localizedDescription)")
+        }
+    }
+
     // 🔮 Starting a focus session with modern concurrency
     func startFocusSession(for task: Item) async {
         print("🌐 ✨ FOCUS RITUAL AWAKENS via TaskService for [\(task.title)] in style [\(task.style.rawValue)]")
@@ -36,12 +78,16 @@ class TaskService {
         print("🎪 📦 Starting cosmic time-tracking for \(task.title)...")
         await lingeringActor.startTracking(taskId: task.id)
 
+#if os(iOS)
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             print("🌩️ ⚠️ Gentle reminder: Live Activities are not enabled for this realm.")
             return
         }
 
         let attributes = FlowAttributes(taskId: task.id.uuidString)
+        
+        let staleDate = Calendar.current.date(byAdding: .hour, value: 4, to: Date())!
+
         let initialState = FlowAttributes.ContentState(
             title: task.title,
             snoozeCount: task.snoozeCount,
@@ -49,21 +95,27 @@ class TaskService {
             startDate: task.creationDate,
             emoji: task.emoji,
             style: task.style,
-            lastInteractionDate: .now,
+            lastInteractionDate: Date.now,
             growthLevel: task.growthLevel
         )
 
         do {
+            // Close any existing activities before starting a new one (to ensure only one is active)
+            for activity in Activity<FlowAttributes>.activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+            
             print("✨ 🎊 PORTAL TRANSFORMATION COMMENCES! Requesting Live Activity...")
             let activity = try Activity.request(
                 attributes: attributes,
-                content: .init(state: initialState, staleDate: nil),
+                content: ActivityContent(state: initialState, staleDate: staleDate), // <--- FIX APPLIED HERE
                 pushType: nil
             )
             print("🎉 ✨ LIVE ACTIVITY MASTERPIECE STARTED! Activity ID: \(activity.id), Style: \(task.style.rawValue)")
         } catch {
             print("💥 😭 FOCUS RITUAL FAILED! The digital muses are taking a brief intermission: \(error.localizedDescription)")
         }
+#endif
     }
 
     // 🌙 The Snooze Ritual - Thread-safe state update
@@ -122,6 +174,10 @@ class TaskService {
 
     // 🎨 Syncing the state with the Live Activity surface
     private func updateLiveActivity(for task: Item) async {
+#if os(iOS)
+        // If we update, we should also push out the stale date slightly to maintain relevance
+        let staleDate = Calendar.current.date(byAdding: .hour, value: 4, to: Date())!
+
         for activity in Activity<FlowAttributes>.activities where activity.attributes.taskId == task.id.uuidString {
             let updatedState = FlowAttributes.ContentState(
                 title: task.title,
@@ -130,16 +186,19 @@ class TaskService {
                 startDate: task.creationDate,
                 emoji: task.emoji,
                 style: task.style,
-                lastInteractionDate: .now,
+                lastInteractionDate: Date.now,
                 growthLevel: task.growthLevel
             )
-            await activity.update(.init(state: updatedState, staleDate: nil))
+            await activity.update(ActivityContent(state: updatedState, staleDate: staleDate)) // <--- FIX APPLIED HERE
         }
+#endif
     }
 
     private func endLiveActivity(for task: Item) async {
+#if os(iOS)
         for activity in Activity<FlowAttributes>.activities where activity.attributes.taskId == task.id.uuidString {
             await activity.end(nil, dismissalPolicy: .immediate)
         }
+#endif
     }
 }

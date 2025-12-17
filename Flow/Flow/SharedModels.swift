@@ -98,13 +98,13 @@ enum TaskStyle: String, Codable, CaseIterable, Sendable {
         case .vintageNewspaper: return "newspaper"
         case .abstractGeometric: return "skew"
         case .magicalScroll: return "scroll.fill"
-        case .crystalPrism: return "prism"
+        case .crystalPrism: return "diamond.fill" // Changed from "prism"
         case .volcanicFlow: return "flame.fill"
         case .cloudPeak: return "smoke.fill"
 
         case .oceanFlow: return "water.waves"
-        case .spaceMission: return "rocket.fill"
-        case .vintageArcade: return "joystick.fill"
+        case .spaceMission: return "globe.americas.fill" // Changed from "rocket.fill"
+        case .vintageArcade: return "gamecontroller.fill" // Changed from "joystick.fill"
         case .steampunk: return "gearshape.2.fill"
         case .magicalForest: return "camera.macro"
         case .midnightMonochrome: return "moon.fill"
@@ -208,7 +208,7 @@ protocol TaskProtocol: Sendable {
 }
 
 #if os(iOS)
-struct FlowAttributes: ActivityAttributes {
+public struct FlowAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var title: String
         var snoozeCount: Int
