@@ -179,11 +179,18 @@ extension TaskStyle {
 
     func themeFont(size: Font = .headline) -> Font {
         switch self {
-        case .retroPixel, .vintageArcade, .pixelArtHero: return .system(.headline, design: .monospaced)
-        case .neoBrutalism: return .system(.headline, design: .default).weight(.black)
-        case .cyberpunk, .blueprint, .industrialRust, .circuitBoard: return .system(.headline, design: .monospaced).italic()
-        case .vintageNewspaper, .steampunk, .sketchbook: return .system(.headline, design: .serif)
-        default: return size
+        case .retroPixel, .vintageArcade, .pixelArtHero: 
+            return .system(size == .headline ? .title3 : size, design: .monospaced).weight(.bold)
+        case .neoBrutalism: 
+            return .system(size == .headline ? .title2 : size, design: .default).weight(.black)
+        case .cyberpunk, .blueprint, .industrialRust, .circuitBoard: 
+            return .system(size == .headline ? .headline : size, design: .monospaced).italic().weight(.semibold)
+        case .vintageNewspaper, .steampunk, .sketchbook: 
+            return .system(size == .headline ? .title3 : size, design: .serif).weight(.medium)
+        case .sleekModern, .glassmorphism, .ethereal:
+            return .system(size == .headline ? .headline : size, design: .default).weight(.light)
+        default: 
+            return size.weight(.medium)
         }
     }
 }

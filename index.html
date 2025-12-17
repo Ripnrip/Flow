@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Flow | Your Always-Visible Companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #ffffff;
+            --accent-color: #007AFF;
+            --gradient-1: #1a1a1a;
+            --gradient-2: #050505;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .background-blob {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 122, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+            filter: blur(80px);
+            z-index: -1;
+            animation: move 20s infinite alternate;
+        }
+
+        @keyframes move {
+            from { transform: translate(-10%, -10%); }
+            to { transform: translate(20%, 20%); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        header {
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 4.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, #888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            letter-spacing: -2px;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            font-weight: 300;
+            color: #aaa;
+            margin-bottom: 3rem;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+            margin-bottom: 6rem;
+        }
+
+        .stat-item h2 {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--accent-color);
+        }
+
+        .stat-item p {
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 8rem;
+        }
+
+        .style-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 1.5rem;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .style-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .style-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            background: #000;
+        }
+
+        .style-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        footer {
+            padding: 4rem 0;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: #444;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background: var(--accent-color);
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            color: white;
+            transition: transform 0.2s;
+        }
+
+        .badge:hover {
+            transform: scale(1.05);
+        }
+
+        /* Subtle scroll animations */
+        [data-aos] {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s ease-out;
+        }
+
+        [data-aos].aos-animate {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="background-blob" style="top: -100px; left: -100px;"></div>
+    <div class="background-blob" style="bottom: -100px; right: -100px; background: radial-gradient(circle, rgba(255, 0, 122, 0.1) 0%, rgba(0, 0, 0, 0) 70%);"></div>
+
+    <div class="container">
+        <header>
+            <h1>Focus Flow</h1>
+            <p class="subtitle">The always-visible productivity companion for Dynamic Island.</p>
+            <a href="#" class="badge">Coming Soon to TestFlight</a>
+        </header>
+
+        <section class="hero-stats">
+            <div class="stat-item">
+                <h2>47+</h2>
+                <p>Visual Resonances</p>
+            </div>
+            <div class="stat-item">
+                <h2>3+</h2>
+                <p>External Realms</p>
+            </div>
+            <div class="stat-item">
+                <h2>∞</h2>
+                <p>Focus Potential</p>
+            </div>
+        </section>
+
+        <section class="gallery">
+            <div class="gallery-grid" id="gallery">
+                <!-- Snapshots will be injected here or listed statically -->
+                <!-- Listing the primary styles statically for the landing page -->
+                <div class="style-card">
+                    <img src="Snapshots/Living_Garden_Level_3.png" alt="Living Garden">
+                    <h3>Living Garden</h3>
+                    <p style="font-size: 0.8rem; color: #666;">Level 3: Harvest Stage</p>
+                </div>
+                <div class="style-card">
+                    <img src="Snapshots/Magical_Forest.png" alt="Magical Forest">
+                    <h3>Magical Forest</h3>
+                    <p style="font-size: 0.8rem; color: #666;">Enchanted Firefly Aura</p>
+                </div>
+                <div class="style-card">
+                    <img src="Snapshots/Bio-Luminescence.png" alt="Bio-Luminescence">
+                    <h3>Bio-Luminescence</h3>
+                    <p style="font-size: 0.8rem; color: #666;">Deep-Sea Glowing Pulse</p>
+                </div>
+                <div class="style-card">
+                    <img src="Snapshots/Cyberpunk.png" alt="Cyberpunk">
+                    <h3>Cyberpunk</h3>
+                    <p style="font-size: 0.8rem; color: #666;">Neon High-Contrast Grid</p>
+                </div>
+                <div class="style-card">
+                    <img src="Snapshots/Cosmic_Nebula.png" alt="Cosmic Nebula">
+                    <h3>Cosmic Nebula</h3>
+                    <p style="font-size: 0.8rem; color: #666;">Interstellar Atmosphere</p>
+                </div>
+                <div class="style-card">
+                    <img src="Snapshots/Glassmorphism.png" alt="Glassmorphism">
+                    <h3>Glassmorphism</h3>
+                    <p style="font-size: 0.8rem; color: #666;">Frosted Material Logic</p>
+                </div>
+                <div class="style-card">
+                    <img src="Snapshots/Neo-Brutalism.png" alt="Neo-Brutalism">
+                    <h3>Neo-Brutalism</h3>
+                    <p style="font-size: 0.8rem; color: #666;">Bold Geometric Defiance</p>
+                </div>
+                <div class="style-card">
+                    <img src="Snapshots/Quest_Mode.png" alt="Quest Mode">
+                    <h3>Quest Mode</h3>
+                    <p style="font-size: 0.8rem; color: #666;">Gamified Intent Tracking</p>
+                </div>
+                <div class="style-card">
+                    <img src="Snapshots/Magical_Scroll.png" alt="Magical Scroll">
+                    <h3>Magical Scroll</h3>
+                    <p style="font-size: 0.8rem; color: #666;">Enchanted Focus Rituals</p>
+                </div>
+                <div class="style-card">
+                    <img src="Snapshots/Courier_Prime.png" alt="Courier Prime">
+                    <h3>Courier Prime</h3>
+                    <p style="font-size: 0.8rem; color: #666;">Delivery-Grade Metrics</p>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2025 Focus Flow Artifacts. Crystallized with Swift 6.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Simple script to reveal cards on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = "1";
+                    entry.target.style.transform = "translateY(0)";
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.style-card').forEach(card => {
+            card.style.opacity = "0";
+            card.style.transform = "translateY(20px)";
+            card.style.transition = "all 0.6s ease-out";
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>
+

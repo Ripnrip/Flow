@@ -31,25 +31,42 @@ final class StyleSnapshotTests: XCTestCase {
         for style in allStyles {
             print("🎨 ✨ CAPTURING RESONANCE: \(style.rawValue)")
             
-            // 🎭 Create a view for the style
-            let view = StyleCard(style: style)
-                .frame(width: 300, height: 250)
-                .background(Color(uiColor: .systemBackground))
-            
-            // 📸 Render to Image
-            let image = view.snapshot()
-            
-            // 💾 Save to disk
-            let fileName = style.rawValue.replacingOccurrences(of: " ", with: "_") + ".png"
-            let fileURL = snapshotDirectory.appendingPathComponent(fileName)
-            
-            if let data = image.pngData() {
-                try? data.write(to: fileURL)
-                print("🎉 ✨ SNAPSHOT CRYSTALLIZED: \(fileName)")
+            // 🎭 If it's a growing style, capture all stages
+            if style == .livingGarden || style == .magicalForest {
+                for level in 0...3 {
+                    captureSnapshot(for: style, growthLevel: level)
+                }
+            } else {
+                captureSnapshot(for: style, growthLevel: 0)
             }
         }
         
-        print("🏁 ✨ ALL \(allStyles.count) RESONANCES ARCHIVED AT: \(snapshotDirectory.path)")
+        print("🏁 ✨ ALL RESONANCES ARCHIVED AT: \(snapshotDirectory.path)")
+    }
+    
+    private func captureSnapshot(for style: TaskStyle, growthLevel: Int) {
+        // 🎭 Create a view for the style
+        // We use a custom card that shows growth if applicable
+        let view = StyleCard(style: style, growthLevel: growthLevel)
+            .frame(width: 300, height: 250)
+            .background(Color(uiColor: .systemBackground))
+        
+        // 📸 Render to Image
+        let image = view.snapshot()
+        
+        // 💾 Save to disk
+        var fileName = style.rawValue.replacingOccurrences(of: " ", with: "_")
+        if style == .livingGarden || style == .magicalForest {
+            fileName += "_Level_\(growthLevel)"
+        }
+        fileName += ".png"
+        
+        let fileURL = snapshotDirectory.appendingPathComponent(fileName)
+        
+        if let data = image.pngData() {
+            try? data.write(to: fileURL)
+            print("🎉 ✨ SNAPSHOT CRYSTALLIZED: \(fileName)")
+        }
     }
 }
 

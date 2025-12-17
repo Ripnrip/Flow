@@ -37,6 +37,7 @@ struct StyleGalleryView: View {
 
 struct StyleCard: View {
     let style: TaskStyle
+    var growthLevel: Int = 0
     @State private var isHovering = false
     
     var body: some View {
@@ -51,7 +52,7 @@ struct StyleCard: View {
                             .strokeBorder(style.themeForegroundColor().opacity(0.1), lineWidth: 1)
                     )
                 
-                BreathingEmojiView(emoji: styleEmoji(for: style), style: style)
+                BreathingEmojiView(emoji: styleEmoji(for: style), style: style, growthLevel: growthLevel)
             }
             
             VStack(alignment: .leading, spacing: 5) {

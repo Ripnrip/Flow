@@ -25,7 +25,7 @@ struct StyleBackground: View {
                 }
             case .sunsetSilk, .sunsetGlow, .solarFlare:
                 LinearGradient(colors: [.orange.opacity(0.4), .pink.opacity(0.4), .purple.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing)
-            case .oceanFlow, .bioLuminescence, .liquidMetal:
+            case .oceanFlow, .liquidMetal:
                 LinearGradient(colors: [.blue.opacity(0.4), .teal.opacity(0.2)], startPoint: .top, endPoint: .bottom)
             case .volcanicFlow:
                 Color(red: 0.1, green: 0.05, blue: 0.0).overlay(RadialGradient(colors: [.orange.opacity(0.2), .clear], center: .bottom, startRadius: 0, endRadius: 150))
@@ -37,6 +37,16 @@ struct StyleBackground: View {
                 Color.white
             case .circuitBoard:
                 Color.black.overlay(circuitOverlay())
+            case .livingGarden, .magicalForest:
+                ZStack {
+                    Color(red: 0.05, green: 0.1, blue: 0.05)
+                    ForestParticleSystem(color: style == .magicalForest ? .yellow : .green)
+                }
+            case .bioLuminescence:
+                ZStack {
+                    Color(red: 0.0, green: 0.05, blue: 0.1)
+                    ForestParticleSystem(color: .teal, isGlow: true)
+                }
             case .glassmorphism, .holographic, .crystalCave:
                 ZStack {
                     if style == .glassmorphism {
@@ -290,6 +300,64 @@ struct CosmicParticleSystem: View {
     }
 }
 
+struct ForestParticleSystem: View {
+    let color: Color
+    var isGlow: Bool = false
+    @State private var particles: [Particle] = []
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                for particle in particles {
+                    let rect = CGRect(x: particle.xPos * size.width, y: particle.yPos * size.height, width: particle.size, height: particle.size)
+                    context.opacity = particle.opacity
+
+                    if isGlow {
+                        context.addFilter(.blur(radius: 2))
+                    }
+
+                    context.fill(Path(ellipseIn: rect), with: .color(color))
+                }
+            }
+            .onAppear {
+                createParticles()
+            }
+            .onChange(of: timeline.date) { _, _ in
+                updateParticles()
+            }
+        }
+    }
+
+    private func createParticles() {
+        for _ in 0..<20 {
+            particles.append(Particle(
+                xPos: Double.random(in: 0...1),
+                yPos: Double.random(in: 0...1),
+                size: Double.random(in: 1...4),
+                opacity: Double.random(in: 0.2...0.8),
+                speed: Double.random(in: 0.0005...0.002)
+            ))
+        }
+    }
+
+    private func updateParticles() {
+        let time = Date().timeIntervalSinceReferenceDate
+        for index in 0..<particles.count {
+            // Swaying motion
+            particles[index].xPos += sin(time + Double(index)) * 0.001
+            particles[index].yPos -= particles[index].speed
+
+            if particles[index].yPos < 0 {
+                particles[index].yPos = 1
+                particles[index].xPos = Double.random(in: 0...1)
+            }
+
+            // Twinkling effect
+            particles[index].opacity = 0.4 + sin(time * 2 + Double(index)) * 0.3
+        }
+    }
+}
+
 // MARK: - 🌊 Kinetic Motion Alchemy
 
 struct FluidWaveView: View {
@@ -326,6 +394,7 @@ struct StyleTransitionWave: View {
     let style: TaskStyle
     var triggerDate: Date = .now
     @State private var trigger = false
+    @State private var resonanceTrigger = false
 
     var body: some View {
         ZStack {
@@ -334,12 +403,20 @@ struct StyleTransitionWave: View {
                     .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .bottom)), removal: .opacity))
                     .ignoresSafeArea()
             }
+
+            if resonanceTrigger {
+                FluidWaveView(color: style.themeForegroundColor())
+                    .scaleEffect(1.2)
+                    .opacity(0.5)
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 0.5)), removal: .opacity))
+                    .ignoresSafeArea()
+            }
         }
         .onChange(of: triggerDate) { _, _ in
             activateWave()
         }
         .onChange(of: style) { _, _ in
-            activateWave()
+            activateResonanceWave()
         }
     }
 
@@ -353,8 +430,18 @@ struct StyleTransitionWave: View {
             }
         }
     }
+
+    private func activateResonanceWave() {
+        withAnimation(.interactiveSpring(response: 0.8, dampingFraction: 0.6)) {
+            resonanceTrigger = true
+        }
+        // Also trigger the standard wave for extra energy
+        activateWave()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            withAnimation {
+                resonanceTrigger = false
+            }
+        }
+    }
 }
-
-
-
-

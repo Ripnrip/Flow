@@ -9,16 +9,19 @@
   - **Multi-Concept Visual Styling (47 Themes)** [COMPLETED]
   - **iPad & macOS Optimized Gallery** [COMPLETED]
   - **Kinetic Motion: "The Fluid Wave"** [COMPLETED] 🌊
+  - **Automated Visual QA (Snapshot Tests)** [COMPLETED] 📸
 - **Phase 2: Intelligence & Sync** [IN PROGRESS]
   - **Apple Calendar/Reminders Integration** [COMPLETED] 🌐
   - **Todoist Portal Integration** [COMPLETED] 📥
   - **Auto-Prioritization Alchemy** [COMPLETED] 🔮
+  - **Harmonic Typography & Landing Page** [COMPLETED] 🏛️
   - Priority Logic & Task Normalization
   - Cross-device sync (watchOS, macOS) [IN PROGRESS] 🖥️
-- **Phase 3: Refinement**
-  - Advanced Kinetic Motion (Waves & Fluidity) [IN PROGRESS] 🌊
+- **Phase 3: Refinement** [IN PROGRESS]
+  - **Advanced Kinetic Motion (Waves & Fluidity)** [COMPLETED] 🌊
   - **Advanced SF Symbol & Particle Alchemy** [COMPLETED] ✨
   - **Temporal Growth Logic (Living Garden)** [COMPLETED] 🌱
+  - **Visual Candy: Organic Particle Systems** [COMPLETED] 🍭
   - Detailed Productivity Analytics Dashboard
   - Custom Focus Modes & Contextual Haptics
   - Expanded Integration Portals (Trello) [POSTPONED]

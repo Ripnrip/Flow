@@ -37,3 +37,7 @@
 - [x] **macOS MenuBar Presence**: Persistent "NotchDrop" style utility.
 - [x] **Living Garden Growth System**: Dynamic 🌱 -> 🌿 -> 🌳 -> 🍎 evolution based on focus time.
 - [x] **Cross-Platform Resilience**: Unified codebase for iOS and macOS.
+- [x] **Digital Showcase (index.html)**: A high-fidelity landing page with style results.
+- [x] **Harmonic Typography System**: Intentional, theme-aligned font pairings.
+- [x] **Advanced Resonance Waves**: Multi-layered kinetic ripples during style transitions.
+- [x] **Organic Particle Alchemy**: Custom fireflies and deep-sea glows for natural styles.

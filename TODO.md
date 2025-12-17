@@ -18,7 +18,10 @@
 - [x] **Todoist Integration (Shadow Realm Inhalation)** 📥
 - [x] **Advanced SF Symbol Animations & Particle Alchemy** ✨
 - [x] **macOS MenuBar Presence (NotchDrop inspiration)** 🖥️
-- [x] **Living Garden Growth Logic (🌱 -> 🌿 -> 🌳 -> 🍎)** 🌱
+- [x] **Living Garden Growth Logic (🌱 -> 🍎)** 🌱
+- [x] **Digital Showcase & Landing Page (index.html)** 📄
+- [x] **Harmonic Typography Refinement** 🏛️
+- [x] **Fluid Style Transitions (Resonance Ripples)** 🌊
+- [x] **Visual Candy: Firefly & Glow Particles** 🍭
 - [ ] Build for iPhone 7 device
 - [ ] Begin the integration of more external task sources (Trello)
-- [ ] Implement fluid wave transitions between styles
