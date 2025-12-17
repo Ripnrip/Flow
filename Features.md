@@ -37,7 +37,10 @@
 - [x] **macOS MenuBar Presence**: Persistent "NotchDrop" style utility.
 - [x] **Living Garden Growth System**: Dynamic 🌱 -> 🌿 -> 🌳 -> 🍎 evolution based on focus time.
 - [x] **Cross-Platform Resilience**: Unified codebase for iOS and macOS.
-- [x] **Digital Showcase (index.html)**: A high-fidelity landing page with style results.
-- [x] **Harmonic Typography System**: Intentional, theme-aligned font pairings.
+- [x] **Harmonic Typography System**: Standardized on *Outfit*, *Space Grotesk*, and *Fira Code* for a bespoke design-system feel.
+- [x] **Digital Showcase (index.html)**: High-fidelity landing page with deep gradients and a curated resonance gallery.
+- [x] **Interactive Landing Page**: Fully interactive experience with live Dynamic Island preview, theme selector, real-time search, category filters, and lightbox modal.
+- [x] **Complete Style Archive**: All 47+ visual resonances accessible through searchable, filterable gallery with smooth animations.
+- [x] **Dynamic Island Preview**: Interactive preview with theme switching, state cycling, and properly sized buttons.
 - [x] **Advanced Resonance Waves**: Multi-layered kinetic ripples during style transitions.
 - [x] **Organic Particle Alchemy**: Custom fireflies and deep-sea glows for natural styles.

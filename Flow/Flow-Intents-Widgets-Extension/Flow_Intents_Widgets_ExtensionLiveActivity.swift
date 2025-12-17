@@ -583,10 +583,10 @@ struct BreathingEmojiView: View {
                     .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: isBreathing)
             } else if isSFSymbol {
                 Image(systemName: emojiName)
-                    .font(style.themeFont(size: compact ? 20 : 40))
+                    .font(style.themeFont(size: .system(size: compact ? 20 : 40)))
                     .symbolEffect(.bounce, value: symbolTrigger)
-                    .symbolEffect(.variableColor.iterative, options: .repeat(.infinite), value: isBreathing)
-                    .symbolEffect(.pulse, options: .repeat(.infinite), value: isBreathing)
+                    .symbolEffect(.variableColor.iterative, options: .repeating, value: isBreathing)
+                    .symbolEffect(.pulse, options: .repeating, value: isBreathing)
                     .foregroundStyle(style.themeForegroundColor())
             } else {
                 Text(emoji)
@@ -681,7 +681,7 @@ struct FluidWaveView: View {
 
                     for xPosition in stride(from: 0, to: size.width, by: 1) {
                         let relativeX = xPosition / size.width
-                        let sine = sin(angle + (relativeX * .pi * 2))
+                        let sine = sin(angle + (Double(relativeX) * .pi * 2.0))
                         let yPosition = size.height * 0.5 + (sine * 10)
                         path.addLine(to: CGPoint(x: xPosition, y: yPosition))
                     }

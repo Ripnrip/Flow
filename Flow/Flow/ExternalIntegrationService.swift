@@ -59,7 +59,11 @@ class ExternalIntegrationService {
             print("✨ Found event: \(event.title ?? "Untitled")")
             // 🎨 Check if already exists to avoid duplicates
             let title = event.title ?? "Untitled"
-            let descriptor = FetchDescriptor<Item>(predicate: #Predicate { $0.title == title })
+            let descriptor = FetchDescriptor<Item>(
+                predicate: #Predicate<Item> { item in
+                    item.title == title
+                }
+            )
 
             do {
                 let existing = try modelContext.fetch(descriptor)
@@ -83,10 +87,19 @@ class ExternalIntegrationService {
         let predicate = eventStore.predicateForReminders(in: nil)
 
         do {
-            let reminders = try await eventStore.reminders(matching: predicate)
+            let reminders: [EKReminder] = await withCheckedContinuation { continuation in
+                eventStore.fetchReminders(matching: predicate) { reminders in
+                    continuation.resume(returning: reminders ?? [])
+                }
+            }
+            
             for reminder in reminders where !reminder.isCompleted {
                 let title = reminder.title ?? "Untitled"
-                let descriptor = FetchDescriptor<Item>(predicate: #Predicate { $0.title == title })
+                let descriptor = FetchDescriptor<Item>(
+                    predicate: #Predicate<Item> { item in
+                        item.title == title
+                    }
+                )
 
                 let existing = try modelContext.fetch(descriptor)
                 if existing.isEmpty {

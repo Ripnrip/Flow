@@ -19,9 +19,10 @@
 - [x] **Advanced SF Symbol Animations & Particle Alchemy** ✨
 - [x] **macOS MenuBar Presence (NotchDrop inspiration)** 🖥️
 - [x] **Living Garden Growth Logic (🌱 -> 🍎)** 🌱
-- [x] **Digital Showcase & Landing Page (index.html)** 📄
-- [x] **Harmonic Typography Refinement** 🏛️
-- [x] **Fluid Style Transitions (Resonance Ripples)** 🌊
-- [x] **Visual Candy: Firefly & Glow Particles** 🍭
+- [x] **Digital Showcase & Landing Page (index.html)** 📄 [HARMONIZED]
+- [x] **Harmonic Typography Refinement** 🏛️ [HARMONIZED]
+- [x] **Visual Vault Expansion (Snapshot tests)** 📸 [ARCHIVED]
 - [ ] Build for iPhone 7 device
 - [ ] Begin the integration of more external task sources (Trello)
+- [ ] Test fluid transitions on physical hardware
+- [x] Finalize "Twinkie" Hipster Changelog Ritual 🎙️
