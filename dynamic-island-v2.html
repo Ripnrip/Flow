@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Island Productivity - Concept</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.15), transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 78, 205, 0.15), transparent 50%),
+                radial-gradient(circle at 40% 90%, rgba(74, 144, 226, 0.15), transparent 50%);
+            animation: gradientShift 20s ease infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-10%, 10%) rotate(5deg); }
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(102, 126, 234, 0.15);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .badge::before {
+            content: '✨';
+            font-size: 1rem;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        .header .subtitle {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.6);
+            max-width: 700px;
+            margin: 0 auto;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .phone-mockup {
+            position: relative;
+            width: 393px;
+            height: 852px;
+            background: linear-gradient(145deg, #1c1c1e, #000000);
+            border-radius: 55px;
+            padding: 12px;
+            box-shadow: 
+                0 50px 100px -20px rgba(0, 0, 0, 0.8),
+                0 30px 60px -30px rgba(102, 126, 234, 0.4),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+            animation: floatIn 1s cubic-bezier(0.16, 1, 0.3, 1);
+            margin: 0 auto;
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #000000;
+            border-radius: 47px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .screen-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.3) 100%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .screen-bg {
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 30% 20%, rgba(102, 126, 234, 0.1), transparent 40%),
+                radial-gradient(circle at 70% 80%, rgba(240, 147, 251, 0.1), transparent 40%);
+            pointer-events: none;
+        }
+
+        .status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 54px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            font-size: 15px;
+            font-weight: 600;
+            z-index: 3;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .dynamic-island-container {
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+
+        .dynamic-island {
+            background: #000000;
+            border-radius: 40px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.6),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .dynamic-island::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+            border-radius: inherit;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .dynamic-island:hover::before {
+            opacity: 1;
+        }
+
+        .dynamic-island.idle {
+            width: 150px;
+            height: 37px;
+        }
+
+        .dynamic-island.active {
+            width: 360px;
+            height: 260px;
+            border-radius: 50px;
+        }
+
+        .island-idle-content {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            opacity: 1;
+            transition: opacity 0.25s ease;
+        }
+
+        .dynamic-island.active .island-idle-content {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .pulse-indicator {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 20px rgba(102, 126, 234, 0.8),
+                0 0 40px rgba(118, 75, 162, 0.4);
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        .pulse-ring {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(102, 126, 234, 0.6);
+            border-radius: 50%;
+            animation: pulseRing 2s ease-in-out infinite;
+        }
+
+        .idle-text {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .island-expanded-content {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            padding: 24px;
+            transition: opacity 0.4s ease 0.2s;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dynamic-island.active .island-expanded-content {
+            opacity: 1;
+        }
+
+        .expanded-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .expanded-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.02em;
+        }
+
+        .close-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 300;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .task-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .task-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .task-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .task-item {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            animation: slideInTask 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+            cursor: pointer;
+        }
+
+        .task-item:nth-child(1) { animation-delay: 0.05s; }
+        .task-item:nth-child(2) { animation-delay: 0.1s; }
+        .task-item:nth-child(3) { animation-delay: 0.15s; }
+        .task-item:nth-child(4) { animation-delay: 0.2s; }
+
+        .task-item:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+            transform: translateX(4px) scale(1.02);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .task-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .task-icon.reminders {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .task-icon.calendar {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .task-icon.todoist {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .task-icon.trello {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+        }
+
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+            letter-spacing: -0.01em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .task-subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 500;
+        }
+
+        .task-progress {
+            width: 32px;
+            height: 32px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring-circle {
+            stroke: rgba(255, 255, 255, 0.1);
+            fill: transparent;
+            stroke-width: 2.5;
+        }
+
+        .progress-ring-progress {
+            stroke: url(#gradient);
+            fill: transparent;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .task-action {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(102, 126, 234, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #667eea;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .task-action:hover {
+            background: rgba(102, 126, 234, 0.25);
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .screen-content {
+            position: absolute;
+            top: 300px;
+            left: 20px;
+            right: 20px;
+            bottom: 30px;
+        }
+
+        .widget-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .widget {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .widget::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .widget:hover {
+            transform: translateY(-4px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px -10px rgba(102, 126, 234, 0.3);
+        }
+
+        .widget:hover::before {
+            opacity: 1;
+        }
+
+        .widget-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+        }
+
+        .widget-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.02em;
+        }
+
+        .widget-trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #4ade80;
+            font-weight: 600;
+        }
+
+        .controls {
+            margin-top: 50px;
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            color: #fff;
+            border: 1px solid rgba(102, 126, 234, 0.4);
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            letter-spacing: -0.01em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .control-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            border-color: rgba(102, 126, 234, 0.6);
+            box-shadow: 0 10px 30px -5px rgba(102, 126, 234, 0.4);
+        }
+
+        .control-btn:hover::before {
+            opacity: 0.3;
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .features {
+            margin-top: 80px;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+            border-radius: 24px;
+            padding: 32px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -15px rgba(102, 126, 234, 0.3);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #fff;
+            letter-spacing: -0.02em;
+        }
+
+        .feature-description {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.7;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+                box-shadow: 0 0 20px rgba(102, 126, 234, 0.8), 0 0 40px rgba(118, 75, 162, 0.4);
+            }
+            50% {
+                transform: scale(1.3);
+                opacity: 0.8;
+                box-shadow: 0 0 30px rgba(102, 126, 234, 1), 0 0 60px rgba(118, 75, 162, 0.6);
+            }
+        }
+
+        @keyframes pulseRing {
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes floatIn {
+            from {
+                opacity: 0;
+                transform: translateY(60px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes slideInTask {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .phone-mockup {
+                width: 340px;
+                height: 736px;
+            }
+
+            .dynamic-island.active {
+                width: 300px;
+                height: 240px;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .control-btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .phone-mockup {
+                width: 300px;
+                height: 650px;
+            }
+
+            .dynamic-island.active {
+                width: 260px;
+                height: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="content-wrapper">
+        <div class="header">
+            <div class="badge">Concept Design</div>
+            <h1>Dynamic Island<br>Productivity</h1>
+            <p class="subtitle">Your sleek, always-available productivity companion that seamlessly lives in the Dynamic Island</p>
+        </div>
+
+        <div class="phone-mockup">
+            <div class="phone-screen">
+                <div class="screen-overlay"></div>
+                <div class="screen-bg"></div>
+                
+                <div class="status-bar">
+                    <div class="time">9:41</div>
+                    <div class="status-icons">
+                        <span style="opacity: 0.8;">📶 🔋</span>
+                    </div>
+                </div>
+
+                <div class="dynamic-island-container">
+                    <div class="dynamic-island idle" id="dynamicIsland">
+                        <div class="island-idle-content">
+                            <div class="pulse-indicator">
+                                <div class="pulse-dot"></div>
+                                <div class="pulse-ring"></div>
+                            </div>
+                            <span class="idle-text">3 tasks</span>
+                        </div>
+
+                        <div class="island-expanded-content">
+                            <div class="expanded-header">
+                                <div class="expanded-title">Today's Tasks</div>
+                                <button class="close-btn" id="closeBtn">×</button>
+                            </div>
+
+                            <div class="task-list">
+                                <div class="task-item">
+                                    <div class="task-icon reminders">✓</div>
+                                    <div class="task-content">
+                                        <div class="task-title">Review design mockups</div>
+                                        <div class="task-subtitle">Reminders • Due 2:00 PM</div>
+                                    </div>
+                                    <div class="task-progress">
+                                        <svg class="progress-ring" width="32" height="32">
+                                            <defs>
+                                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                                </linearGradient>
+                                            </defs>
+                                            <circle class="progress-ring-circle" cx="16" cy="16" r="14" />
+                                            <circle class="progress-ring-progress" cx="16" cy="16" r="14" 
+                                                    stroke-dasharray="88" stroke-dashoffset="22" />
+                                        </svg>
+                                    </div>
+                                    <button class="task-action">✓</button>
+                                </div>
+
+                                <div class="task-item">
+                                    <div class="task-icon calendar">📅</div>
+                                    <div class="task-content">
+                                        <div class="task-title">Team standup meeting</div>
+                                        <div class="task-subtitle">Calendar • 3:30 PM</div>
+                                    </div>
+                                    <div class="task-progress">
+                                        <svg class="progress-ring" width="32" height="32">
+                                            <circle class="progress-ring-circle" cx="16" cy="16" r="14" />
+                                            <circle class="progress-ring-progress" cx="16" cy="16" r="14" 
+                                                    stroke-dasharray="88" stroke-dashoffset="66" />
+                                        </svg>
+                                    </div>
+                                    <button class="task-action">⏰</button>
+                                </div>
+
+                                <div class="task-item">
+                                    <div class="task-icon todoist">📝</div>
+                                    <div class="task-content">
+                                        <div class="task-title">Finish Q4 report</div>
+                                        <div class="task-subtitle">Todoist • High Priority</div>
+                                    </div>
+                                    <div class="task-progress">
+                                        <svg class="progress-ring" width="32" height="32">
+                                            <circle class="progress-ring-circle" cx="16" cy="16" r="14" />
+                                            <circle class="progress-ring-progress" cx="16" cy="16" r="14" 
+                                                    stroke-dasharray="88" stroke-dashoffset="44" />
+                                        </svg>
+                                    </div>
+                                    <button class="task-action">✓</button>
+                                </div>
+
+                                <div class="task-item">
+                                    <div class="task-icon trello">📊</div>
+                                    <div class="task-content">
+                                        <div class="task-title">Update project board</div>
+                                        <div class="task-subtitle">Trello • Medium Priority</div>
+                                    </div>
+                                    <div class="task-progress">
+                                        <svg class="progress-ring" width="32" height="32">
+                                            <circle class="progress-ring-circle" cx="16" cy="16" r="14" />
+                                            <circle class="progress-ring-progress" cx="16" cy="16" r="14" 
+                                                    stroke-dasharray="88" stroke-dashoffset="30" />
+                                        </svg>
+                                    </div>
+                                    <button class="task-action">✓</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="screen-content">
+                    <div class="widget-grid">
+                        <div class="widget">
+                            <div class="widget-title">Tasks Today</div>
+                            <div class="widget-value">8</div>
+                            <div class="widget-trend">↑ 2 from yesterday</div>
+                        </div>
+                        <div class="widget">
+                            <div class="widget-title">Completed</div>
+                            <div class="widget-value">5</div>
+                            <div class="widget-trend">↑ 62%</div>
+                        </div>
+                        <div class="widget">
+                            <div class="widget-title">Upcoming</div>
+                            <div class="widget-value">12</div>
+                            <div class="widget-trend">Next 7 days</div>
+                        </div>
+                        <div class="widget">
+                            <div class="widget-title">Focus Time</div>
+                            <div class="widget-value">2.5h</div>
+                            <div class="widget-trend">↑ +30 min</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" id="toggleBtn"><span>Toggle Dynamic Island</span></button>
+            <button class="control-btn" id="resetBtn"><span>Reset Animation</span></button>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <span class="feature-icon">✨</span>
+                <div class="feature-title">Subtle Notifications</div>
+                <div class="feature-description">Gentle pulse animations and wave effects keep you aware without being intrusive. Your productivity companion that respects your focus.</div>
+            </div>
+
+            <div class="feature-card">
+                <span class="feature-icon">🎯</span>
+                <div class="feature-title">Quick Actions</div>
+                <div class="feature-description">Mark tasks complete, snooze reminders, or jump to full details with a tap. Everything you need is right there in the Island.</div>
+            </div>
+
+            <div class="feature-card">
+                <span class="feature-icon">🔄</span>
+                <div class="feature-title">Unified Dashboard</div>
+                <div class="feature-description">Seamlessly integrates Apple Reminders, Calendar, Todoist, and Trello. One place for all your tasks and events.</div>
+            </div>
+
+            <div class="feature-card">
+                <span class="feature-icon">🎨</span>
+                <div class="feature-title">Fully Customizable</div>
+                <div class="feature-description">Choose what appears in your Island. Filter by priority, source, time, or create custom views that match your workflow.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const island = document.getElementById('dynamicIsland');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const closeBtn = document.getElementById('closeBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        island.addEventListener('click', () => {
+            if (!island.classList.contains('active')) {
+                island.classList.remove('idle');
+                island.classList.add('active');
+            }
+        });
+
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            island.classList.remove('active');
+            island.classList.add('idle');
+        });
+
+        toggleBtn.addEventListener('click', () => {
+            if (island.classList.contains('active')) {
+                island.classList.remove('active');
+                island.classList.add('idle');
+            } else {
+                island.classList.remove('idle');
+                island.classList.add('active');
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            island.classList.remove('active');
+            island.classList.add('idle');
+            
+            const taskItems = document.querySelectorAll('.task-item');
+            taskItems.forEach(item => {
+                item.style.animation = 'none';
+                setTimeout(() => {
+                    item.style.animation = '';
+                }, 10);
+            });
+        });
+
+        document.querySelectorAll('.task-action').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const taskItem = btn.closest('.task-item');
+                
+                taskItem.style.transition = 'all 0.3s ease';
+                taskItem.style.opacity = '0.4';
+                taskItem.style.transform = 'scale(0.95)';
+                
+                setTimeout(() => {
+                    taskItem.style.opacity = '1';
+                    taskItem.style.transform = 'scale(1)';
+                }, 300);
+            });
+        });
+    </script>
+</body>
+</html>

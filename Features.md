@@ -1,0 +1,30 @@
+# Features
+
+- [x] Basic Project Structure
+- [x] Always-Visible Dynamic Island Presence
+- [x] Task Tracking (Done, Snooze, Move)
+- [x] Snooze/Move Analytics (Tracking frequency and lingering time)
+- [x] **Contextual Breathing Animations**
+- [x] Multi-Task Expanded View (Artisan Dashboard)
+- [x] Task Intent Integration (App Intents)
+- [x] **Swift 6 Concurrency & Observation**
+- [x] **TaskService Actor-based Architecture**
+- [x] **Temporal Lingering Tracking (TaskLingeringActor)**
+- [x] **Notification Permission Ritual**
+- [x] **Exhaustive Xcode Preview Permutations**
+- [x] **Multi-Concept Visual Styles (47+ Creative Themes)**
+- [x] **Figma Benchmark Layout Integration**
+- [x] **Centralized Theme Engine (TaskStyle Engine)**
+- [x] **iPad & macOS Catalogue Gallery (Visual Vault)**
+- [x] **Sidebar-Based Navigation (NavigationSplitView)**
+- [x] **Shared UI Component Library (CommonViews)**
+- [x] **Style Snapshot Testing (Automated Visual QA)**
+- [x] **47+ High-Fidelity Style Crystallizations**
+- [x] **SF Symbols 7 "Draw" Animation Integration**
+- [x] **Theme-Specific Dynamic Island Metrics**
+- [x] **Cosmic Nebula, Blueprint, & Bio-Luminescence Atmospheres**
+- [x] **Vintage Newspaper & Magical Scroll Resonances**
+- [x] **Magical Scroll "Spell Casting" Interactions**
+- [x] **Gamified Quest Mode UI**
+- [x] **Cyberpunk & Neo-Brutalism Themes**
+- [x] **Style Picker & Concept Preview UI**

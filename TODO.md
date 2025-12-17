@@ -1,0 +1,18 @@
+# TODO - Immediate Tasks
+
+- [x] Update `Item.swift` with snooze/move metadata tracking
+- [x] Implement `FlowAttributes` for Live Activity state
+- [x] Design Expanded Dynamic Island UI (Top 3 tasks, primary actions)
+- [x] Implement App Intents: `DoneIntent`, `SnoozeIntent`, `MoveIntent`
+- [x] Add task lingering logic (calculate duration since start)
+- [x] Connect `ContentView` to start/stop Live Activities
+- [x] Implement 47+ Creative Visual Styles
+- [x] Integrate Figma-inspired Dynamic Island templates
+- [x] Create iPad/macOS Catalogue Gallery
+- [x] Consolidate Shared UI Components
+- [x] Implement Style Snapshot Testing
+- [x] Add exhaustive Xcode Previews for all states
+- [x] Fix font parameter ordering compilation errors
+- [ ] Implement the fluid wave animations for style transitions
+- [ ] Build for iPhone 7 device
+- [ ] Begin the integration of external task sources (Todoist, Trello)
