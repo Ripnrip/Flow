@@ -28,3 +28,6 @@
 - [x] **Gamified Quest Mode UI**
 - [x] **Cyberpunk & Neo-Brutalism Themes**
 - [x] **Style Picker & Concept Preview UI**
+- [x] **Kinetic Motion: "The Fluid Wave"** 🌊
+- [x] **The Great Integration: Calendar & Reminders Inhalation** 🌐
+- [x] **Auto-Prioritization Alchemy** 🔮

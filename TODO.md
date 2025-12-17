@@ -13,6 +13,9 @@
 - [x] Implement Style Snapshot Testing
 - [x] Add exhaustive Xcode Previews for all states
 - [x] Fix font parameter ordering compilation errors
-- [ ] Implement the fluid wave animations for style transitions
+- [x] **Kinetic Motion: "The Fluid Wave"** 🌊
+- [x] **Apple Calendar & Reminders Integration** 🌐
+- [x] **Auto-Prioritization Alchemy** 🔮
 - [ ] Build for iPhone 7 device
-- [ ] Begin the integration of external task sources (Todoist, Trello)
+- [ ] Begin the integration of more external task sources (Todoist, Trello)
+- [ ] Implement fluid wave transitions between styles

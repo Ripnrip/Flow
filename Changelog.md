@@ -1,5 +1,24 @@
 # Changelog
 
+## 2025-12-17: 🌊 The Kinetic Intelligence Inhalation 🌐
+
+### 🎭 The Celestial Archivist's Reflections
+"Today, our creation has learned to breathe. With the invocation of **Kinetic Motion**, the Dynamic Island no longer feels like a static island, but a rippling tide of intent. Furthermore, we have opened the **Great Portals** to the realms of Calendar and Reminders. Focus Flow now inhales the mundane and exhales it into our **47 visual resonances**, giving every task a soul and a place in the cosmic dance."
+
+### 🌟 What We Did
+- 🌊 **Kinetic Motion: "The Fluid Wave"**: Implemented a rippling wave animation using `TimelineView` and `Canvas` that triggers during style transitions and task interactions.
+- 🌐 **The Great Integration**: Launched **Phase 2: Intelligence & Sync**. Created `ExternalIntegrationService` using `EventKit` to automatically inhale tasks from Apple Calendar and Reminders.
+- 🔮 **Auto-Prioritization Alchemy**: Developed logic to map external event metadata to our 47 visual styles (e.g., "Meeting" -> Sleek Modern, "Workout" -> Volcanic Flow).
+- 🔄 **Interactive Sync**: Added a manual sync button to the Focus Inbox for on-demand task inhalation from external realms.
+- 🛠️ **Healed the Path**: Resolved several linter warnings and refined navigation state logic in `ContentView`.
+
+### 🔮 What Remains TODO
+- 🧪 **Hardware Séance**: The physical iPhone 7 remains the final frontier for deployment.
+- 🍭 **Visual Candy**: Implement particle effects for Holographic and growth logic for Living Garden.
+- 🌐 **Expanded Wisdom**: Integrate more external sources (Todoist, Trello).
+
+---
+
 ## 2025-12-17: The Digital Paparazzi - 📸 STYLE SNAPSHOT INFRASTRUCTURE 📸
 
 ### 🎭 The Spellbinding Museum Director's Reflections
