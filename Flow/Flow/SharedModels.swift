@@ -8,7 +8,9 @@
  */
 
 import Foundation
+#if os(iOS)
 import ActivityKit
+#endif
 import SwiftUI
 
 // MARK: - 🎨 Visual Concept Alchemy
@@ -195,8 +197,10 @@ protocol TaskProtocol: Sendable {
     var moveCount: Int { get }
     var totalLingeringTime: TimeInterval { get }
     var creationDate: Date { get }
+    var growthLevel: Int { get }
 }
 
+#if os(iOS)
 struct FlowAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var title: String
@@ -206,6 +210,8 @@ struct FlowAttributes: ActivityAttributes {
         var emoji: String
         var style: TaskStyle
         var lastInteractionDate: Date = .now
+        var growthLevel: Int = 0
     }
     var taskId: String
 }
+#endif

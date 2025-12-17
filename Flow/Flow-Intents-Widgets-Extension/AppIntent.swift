@@ -14,6 +14,10 @@ import Foundation
 
 // MARK: - 🧙‍♂️ SHARED KNOWLEDGE
 
+#if os(iOS)
+import ActivityKit
+#endif
+
 // 📜 TaskProtocol - Conforming to the cosmic order
 protocol TaskProtocol: Sendable {
     var id: UUID { get }
@@ -24,6 +28,7 @@ protocol TaskProtocol: Sendable {
     var moveCount: Int { get }
     var totalLingeringTime: TimeInterval { get }
     var creationDate: Date { get }
+    var growthLevel: Int { get }
 }
 
 // 🧙‍♂️ The Item Model - The Vessel of Purpose (Extension-visible definition)
@@ -40,7 +45,17 @@ final class Item: TaskProtocol {
     var creationDate: Date
     var lastInteractionDate: Date
     var totalLingeringTime: TimeInterval = 0
-    
+
+    var growthLevel: Int {
+        if style == .livingGarden || style == .magicalForest {
+            if totalLingeringTime > 1800 { return 3 }
+            else if totalLingeringTime > 900 { return 2 }
+            else if totalLingeringTime > 300 { return 1 }
+            else { return 0 }
+        }
+        return 0
+    }
+
     init(title: String = "New Task", emoji: String = "🎯", style: TaskStyle = TaskStyle.sleekModern, timestamp: Date = .now) {
         self.title = title
         self.emoji = emoji
@@ -50,13 +65,13 @@ final class Item: TaskProtocol {
         self.lastInteractionDate = .now
         print("🌟 ✨ NEW ITEM CRYSTALLIZED IN EXTENSION: \(title) [\(style.rawValue)]")
     }
-    
+
     func snooze() {
         snoozeCount += 1
         lastInteractionDate = .now
         print("🌙 ✨ SNOOZE RITUAL COMPLETE via Intent for [\(title)]!")
     }
-    
+
     func move() {
         moveCount += 1
         lastInteractionDate = .now
@@ -78,26 +93,26 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
 // 🌟 The Snooze Ritual - Delaying the inevitable with grace
 struct SnoozeIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Snooze Task"
-    
+
     @Parameter(title: "Task ID")
     var taskId: String
-    
+
     init() {}
     init(taskId: String) {
         self.taskId = taskId
     }
-    
+
     func perform() async throws -> some IntentResult {
         print("🌐 ✨ SNOOZE INTENT AWAKENS for \(taskId)")
-        
+
         let schema = Schema([Item.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         let container = try ModelContainer(for: schema, configurations: [config])
-        
+
         await MainActor.run {
             let context = container.mainContext
             let uuid = UUID(uuidString: taskId)
-            
+
             do {
                 if let uuid = uuid, let task = try context.fetch(FetchDescriptor<Item>()).first(where: { $0.id == uuid }) {
                     task.snooze()
@@ -117,26 +132,26 @@ struct SnoozeIntent: LiveActivityIntent {
 // ✅ The Done Ritual - Celebrating completion
 struct DoneIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Complete Task"
-    
+
     @Parameter(title: "Task ID")
     var taskId: String
-    
+
     init() {}
     init(taskId: String) {
         self.taskId = taskId
     }
-    
+
     func perform() async throws -> some IntentResult {
         print("🎉 ✨ DONE INTENT AWAKENS for \(taskId)")
-        
+
         let schema = Schema([Item.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         let container = try ModelContainer(for: schema, configurations: [config])
-        
+
         await MainActor.run {
             let context = container.mainContext
             let uuid = UUID(uuidString: taskId)
-            
+
             do {
                 if let uuid = uuid, let task = try context.fetch(FetchDescriptor<Item>()).first(where: { $0.id == uuid }) {
                     task.isCompleted = true
@@ -156,26 +171,26 @@ struct DoneIntent: LiveActivityIntent {
 // 🎨 The Move Ritual - Shifting focus
 struct MoveIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Move Task"
-    
+
     @Parameter(title: "Task ID")
     var taskId: String
-    
+
     init() {}
     init(taskId: String) {
         self.taskId = taskId
     }
-    
+
     func perform() async throws -> some IntentResult {
         print("🎪 📦 MOVE INTENT AWAKENS for \(taskId)")
-        
+
         let schema = Schema([Item.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         let container = try ModelContainer(for: schema, configurations: [config])
-        
+
         await MainActor.run {
             let context = container.mainContext
             let uuid = UUID(uuidString: taskId)
-            
+
             do {
                 if let uuid = uuid, let task = try context.fetch(FetchDescriptor<Item>()).first(where: { $0.id == uuid }) {
                     task.move()

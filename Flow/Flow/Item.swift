@@ -31,6 +31,18 @@ final class Item: TaskProtocol {
     // ✨ Total time the task has 'lingered' in the active state (in seconds)
     var totalLingeringTime: TimeInterval = 0
 
+    // 🌱 Growth logic for styles like Living Garden
+    var growthLevel: Int {
+        if style == .livingGarden || style == .magicalForest {
+            // Growth thresholds in seconds (e.g., 5 mins, 15 mins, 30 mins)
+            if totalLingeringTime > 1800 { return 3 }      // 🍎 Mature/Fruit
+            else if totalLingeringTime > 900 { return 2 }   // 🌳 Tree
+            else if totalLingeringTime > 300 { return 1 }   // 🌿 Plant
+            else { return 0 }                               // 🌱 Seedling
+        }
+        return 0
+    }
+
     init(title: String = "New Task", emoji: String = "🎯", style: TaskStyle = .sleekModern, timestamp: Date = .now) {
         self.title = title
         self.emoji = emoji

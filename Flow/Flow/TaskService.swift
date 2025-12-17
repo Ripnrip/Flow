@@ -49,7 +49,8 @@ class TaskService {
             startDate: task.creationDate,
             emoji: task.emoji,
             style: task.style,
-            lastInteractionDate: .now
+            lastInteractionDate: .now,
+            growthLevel: task.growthLevel
         )
 
         do {
@@ -129,7 +130,8 @@ class TaskService {
                 startDate: task.creationDate,
                 emoji: task.emoji,
                 style: task.style,
-                lastInteractionDate: .now
+                lastInteractionDate: .now,
+                growthLevel: task.growthLevel
             )
             await activity.update(.init(state: updatedState, staleDate: nil))
         }

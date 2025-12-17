@@ -7,7 +7,9 @@
  * - The Theatrical Task Virtuoso
  */
 
+#if os(iOS)
 import ActivityKit
+#endif
 import WidgetKit
 import SwiftUI
 import AppIntents
@@ -177,6 +179,7 @@ extension TaskStyle {
     }
 }
 
+#if os(iOS)
 struct FlowAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var title: String
@@ -186,6 +189,7 @@ struct FlowAttributes: ActivityAttributes {
         var emoji: String
         var style: TaskStyle
         var lastInteractionDate: Date = .now
+        var growthLevel: Int = 0
     }
     var taskId: String
 }
@@ -204,7 +208,7 @@ struct Flow_Intents_Widgets_ExtensionLiveActivity: Widget {
 
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 15) {
-                        BreathingEmojiView(emoji: context.state.emoji, style: context.state.style)
+                        BreathingEmojiView(emoji: context.state.emoji, style: context.state.style, growthLevel: context.state.growthLevel)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(context.state.title)
@@ -230,7 +234,7 @@ struct Flow_Intents_Widgets_ExtensionLiveActivity: Widget {
             DynamicIsland {
                 // 🌟 Expanded State
                 DynamicIslandExpandedRegion(.leading) {
-                    BreathingEmojiView(emoji: context.state.emoji, style: context.state.style)
+                    BreathingEmojiView(emoji: context.state.emoji, style: context.state.style, growthLevel: context.state.growthLevel)
                         .padding(.leading, 8)
                 }
 
@@ -273,7 +277,7 @@ struct Flow_Intents_Widgets_ExtensionLiveActivity: Widget {
                     .padding(.top, 4)
                 }
             } compactLeading: {
-                BreathingEmojiView(emoji: context.state.emoji, style: context.state.style, compact: true)
+                BreathingEmojiView(emoji: context.state.emoji, style: context.state.style, compact: true, growthLevel: context.state.growthLevel)
             } compactTrailing: {
                 HStack(spacing: 2) {
                     Text("\(context.state.snoozeCount)")
@@ -282,7 +286,7 @@ struct Flow_Intents_Widgets_ExtensionLiveActivity: Widget {
                 }
                 .font(.caption2.bold())
             } minimal: {
-                BreathingEmojiView(emoji: context.state.emoji, style: context.state.style, compact: true)
+                BreathingEmojiView(emoji: context.state.emoji, style: context.state.style, compact: true, growthLevel: context.state.growthLevel)
             }
             .widgetURL(URL(string: "flow://task/\(context.attributes.taskId)"))
             .keylineTint(context.state.style.themeAccentColor())
@@ -316,6 +320,7 @@ struct Flow_Intents_Widgets_ExtensionLiveActivity: Widget {
         }
     }
 }
+#endif
 
 // MARK: - 🌊 Theme Views
 
@@ -557,16 +562,137 @@ struct BreathingEmojiView: View {
     let emoji: String
     var style: TaskStyle = .sleekModern
     var compact: Bool = false
+    var growthLevel: Int = 0
     @State private var isBreathing = false
+    @State private var symbolTrigger = false
 
     var body: some View {
-        Text(emoji)
-            .font(compact ? .body : (style == .retroPixel || style == .vintageArcade || style == .pixelArtHero ? .system(size: 30, design: .monospaced) : .largeTitle))
-            .scaleEffect(isBreathing ? 1.15 : 0.85)
-            .shadow(color: style == .holographic || style == .glassmorphism ? .cyan.opacity(0.5) : .clear, radius: 10)
-            .symbolEffect(.bounce, value: isBreathing)
-            .animation(.easeInOut(duration: style == .zenFocus ? 3.0 : 2.0).repeatForever(autoreverses: true), value: isBreathing)
-            .onAppear { isBreathing = true }
+        ZStack {
+            ForEach(0..<3) { index in
+                Circle()
+                    .stroke(style.themeAccentColor().opacity(0.3), lineWidth: 2)
+                    .scaleEffect(isBreathing ? 1.5 : 1.0)
+                    .opacity(isBreathing ? 0 : 0.5)
+                    .animation(.easeInOut(duration: breathingDuration).repeatForever(autoreverses: false).delay(Double(index) * 0.5), value: isBreathing)
+            }
+
+            if style == .livingGarden || style == .magicalForest {
+                Text(gardenEmoji)
+                    .font(compact ? .body : .largeTitle)
+                    .scaleEffect(isBreathing ? 1.1 : 0.9)
+                    .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: isBreathing)
+            } else if isSFSymbol {
+                Image(systemName: emojiName)
+                    .font(style.themeFont(size: compact ? 20 : 40))
+                    .symbolEffect(.bounce, value: symbolTrigger)
+                    .symbolEffect(.variableColor.iterative, options: .repeat(.infinite), value: isBreathing)
+                    .symbolEffect(.pulse, options: .repeat(.infinite), value: isBreathing)
+                    .foregroundStyle(style.themeForegroundColor())
+            } else {
+                Text(emoji)
+                    .font(compact ? .body : (style == .retroPixel || style == .vintageArcade || style == .pixelArtHero ? .system(size: 30, design: .monospaced) : .largeTitle))
+                    .scaleEffect(isBreathing ? 1.15 : 0.85)
+                    .shadow(color: style == .holographic || style == .glassmorphism ? .cyan.opacity(0.5) : .clear, radius: 10)
+                    .animation(.easeInOut(duration: style == .zenFocus ? 3.0 : 2.0).repeatForever(autoreverses: true), value: isBreathing)
+            }
+        }
+        .onAppear {
+            isBreathing = true
+            // Periodically trigger bounce for SF Symbols
+            Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+                symbolTrigger.toggle()
+            }
+        }
+    }
+
+    private var gardenEmoji: String {
+        switch growthLevel {
+        case 0: return "🌱"
+        case 1: return "🌿"
+        case 2: return "🌳"
+        case 3: return "🍎"
+        default: return "🌱"
+        }
+    }
+
+    private var isSFSymbol: Bool {
+        emoji.hasPrefix("sf:")
+    }
+
+    private var emojiName: String {
+        isSFSymbol ? String(emoji.dropFirst(3)) : emoji
+    }
+
+    private var breathingDuration: Double {
+        switch style {
+        case .zenFocus, .magicalScroll: return 4.0
+        case .cyberpunk, .retroPixel: return 1.5
+        case .volcanicFlow, .solarFlare: return 1.0
+        default: return 2.5
+        }
+    }
+}
+
+struct StyleTransitionWave: View {
+    let style: TaskStyle
+    var triggerDate: Date = .now
+    @State private var trigger = false
+
+    var body: some View {
+        ZStack {
+            if trigger {
+                FluidWaveView(color: style.themeAccentColor())
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .bottom)), removal: .opacity))
+                    .ignoresSafeArea()
+            }
+        }
+        .onChange(of: triggerDate) { _, _ in
+            activateWave()
+        }
+        .onChange(of: style) { _, _ in
+            activateWave()
+        }
+    }
+
+    private func activateWave() {
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+            trigger = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation {
+                trigger = false
+            }
+        }
+    }
+}
+
+struct FluidWaveView: View {
+    let color: Color
+    @State private var phase = 0.0
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                let now = timeline.date.timeIntervalSinceReferenceDate
+                let angle = now * 2.0
+
+                let path = Path { path in
+                    path.move(to: CGPoint(x: 0, y: size.height))
+
+                    for xPosition in stride(from: 0, to: size.width, by: 1) {
+                        let relativeX = xPosition / size.width
+                        let sine = sin(angle + (relativeX * .pi * 2))
+                        let yPosition = size.height * 0.5 + (sine * 10)
+                        path.addLine(to: CGPoint(x: xPosition, y: yPosition))
+                    }
+
+                    path.addLine(to: CGPoint(x: size.width, y: size.height))
+                    path.closeSubpath()
+                }
+
+                context.fill(path, with: .color(color.opacity(0.3)))
+            }
+        }
     }
 }
 

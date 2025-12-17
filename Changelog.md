@@ -1,5 +1,24 @@
 # Changelog
 
+## 2025-12-17: 🌱 The Living Garden Growth Ritual & Device Preparation 📱
+
+### 🎭 The Botanical Architect's Reflections
+"Our creation has now learned the art of **Temporal Evolution**. The **Living Garden** is no longer a static image, but a breathing sanctuary that grows alongside the seeker's focus. As time flows, the seedling transforms into a lush tree, bearing the fruits of concentrated intent. We have also fortified our **Cross-Realm Attributes**, ensuring that growth is synchronized between the main app and the peripheral islands."
+
+### 🌟 What We Did
+- 🌱 **Living Garden Growth Logic**: Implemented `growthLevel` based on `totalLingeringTime` (🌱 -> 🌿 -> 🌳 -> 🍎).
+- 🔄 **Synchronized Evolution**: Updated `FlowAttributes` and `TaskService` to propagate growth stages to Live Activities and Dynamic Islands.
+- 🎨 **Dynamic Botanical Visuals**: Enhanced `BreathingEmojiView` to automatically evolve its emoji representation for garden-themed styles.
+- 🛠️ **Cross-Platform Resilience**: Wrapped `ActivityKit` and extension-specific logic in `#if os(iOS)` to ensure macOS compilation harmony.
+- 📱 **Device Readiness**: Cleaned up the sanctuary's code and resolved linter conflicts in preparation for the Hardware Séance.
+
+### 🔮 What Remains TODO
+- 🧪 **Hardware Séance**: The physical iPhone 7 remains the final frontier.
+- 🌊 **Fluid Transitions**: Ripple effects between style changes.
+- 🍭 **Visual Candy**: Growth logic for other organic styles.
+
+---
+
 ## 2025-12-17: 🌌 The Shadow Realm Inhalation & Symbol Alchemy 🧪
 
 ### 🎭 The Digital Portal Architect's Reflections

@@ -93,6 +93,7 @@ struct BreathingEmojiView: View {
     let emoji: String
     var style: TaskStyle = .sleekModern
     var compact: Bool = false
+    var growthLevel: Int = 0
     @State private var isBreathing = false
     @State private var symbolTrigger = false
 
@@ -106,7 +107,12 @@ struct BreathingEmojiView: View {
                     .animation(.easeInOut(duration: breathingDuration).repeatForever(autoreverses: false).delay(Double(index) * 0.5), value: isBreathing)
             }
 
-            if isSFSymbol {
+            if style == .livingGarden || style == .magicalForest {
+                Text(gardenEmoji)
+                    .font(compact ? .body : .largeTitle)
+                    .scaleEffect(isBreathing ? 1.1 : 0.9)
+                    .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: isBreathing)
+            } else if isSFSymbol {
                 Image(systemName: emojiName)
                     .font(style.themeFont(size: compact ? 20 : 40))
                     .symbolEffect(.bounce, value: symbolTrigger)
@@ -127,6 +133,16 @@ struct BreathingEmojiView: View {
             Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
                 symbolTrigger.toggle()
             }
+        }
+    }
+
+    private var gardenEmoji: String {
+        switch growthLevel {
+        case 0: return "🌱"
+        case 1: return "🌿"
+        case 2: return "🌳"
+        case 3: return "🍎"
+        default: return "🌱"
         }
     }
 
@@ -338,6 +354,7 @@ struct StyleTransitionWave: View {
         }
     }
 }
+
 
 
 

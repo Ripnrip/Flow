@@ -18,7 +18,7 @@
 - [x] **Todoist Integration (Shadow Realm Inhalation)** 📥
 - [x] **Advanced SF Symbol Animations & Particle Alchemy** ✨
 - [x] **macOS MenuBar Presence (NotchDrop inspiration)** 🖥️
+- [x] **Living Garden Growth Logic (🌱 -> 🌿 -> 🌳 -> 🍎)** 🌱
 - [ ] Build for iPhone 7 device
 - [ ] Begin the integration of more external task sources (Trello)
 - [ ] Implement fluid wave transitions between styles
-- [ ] Implement growth logic for Living Garden

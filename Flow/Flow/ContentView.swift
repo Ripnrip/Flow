@@ -241,6 +241,12 @@ struct TaskRow: View {
                     .padding(8)
                     .background(styleColor.opacity(0.1))
                     .clipShape(Circle())
+            } else if item.style == .livingGarden || item.style == .magicalForest {
+                Text(gardenEmoji(for: item.growthLevel))
+                    .font(.title2)
+                    .padding(8)
+                    .background(styleColor.opacity(0.1))
+                    .clipShape(Circle())
             } else {
                 Text(item.emoji)
                     .font(.title2)
@@ -294,6 +300,16 @@ struct TaskRow: View {
         formatter.allowedUnits = [.hour, .minute, .second]
         formatter.unitsStyle = .abbreviated
         return formatter.string(from: seconds) ?? "0s"
+    }
+
+    private func gardenEmoji(for level: Int) -> String {
+        switch level {
+        case 0: return "🌱"
+        case 1: return "🌿"
+        case 2: return "🌳"
+        case 3: return "🍎"
+        default: return "🌱"
+        }
     }
 }
 

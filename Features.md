@@ -35,3 +35,5 @@
 - [x] **Advanced SF Symbol Animations**: Interactive `.symbolEffect` integration.
 - [x] **Cosmic Particle Systems**: Native SwiftUI particles for atmosphere.
 - [x] **macOS MenuBar Presence**: Persistent "NotchDrop" style utility.
+- [x] **Living Garden Growth System**: Dynamic 🌱 -> 🌿 -> 🌳 -> 🍎 evolution based on focus time.
+- [x] **Cross-Platform Resilience**: Unified codebase for iOS and macOS.
