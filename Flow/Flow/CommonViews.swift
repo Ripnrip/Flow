@@ -180,7 +180,7 @@ struct BreathingEmojiView: View {
 struct StyleProgressView: View {
     // Placeholder definition to fulfill references
     let progress: Double = 0.5
-    let style: TaskStyle = .sleekModern
+    let style: TaskStyle
     var body: some View {
         ProgressView(value: progress)
             .progressViewStyle(LinearProgressViewStyle(tint: progressColor))
@@ -195,6 +195,9 @@ struct StyleProgressView: View {
         case .courierPrime: return .yellow
         default: return .blue
         }
+    }
+    init(style: TaskStyle = .sleekModern) {
+        self.style = style
     }
 }
 
@@ -238,7 +241,7 @@ import WidgetKit
 // Assuming the module containing FlowAttributes is named 'Flow'
 // We use the explicit module name prefix to resolve potential ambiguity 
 // between the main app target and a widget extension target.
-public typealias LiveActivityAttributes = FlowAttributes
+typealias LiveActivityAttributes = FlowAttributes
 
 public struct FlowLiveActivityView: View {
     // Note: We cannot rely on State/ObservedObject in Live Activities.
@@ -371,5 +374,162 @@ private struct MovingParticle: ViewModifier {
                     phase = .pi * 2
                 }
             }
+    }
+}
+
+
+
+// MARK: - 🌊 Theme Views
+
+struct StyleMetricView: View {
+    let style: TaskStyle
+    let snoozeCount: Int
+    let moveCount: Int
+
+    var body: some View {
+        Group {
+            if style == .questMode {
+                VStack(alignment: .trailing) {
+                    Text("LVL 5").font(.system(size: 12, weight: .black, design: .monospaced))
+                    Text("XP 450").font(.caption2)
+                }.foregroundStyle(.orange)
+            } else if style == .cosmicNebula || style == .cosmicVoid || style == .deepSpace {
+                VStack(alignment: .trailing) {
+                    Image(systemName: "sparkles").symbolEffect(.pulse).foregroundStyle(.white)
+                    Text("ASTRA").font(.system(size: 8, weight: .bold))
+                }
+            } else if style == .spaceMission {
+                VStack(alignment: .trailing) {
+                    Text("FUEL 88%").font(.system(size: 8, design: .monospaced))
+                    Text("ALT 400K").font(.system(size: 8, design: .monospaced))
+                }.foregroundStyle(.cyan)
+            } else if style == .courierPrime {
+                VStack(alignment: .trailing) {
+                    Text("ROUTE 7").font(.system(size: 8, weight: .black))
+                    Text("ETA 12m").font(.caption2.monospaced())
+                }.foregroundStyle(.yellow)
+            } else if style == .circuitBoard {
+                VStack(alignment: .trailing) {
+                    Text("CPU 12%").font(.system(size: 8, design: .monospaced))
+                    Text("RAM OK").font(.system(size: 8, design: .monospaced))
+                }.foregroundStyle(.green)
+            } else {
+                HStack(spacing: 8) {
+                    Label("\(snoozeCount)", systemImage: "zzz")
+                    Label("\(moveCount)", systemImage: "arrow.right.circle")
+                }
+                .font(.caption2.bold())
+            }
+        }
+    }
+}
+
+struct StyleMetadataView: View {
+    let style: TaskStyle
+    let snoozeCount: Int
+
+    var body: some View {
+        Group {
+            metadataText
+                .font(.system(size: 8, weight: .bold, design: .monospaced))
+
+            HStack(spacing: 4) {
+                Text("\(snoozeCount)").bold()
+                Text(styleIcon)
+            }
+            .font(.caption2)
+        }
+    }
+
+    @ViewBuilder
+    private var metadataText: some View {
+        switch style {
+        case .livingGarden: Text("🌱 GROWING").foregroundStyle(.green)
+        case .cyberpunk: Text("SYS_ACTIVE").foregroundStyle(.yellow)
+        case .blueprint: Text("DRAFT_V1").foregroundStyle(.cyan)
+        case .cosmicNebula: Text("ORBITAL").foregroundStyle(.purple)
+        case .oceanFlow: Text("DEPTH_400m").foregroundStyle(.blue)
+        case .industrialRust: Text("MAINT_REQ").foregroundStyle(.orange)
+        case .steampunk: Text("PRESSURE_OK").foregroundStyle(.brown)
+        case .courierPrime: Text("OUT_FOR_DELIV").foregroundStyle(.yellow)
+        case .circuitBoard: Text("LINK_STABLE").foregroundStyle(.green)
+        case .liquidMetal: Text("TEMP_900C").foregroundStyle(.cyan)
+        default: EmptyView()
+        }
+    }
+
+    private var styleIcon: String {
+        switch style {
+        case .cosmicNebula, .cosmicVoid, .deepSpace: return "✨"
+        case .bioLuminescence, .oceanFlow, .liquidMetal: return "🫧"
+        case .volcanicFlow, .solarFlare: return "🔥"
+        case .livingGarden, .magicalForest: return "🌿"
+        case .spaceMission: return "🚀"
+        case .courierPrime: return "📦"
+        default: return "💤"
+        }
+    }
+}
+
+struct StyleTransitionWave: View {
+    let style: TaskStyle
+    var triggerDate: Date = .now
+    @State private var trigger = false
+
+    var body: some View {
+        ZStack {
+            if trigger {
+                FluidWaveView(color: style.themeAccentColor())
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .bottom)), removal: .opacity))
+                    .ignoresSafeArea()
+            }
+        }
+        .onChange(of: triggerDate) { _, _ in
+            activateWave()
+        }
+        .onChange(of: style) { _, _ in
+            activateWave()
+        }
+    }
+
+    private func activateWave() {
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+            trigger = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation {
+                trigger = false
+            }
+        }
+    }
+}
+
+struct FluidWaveView: View {
+    let color: Color
+    @State private var phase = 0.0
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                let now = timeline.date.timeIntervalSinceReferenceDate
+                let angle = now * 2.0
+
+                let path = Path { path in
+                    path.move(to: CGPoint(x: 0, y: size.height))
+
+                    for xPosition in stride(from: 0, to: size.width, by: 1) {
+                        let relativeX = xPosition / size.width
+                        let sine = sin(angle + (Double(relativeX) * .pi * 2.0))
+                        let yPosition = size.height * 0.5 + (sine * 10)
+                        path.addLine(to: CGPoint(x: xPosition, y: yPosition))
+                    }
+
+                    path.addLine(to: CGPoint(x: size.width, y: size.height))
+                    path.closeSubpath()
+                }
+
+                context.fill(path, with: .color(color.opacity(0.3)))
+            }
+        }
     }
 }

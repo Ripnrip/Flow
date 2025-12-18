@@ -11,6 +11,7 @@ import ActivityKit
 import SwiftData
 import SwiftUI
 import Observation
+import AppIntents
 
 @MainActor
 @Observable

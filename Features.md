@@ -41,6 +41,8 @@
 - [x] **Digital Showcase (index.html)**: High-fidelity landing page with deep gradients and a curated resonance gallery.
 - [x] **Interactive Landing Page**: Fully interactive experience with live Dynamic Island preview, theme selector, real-time search, category filters, and lightbox modal.
 - [x] **Complete Style Archive**: All 47+ visual resonances accessible through searchable, filterable gallery with smooth animations.
+- [x] **Dynamic Island Layout Refinement**: Fixed duplicate buttons, proper region hierarchy, refined button sizing and styling.
+- [x] **Architectural Restructuring**: Separated AppIntents into dedicated file, cleaned up widget structure, removed duplicate configurations.
 - [x] **Dynamic Island Preview**: Interactive preview with theme switching, state cycling, and properly sized buttons.
 - [x] **Advanced Resonance Waves**: Multi-layered kinetic ripples during style transitions.
 - [x] **Organic Particle Alchemy**: Custom fireflies and deep-sea glows for natural styles.

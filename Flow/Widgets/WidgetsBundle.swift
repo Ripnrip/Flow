@@ -14,6 +14,6 @@ struct WidgetsBundle: WidgetBundle {
         Widgets()
         WidgetsControl()
         WidgetsLiveActivity()
-        FlowActivityConfiguration()
+        //FlowActivityConfiguration()
     }
 }

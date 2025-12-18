@@ -207,18 +207,3 @@ protocol TaskProtocol: Sendable {
     var growthLevel: Int { get }
 }
 
-#if os(iOS)
-public struct FlowAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        var title: String
-        var snoozeCount: Int
-        var moveCount: Int
-        var startDate: Date
-        var emoji: String
-        var style: TaskStyle
-        var lastInteractionDate: Date = .now
-        var growthLevel: Int = 0
-    }
-    var taskId: String
-}
-#endif

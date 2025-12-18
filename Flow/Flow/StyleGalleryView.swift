@@ -29,7 +29,12 @@ struct StyleGalleryView: View {
             .padding(25)
         }
         .navigationTitle("The Visual Vault")
+#if os(iOS)
         .background(Color(uiColor: .systemGroupedBackground))
+#elseif (os(macOS))
+        .background(Color.teal)
+        
+#endif
     }
 }
 

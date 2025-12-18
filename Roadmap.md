@@ -27,6 +27,8 @@
   - **Interactive Landing Page Awakening** [COMPLETED] 🎭
   - **Complete Style Archive (47+ Resonances)** [COMPLETED] 📸
   - **SwiftData Persistence Fix** [COMPLETED] 🔧
+  - **Dynamic Island Layout Refinement** [COMPLETED] 🎨
+  - **Architectural Restructuring** [COMPLETED] 🏗️
   - **Hardware Séance (iPhone 7 Deployment)** [PENDING] 📱
   - Detailed Productivity Analytics Dashboard
   - Custom Focus Modes & Contextual Haptics

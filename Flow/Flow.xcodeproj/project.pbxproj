@@ -86,6 +86,13 @@
 			);
 			target = 84AD77222EF30E1A00FCC179 /* Flow */;
 		};
+		84D6DE8F2EF37B0B0052F46B /* Exceptions for "Widgets" folder in "Flow" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				LiveActivityIntents.swift,
+			);
+			target = 84AD77222EF30E1A00FCC179 /* Flow */;
+		};
 		84D8EA7D2EF3705700125721 /* Exceptions for "Flow" folder in "WidgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -104,6 +111,7 @@
 		8476DDFF2EF36CB900949AE5 /* Widgets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				84D6DE8F2EF37B0B0052F46B /* Exceptions for "Widgets" folder in "Flow" target */,
 				8476DE132EF36CBE00949AE5 /* Exceptions for "Widgets" folder in "WidgetsExtension" target */,
 			);
 			path = Widgets;
