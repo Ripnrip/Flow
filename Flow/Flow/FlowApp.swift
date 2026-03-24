@@ -1,10 +1,28 @@
 /**
- * 🎭 The FlowApp - The Grand Entrance
+ * 🎭 FlowApp — The Grand Entrance
  *
  * "The portal through which the user enters the realm of Focus Flow.
- * It initializes the shared wisdom of the Model Container and the Task Service."
+ * It initialises the shared ModelContainer, services, and routing layer,
+ * then stands ready to receive Universal Links and App Clip handoffs."
  *
- * - The Cosmic Process Orchestrator
+ * Universal Links & Deep Links
+ * ────────────────────────────
+ *  1. System delivers URL to `.onOpenURL`
+ *  2. `FlowRoute(url:)` parses it into a typed route
+ *  3. `activeRoute` state drives navigation in ContentView
+ *
+ * App Clip → Full App handoff
+ * ────────────────────────────
+ *  App Clip writes a `pendingTaskName` into App Groups UserDefaults
+ *  before promoting to the full app. `FlowApp.onAppear` reads it and
+ *  pre-populates the new-task sheet.
+ *
+ * Foreground reconciliation
+ * ────────────────────────────
+ *  `scenePhase` change to `.active` triggers
+ *  `taskService.reconcileFromSharedStore()` so any SnoozeIntent /
+ *  DoneIntent actions taken while the app was backgrounded are
+ *  committed to SwiftData before the user sees the UI.
  */
 
 import SwiftUI
@@ -13,128 +31,204 @@ import UserNotifications
 
 @main
 struct FlowApp: App {
-    // 💎 The crystallized wisdom of our data model
+
+    // MARK: - Shared State
+
     let sharedModelContainer: ModelContainer
 
     @State private var taskService: TaskService
     @State private var integrationService: ExternalIntegrationService
     @State private var todoistService: TodoistService
 
+    /// The pending route derived from an incoming Universal Link or deep link.
+    /// Consumed by ContentView's `.onChange(of: activeRoute)` to navigate.
+    @State private var activeRoute: FlowRoute?
+
+    @Environment(\.scenePhase) private var scenePhase
+
+    // MARK: - Init
+
     init() {
-        print("🌐 ✨ FLOW APP AWAKENS!")
-        
-        let schema = Schema([
-            Item.self
-        ])
-        
+        FlowLogger.lifecycle.info("🌐 ✨ FlowApp awakening…")
+
+        let schema = Schema([Item.self])
+
         do {
-            // 🛠️ Healing the path for SwiftData - ensuring Application Support exists
             let fileManager = FileManager.default
-            let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            if !fileManager.fileExists(atPath: appSupportURL.path) {
-                print("🏗️ Creating Application Support sanctuary...")
-                try? fileManager.createDirectory(at: appSupportURL, withIntermediateDirectories: true)
+            let appSupport  = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            if !fileManager.fileExists(atPath: appSupport.path) {
+                try? fileManager.createDirectory(at: appSupport, withIntermediateDirectories: true)
+                FlowLogger.local.info("🏗️ Created Application Support directory")
             }
 
-            let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-            
-            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let config    = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            let container = try ModelContainer(for: schema, configurations: [config])
             self.sharedModelContainer = container
-            let context = container.mainContext
-            
-            // 🧙‍♂️ Services initialized with the main context
-            self._taskService = State(initialValue: TaskService(modelContext: context))
-            self._integrationService = State(initialValue: ExternalIntegrationService(modelContext: context))
-            self._todoistService = State(initialValue: TodoistService(modelContext: context))
-            
-            print("✅ ✨ MODEL CONTAINER CRYSTALLIZED!")
-            
+            let ctx = container.mainContext
+
+            self._taskService        = State(initialValue: TaskService(modelContext: ctx))
+            self._integrationService = State(initialValue: ExternalIntegrationService(modelContext: ctx))
+            self._todoistService     = State(initialValue: TodoistService(modelContext: ctx))
+
+            FlowLogger.lifecycle.info("✅ ModelContainer crystallised")
+
         } catch {
-            // --- FIX FOR AMBIGUOUS INIT ERROR: Initialize all properties before fatalError ---
-            print("🌩️ CRITICAL FAILURE: Could not create ModelContainer: \(error)")
-            
-            // Create a temporary, in-memory container configuration for placeholder initialization
-            let fallbackConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-            
+            FlowLogger.lifecycle.critical("💥 ModelContainer creation failed: \(error.localizedDescription)")
+
+            // Fallback: in-memory container so all @State properties can be initialised
+            // before the inevitable fatalError.
+            let fallback = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
             do {
-                let tempContainer = try ModelContainer(for: schema, configurations: [fallbackConfiguration])
-                self.sharedModelContainer = tempContainer
-                let context = tempContainer.mainContext
-                
-                // Initialize @State properties with placeholder services (will be immediately destroyed by fatalError)
-                self._taskService = State(initialValue: TaskService(modelContext: context))
-                self._integrationService = State(initialValue: ExternalIntegrationService(modelContext: context))
-                self._todoistService = State(initialValue: TodoistService(modelContext: context))
-                
+                let tmp = try ModelContainer(for: schema, configurations: [fallback])
+                self.sharedModelContainer = tmp
+                let ctx = tmp.mainContext
+                self._taskService        = State(initialValue: TaskService(modelContext: ctx))
+                self._integrationService = State(initialValue: ExternalIntegrationService(modelContext: ctx))
+                self._todoistService     = State(initialValue: TodoistService(modelContext: ctx))
             } catch {
-                // If the fallback fails, we must use a minimal, manual fallback
-                // This path should ideally never be hit.
-                fatalError("Double Critical Failure: Cannot even create in-memory ModelContainer: \(error)")
+                fatalError("Double critical failure — cannot create in-memory ModelContainer: \(error)")
             }
-            
-            // Terminate the application after ensuring properties are initialized
             fatalError("Could not create ModelContainer: \(error)")
         }
     }
 
+    // MARK: - Scene
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(activeRoute: $activeRoute)
                 .environment(taskService)
                 .environment(integrationService)
                 .environment(todoistService)
                 .onAppear {
-                    // 🔔 ✨ REQUESTING THE GIFT OF NOTIFICATIONS
                     requestNotificationPermissions()
-
-                    Task {
-                        // Restore Live Activity session if a task is already in focus or if there is a primary task awaiting focus.
-                        await taskService.restoreActiveFocusSession()
-                        
-                        await integrationService.requestPermissions()
-                        if integrationService.isAuthorized {
-                            await integrationService.inhaleCalendarEvents()
-                            await integrationService.inhaleReminders()
-                        }
-                        await todoistService.inhaleTasks()
+                    handleStartup()
+                }
+                // ── Universal Link / deep-link ingestion ──────────────
+                .onOpenURL { url in
+                    FlowLogger.deepLink.info("🔗 Received URL: \(url.absoluteString)")
+                    if let route = FlowRoute(url: url) {
+                        FlowLogger.deepLink.info("🔗 Resolved route: \(String(describing: route))")
+                        activeRoute = route
+                    } else {
+                        FlowLogger.deepLink.warning("⚠️ No route matched for: \(url.absoluteString)")
                     }
+                }
+                // ── NSUserActivity continuation (Handoff / Spotlight) ──
+                .onContinueUserActivity(NSUserActivityTypes.browsingWeb) { activity in
+                    guard let url = activity.webpageURL,
+                          let route = FlowRoute(url: url) else { return }
+                    FlowLogger.deepLink.info("🔗 NSUserActivity route: \(String(describing: route))")
+                    activeRoute = route
                 }
         }
         .modelContainer(sharedModelContainer)
+        // Reconcile on every foreground (catches intent-pending changes)
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                FlowLogger.lifecycle.info("🔄 Scene became active — reconciling shared store")
+                Task {
+                    await taskService.reconcileFromSharedStore()
+                }
+            }
+        }
 
         #if os(macOS)
         MenuBarExtra("Focus Flow", systemImage: "target") {
-            VStack {
-                Text("Focus Flow")
-                    .font(.headline)
-                Divider()
-                Button("Sync All") {
-                    Task {
-                        await integrationService.inhaleCalendarEvents()
-                        await integrationService.inhaleReminders()
-                        await todoistService.inhaleTasks()
-                    }
-                }
-                Divider()
-                Button("Quit") {
-                    NSApplication.shared.terminate(nil)
-                }
-            }
+            MacMenuBarView(
+                taskService: taskService,
+                integrationService: integrationService,
+                todoistService: todoistService
+            )
         }
         #endif
     }
 
-    // 🔔 The Ritual of Permission - Seeking the user's blessing for awareness
+    // MARK: - Startup
+
+    private func handleStartup() {
+        Task {
+            // Restore any active focus session (also reconciles SharedTaskStore)
+            await taskService.restoreActiveFocusSession()
+
+            // Sync external integrations
+            await integrationService.requestPermissions()
+            if integrationService.isAuthorized {
+                FlowLogger.network.info("🌐 Syncing Calendar & Reminders…")
+                await integrationService.inhaleCalendarEvents()
+                await integrationService.inhaleReminders()
+            }
+
+            FlowLogger.network.info("🌐 Syncing Todoist…")
+            await todoistService.inhaleTasks()
+
+            // Handle App Clip → Full App handoff task name
+            if let defaults  = UserDefaults(suiteName: kFlowAppGroup),
+               let taskName  = defaults.string(forKey: "com.binarybros.Flow.pendingTaskName"),
+               !taskName.isEmpty {
+                FlowLogger.deepLink.info("🔗 App Clip handoff: pending task '\(taskName)'")
+                activeRoute = .inbox // Navigate to inbox; ContentView surfaces the sheet
+                defaults.removeObject(forKey: "com.binarybros.Flow.pendingTaskName")
+            }
+        }
+    }
+
+    // MARK: - Notifications
+
     private func requestNotificationPermissions() {
-        print("🔍 🧙‍♂️ PEERING INTO NOTIFICATION BLESSINGS...")
+        FlowLogger.lifecycle.info("🔔 Requesting notification authorisation…")
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
             if granted {
-                print("🎉 ✨ USER HAS BLESSED US WITH AWARENESS!")
-            } else if let error = error {
-                print("🌩️ Temporary setback in seeking blessing: \(error.localizedDescription)")
+                FlowLogger.lifecycle.info("🎉 Notifications authorised")
+            } else if let error {
+                FlowLogger.lifecycle.warning("⚠️ Notification auth error: \(error.localizedDescription)")
             } else {
-                print("🌙 ⚠️ User has declined the gift of notifications.")
+                FlowLogger.lifecycle.info("🌙 User declined notifications")
             }
         }
     }
 }
+
+// MARK: - NSUserActivityTypes helper
+
+private enum NSUserActivityTypes {
+    static let browsingWeb = "NSUserActivityTypeBrowsingWeb"
+}
+
+// MARK: - macOS Menu Bar View
+
+#if os(macOS)
+private struct MacMenuBarView: View {
+    let taskService: TaskService
+    let integrationService: ExternalIntegrationService
+    let todoistService: TodoistService
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Focus Flow")
+                .font(.headline)
+                .padding(.horizontal)
+
+            Divider()
+
+            Button("Sync Integrations") {
+                Task {
+                    FlowLogger.network.info("🌐 macOS menu: syncing integrations")
+                    await integrationService.inhaleCalendarEvents()
+                    await integrationService.inhaleReminders()
+                    await todoistService.inhaleTasks()
+                }
+            }
+
+            Divider()
+
+            Button("Quit") {
+                FlowLogger.lifecycle.info("👋 macOS menu: quitting app")
+                NSApplication.shared.terminate(nil)
+            }
+        }
+        .padding(.vertical, 6)
+        .frame(minWidth: 200)
+    }
+}
+#endif

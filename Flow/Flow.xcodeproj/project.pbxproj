@@ -97,8 +97,10 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				CommonViews.swift,
+				FlowLogger.swift,
 				Item.swift,
 				SharedModels.swift,
+				SharedTaskStore.swift,
 				TaskLingeringActor.swift,
 				TaskService.swift,
 				TodoistService.swift,

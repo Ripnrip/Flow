@@ -2,30 +2,89 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Push Notifications -->
 	<key>aps-environment</key>
 	<string>development</string>
+
+	<!-- CloudKit sync -->
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array/>
 	<key>com.apple.developer.icloud-services</key>
 	<array>
 		<string>CloudKit</string>
 	</array>
+
+	<!-- Journal suggestions -->
 	<key>com.apple.developer.journal.allow</key>
 	<array>
 		<string>suggestions</string>
 	</array>
+
+	<!-- Siri / AppIntents -->
 	<key>com.apple.developer.siri</key>
 	<true/>
+
+	<!-- Custom fonts -->
 	<key>com.apple.developer.user-fonts</key>
 	<array>
 		<string>system-installation</string>
 		<string>app-usage</string>
 	</array>
+
+	<!-- Time-sensitive notifications -->
 	<key>com.apple.developer.usernotifications.time-sensitive</key>
 	<true/>
+
+	<!-- Wi-Fi Aware -->
 	<key>com.apple.developer.wifi-aware</key>
 	<array>
 		<string>Subscribe</string>
+	</array>
+
+	<!--
+	    App Groups — shared UserDefaults between Flow app and WidgetsExtension.
+	    SharedTaskStore uses this suite so AppIntents (SnoozeIntent, DoneIntent)
+	    can mutate task state without launching the main app.
+
+	    ⚠️  Register this group ID in the Apple Developer portal for your team,
+	        and add the same entitlement to the WidgetsExtension target's .entitlements.
+	-->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.binarybros.Flow</string>
+	</array>
+
+	<!--
+	    Associated Domains — Universal Links + App Clips.
+
+	    Requires an apple-app-site-association (AASA) file hosted at:
+	      https://flow.app/.well-known/apple-app-site-association
+
+	    AASA content (paths map to FlowRoute cases):
+	    {
+	      "applinks": {
+	        "details": [{
+	          "appIDs": ["<TEAM_ID>.com.binarybros.Flow"],
+	          "components": [
+	            { "/": "/task/*",   "comment": "FlowRoute.focus(taskId:)" },
+	            { "/": "/gallery",  "comment": "FlowRoute.styleGallery"   },
+	            { "/": "/join/*",   "comment": "FlowRoute.join(code:)"    }
+	          ]
+	        }]
+	      },
+	      "appclips": {
+	        "apps": ["<TEAM_ID>.com.binarybros.Flow.Clip"]
+	      }
+	    }
+
+	    ⚠️  Replace <TEAM_ID> with your Apple Developer Team ID before submitting.
+	        Hosting on a CDN with valid TLS and no redirects is required by Apple.
+	-->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:flow.app</string>
+		<string>webcredentials:flow.app</string>
+		<string>appclips:flow.app</string>
 	</array>
 </dict>
 </plist>

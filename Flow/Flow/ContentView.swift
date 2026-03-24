@@ -24,6 +24,9 @@ struct ContentView: View {
     @Environment(TodoistService.self) private var todoistService: TodoistService
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
 
+    /// Incoming deep-link / Universal Link route — set by FlowApp.onOpenURL.
+    @Binding var activeRoute: FlowRoute?
+
     @State private var isAddingTask = false
     @State private var newTaskTitle = ""
     @State private var newTaskEmoji = "🎯"
@@ -31,6 +34,10 @@ struct ContentView: View {
     @State private var selection: NavigationItem? = .inbox
 
     let emojis = ["🎯", "📝", "💪", "📚", "📧", "🚀", "🎨", "💻", "🧠", "🌌", "🏗️", "📰", "📜", "🔥", "🌿", "🐙", "🕹️", "⚙️", "💎", "📦", "🚥", "🪟", "⚔️", "💧", "☀️", "🖍️", "🖤"]
+
+    init(activeRoute: Binding<FlowRoute?> = .constant(nil)) {
+        self._activeRoute = activeRoute
+    }
 
     var body: some View {
         NavigationSplitView {
@@ -110,6 +117,31 @@ struct ContentView: View {
             Text("Select a task to see its journey")
                 .font(.title3)
                 .foregroundStyle(.secondary)
+        }
+        // ── Deep-link / Universal Link routing ──────────────────
+        .onChange(of: activeRoute) { _, newRoute in
+            guard let route = newRoute else { return }
+            FlowLogger.deepLink.info("🔗 ContentView routing to: \(String(describing: route))")
+            switch route {
+            case .inbox:
+                selection = .inbox
+            case .focus(let taskId):
+                selection = .inbox
+                // Start a focus session for the linked task if it exists
+                Task {
+                    let descriptor = FetchDescriptor<Item>(predicate: #Predicate { $0.id == taskId })
+                    if let task = try? modelContext.fetch(descriptor).first {
+                        await taskService.startFocusSession(for: task)
+                    }
+                }
+            case .styleGallery:
+                selection = .gallery
+            case .join, .appClipCapture:
+                // Surface the new-task sheet for quick capture
+                selection = .inbox
+                isAddingTask = true
+            }
+            activeRoute = nil // consume the route
         }
         .sheet(isPresented: $isAddingTask) {
             NavigationStack {
