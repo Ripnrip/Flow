@@ -95,7 +95,10 @@ private func endAllLiveActivities() async {
 ///
 /// When the main app next foregrounds, `TaskService.reconcileFromSharedStore()`
 /// commits the pending snooze to SwiftData.
-struct SnoozeIntent: AppIntent {
+/// Conforms to `LiveActivityIntent` (iOS 16.2+, subprotocol of `AppIntent`)
+/// so the system optimises delivery to the widget extension process and
+/// updates the Live Activity content state in the same pass.
+struct SnoozeIntent: LiveActivityIntent {
 
     static var openAppWhenRun: Bool = false
     static var title: LocalizedStringResource = "Snooze Task"
@@ -142,7 +145,9 @@ struct SnoozeIntent: AppIntent {
 /// 3. Requests a WidgetKit timeline refresh.
 ///
 /// The main app commits the completion to SwiftData on next foreground.
-struct DoneIntent: AppIntent {
+/// `LiveActivityIntent` so the system co-locates execution with the
+/// widget extension and can update Live Activity state atomically.
+struct DoneIntent: LiveActivityIntent {
 
     static var openAppWhenRun: Bool = false
     static var title: LocalizedStringResource = "Complete Task"

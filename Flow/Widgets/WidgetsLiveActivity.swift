@@ -124,6 +124,8 @@ struct WidgetsLiveActivity: Widget {
                         HStack(spacing: 5) {
                             Image(systemName: "bed.double.fill")
                                 .symbolEffect(.wiggle, value: context.state.snoozeCount)
+                                // SF Symbols 7 (iOS 26): draw-in on first appear
+                                .transition(.symbolEffect(.drawOn))
                             Text("Snooze")
                         }
                         .font(.system(size: 14, weight: .semibold))
@@ -138,6 +140,7 @@ struct WidgetsLiveActivity: Widget {
                         HStack(spacing: 5) {
                             Image(systemName: "checkmark.circle.fill")
                                 .symbolEffect(.bounce, value: true)
+                                .transition(.symbolEffect(.drawOn))
                             Text(doneLabel(for: style))
                         }
                         .font(.system(size: 14, weight: .semibold))
@@ -148,7 +151,7 @@ struct WidgetsLiveActivity: Widget {
                     .buttonStyle(.plain)
                     .background(style.themeAccentColor())
                     .clipShape(RoundedRectangle(cornerRadius: 13))
-                    .glassEffect(.tinted(style.themeAccentColor()), in: RoundedRectangle(cornerRadius: 13))
+                    .glassEffect(.regular.tint(style.themeAccentColor()), in: RoundedRectangle(cornerRadius: 13))
                 }
             }
             .padding(14)
@@ -263,7 +266,7 @@ struct WidgetsLiveActivity: Widget {
                         .foregroundStyle(.white)
                     }
                     .buttonStyle(.plain)
-                    .glassEffect(.tinted(style.themeAccentColor()), in: RoundedRectangle(cornerRadius: 12))
+                    .glassEffect(.regular.tint(style.themeAccentColor()), in: RoundedRectangle(cornerRadius: 12))
                 }
                 .padding(.horizontal, 14)
             }
