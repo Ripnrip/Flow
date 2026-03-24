@@ -1,10 +1,34 @@
 /**
- * 🎭 The TaskService - The Cosmic Orchestrator of Action
+ * 🎭 TaskService — The Cosmic Orchestrator of Action
  *
- * "An Actor that stands outside of time, managing the flow of tasks
- * with thread-safe precision. It is the guardian of the task's state."
+ * "An @MainActor @Observable class that manages the full lifecycle
+ * of a focus session: ActivityKit Live Activities, background time
+ * tracking via TaskLingeringActor, and the cross-process App Groups
+ * bridge via SharedTaskStore."
  *
- * - The Celestial Task Maestro
+ * Swift 6 concurrency notes
+ * ─────────────────────────
+ *   • @MainActor isolates all UI-facing state mutations.
+ *   • `await lingeringActor.*` crosses actor boundaries safely.
+ *   • `await SharedTaskStore.shared.*` crosses actor boundaries safely.
+ *   • All ActivityKit calls are wrapped in `#if os(iOS)`.
+ *
+ * Intent reconciliation
+ * ─────────────────────
+ *   AppIntents (SnoozeIntent, DoneIntent) mutate SharedTaskStore
+ *   without opening the app. On next foreground the app calls
+ *   `reconcileFromSharedStore()` to apply those changes to SwiftData
+ *   and keep the single source of truth in sync.
+ *
+ * Logging channels used
+ * ─────────────────────
+ *   🌐 FlowLogger.network  — external API calls
+ *   🏠 FlowLogger.local    — SwiftData / local operations
+ *   🏝️ FlowLogger.liveActivity — ActivityKit
+ *   🔃 FlowLogger.sync     — SharedTaskStore bridge
+ *   ⚙️ FlowLogger.task     — CRUD / session operations
+ *   ⚠️ FlowLogger.task.warning — degraded / unexpected paths
+ *   🎉 FlowLogger.task.info — success milestones
  */
 
 import ActivityKit
@@ -12,82 +36,151 @@ import SwiftData
 import SwiftUI
 import Observation
 import AppIntents
+import WidgetKit
 
 @MainActor
 @Observable
 class TaskService {
+
     @ObservationIgnored
     private var modelContext: ModelContext
 
-    // ⏳ The timekeeper of shadows
     @ObservationIgnored
     private let lingeringActor = TaskLingeringActor()
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
-        print("🎭 ✨ TASK SERVICE INITIALIZED!")
+        FlowLogger.lifecycle.info("🌐 ✨ TaskService initialised")
     }
 
-    // New Function: Restores or starts an active Live Activity session
+    // ─────────────────────────────────────────────────────────
+    // MARK: - 🔄 Session Restore / Reconcile
+    // ─────────────────────────────────────────────────────────
+
+    /// Called on app launch and foreground. Reconciles any pending changes
+    /// written by AppIntents while the app was not running.
     func restoreActiveFocusSession() async {
-#if os(iOS)
+        FlowLogger.lifecycle.info("🔄 Restoring active focus session…")
+
+        // 1. Apply any intent-pending changes first
+        await reconcileFromSharedStore()
+
+        #if os(iOS)
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            print("🌩️ ⚠️ Live Activities are not enabled for this realm.")
+            FlowLogger.liveActivity.warning("⚠️ Live Activities disabled — skipping restore")
             return
         }
 
-        // 1. Check if any activity is already running from a previous launch
-        let runningActivities = Activity<FlowAttributes>.activities
-        if !runningActivities.isEmpty {
-            print("🎉 ✨ Found \(runningActivities.count) existing Live Activities. Assuming continuity.")
-            // Also need to ensure background time tracking is restarted for the tracked item
-            if let firstActivity = runningActivities.first {
-                let taskId = firstActivity.attributes.taskId
-                if let uuid = UUID(uuidString: taskId) {
+        // 2. If a Live Activity is already running, re-attach background tracking
+        let running = Activity<FlowAttributes>.activities
+        if !running.isEmpty {
+            FlowLogger.liveActivity.info("🎉 Found \(running.count) running Live Activities — re-attaching")
+            for activity in running {
+                if let uuid = UUID(uuidString: activity.attributes.taskId) {
                     await lingeringActor.startTracking(taskId: uuid)
                 }
             }
             return
         }
-#endif
+        #endif
 
-        // 2. If no activities are running, find an uncompleted task to focus on (the most recent one)
+        // 3. No running Live Activity — find the most-recent uncompleted task
         do {
             let descriptor = FetchDescriptor<Item>(
                 predicate: #Predicate { $0.isCompleted == false },
                 sortBy: [SortDescriptor(\Item.timestamp, order: .reverse)]
             )
-            
-            if let taskToFocus = try modelContext.fetch(descriptor).first {
-                print("🌟 🔄 Restoring focus on task: [\(taskToFocus.title)]")
-                // Start a new Live Activity for this task
-                await startFocusSession(for: taskToFocus)
+            if let task = try modelContext.fetch(descriptor).first {
+                FlowLogger.task.info("🌟 Restoring focus on: '\(task.title)'")
+                await startFocusSession(for: task)
             } else {
-                print("🌙 ⚠️ No uncompleted tasks found to restore focus session.")
+                FlowLogger.task.info("🌙 No uncompleted tasks — nothing to restore")
             }
         } catch {
-            print("💥 😭 Error restoring focus session: \(error.localizedDescription)")
+            FlowLogger.task.error("💥 restoreActiveFocusSession fetch error: \(error.localizedDescription)")
         }
     }
 
-    // 🔮 Starting a focus session with modern concurrency
-    func startFocusSession(for task: Item) async {
-        print("🌐 ✨ FOCUS RITUAL AWAKENS via TaskService for [\(task.title)] in style [\(task.style.rawValue)]")
-        print("🔍 🧙‍♂️ Peering into mystical variables: TaskID=\(task.id), Style=\(task.style.rawValue)")
+    /// Reads `SharedTaskStore` for pending intent actions and commits them
+    /// to SwiftData. Called on foreground and after receiving a background
+    /// app-refresh task.
+    func reconcileFromSharedStore() async {
+        guard await SharedTaskStore.shared.needsReconciliation else {
+            FlowLogger.sync.info("🔃 SharedTaskStore: nothing pending")
+            return
+        }
 
-        // ⏳ Start background tracking
-        print("🎪 📦 Starting cosmic time-tracking for \(task.title)...")
+        guard let snapshot = await SharedTaskStore.shared.load() else { return }
+        FlowLogger.sync.info("🔃 Reconciling snapshot: '\(snapshot.title)' pendingSnooze=\(snapshot.pendingSnooze) pendingComplete=\(snapshot.pendingComplete)")
+
+        guard let uuid = UUID(uuidString: snapshot.taskId) else {
+            FlowLogger.sync.error("⚠️ Invalid taskId in snapshot: \(snapshot.taskId)")
+            return
+        }
+
+        let descriptor = FetchDescriptor<Item>(predicate: #Predicate { $0.id == uuid })
+        do {
+            guard let task = try modelContext.fetch(descriptor).first else {
+                FlowLogger.sync.warning("⚠️ Task \(uuid) not found in SwiftData — clearing stale snapshot")
+                await SharedTaskStore.shared.clear()
+                return
+            }
+
+            if snapshot.pendingSnooze {
+                FlowLogger.task.info("💤 Reconcile: applying snooze to '\(task.title)'")
+                let lingering = await lingeringActor.stopTracking(taskId: uuid)
+                task.totalLingeringTime += lingering
+                task.snooze()
+                await lingeringActor.startTracking(taskId: uuid)
+            }
+
+            if snapshot.pendingComplete {
+                FlowLogger.task.info("✅ Reconcile: applying completion to '\(task.title)'")
+                let lingering = await lingeringActor.stopTracking(taskId: uuid)
+                task.totalLingeringTime += lingering
+                task.isCompleted = true
+            }
+
+            try modelContext.save()
+            FlowLogger.local.info("🏠 SwiftData saved after reconcile")
+
+            await SharedTaskStore.shared.clearPendingFlags()
+            if snapshot.pendingComplete {
+                await SharedTaskStore.shared.clear()
+            } else {
+                // Refresh snapshot with latest SwiftData values
+                await writeSnapshotToStore(for: task)
+            }
+
+            // Refresh widget timelines after SwiftData commit
+            WidgetCenter.shared.reloadAllTimelines()
+
+        } catch {
+            FlowLogger.local.error("💥 Reconcile save error: \(error.localizedDescription)")
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // MARK: - 🚀 Start Focus Session
+    // ─────────────────────────────────────────────────────────
+
+    func startFocusSession(for task: Item) async {
+        FlowLogger.task.info("🌐 Starting focus: '\(task.title)' style=\(task.style.rawValue)")
+
         await lingeringActor.startTracking(taskId: task.id)
 
-#if os(iOS)
+        // Persist snapshot so widgets + intents can act without the app
+        await writeSnapshotToStore(for: task)
+        WidgetCenter.shared.reloadAllTimelines()
+
+        #if os(iOS)
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            print("🌩️ ⚠️ Gentle reminder: Live Activities are not enabled for this realm.")
+            FlowLogger.liveActivity.warning("⚠️ Live Activities disabled — focus session started locally only")
             return
         }
 
         let attributes = FlowAttributes(taskId: task.id.uuidString)
-        
-        let staleDate = Calendar.current.date(byAdding: .hour, value: 4, to: Date())!
+        let staleDate  = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
 
         let initialState = FlowAttributes.ContentState(
             title: task.title,
@@ -96,110 +189,135 @@ class TaskService {
             startDate: task.creationDate,
             emoji: task.emoji,
             style: task.style,
-            lastInteractionDate: Date.now,
+            lastInteractionDate: .now,
             growthLevel: task.growthLevel
         )
 
         do {
-            // Close any existing activities before starting a new one (to ensure only one is active)
+            // End any existing Live Activities before starting a new one
             for activity in Activity<FlowAttributes>.activities {
                 await activity.end(nil, dismissalPolicy: .immediate)
             }
-            
-            print("✨ 🎊 PORTAL TRANSFORMATION COMMENCES! Requesting Live Activity...")
             let activity = try Activity.request(
                 attributes: attributes,
-                content: ActivityContent(state: initialState, staleDate: staleDate), // <--- FIX APPLIED HERE
+                content: ActivityContent(state: initialState, staleDate: staleDate),
                 pushType: nil
             )
-            print("🎉 ✨ LIVE ACTIVITY MASTERPIECE STARTED! Activity ID: \(activity.id), Style: \(task.style.rawValue)")
+            FlowLogger.liveActivity.info("🎉 Live Activity started: id=\(activity.id) style=\(task.style.rawValue)")
         } catch {
-            print("💥 😭 FOCUS RITUAL FAILED! The digital muses are taking a brief intermission: \(error.localizedDescription)")
+            FlowLogger.liveActivity.error("💥 Activity.request failed: \(error.localizedDescription)")
         }
-#endif
+        #endif
     }
 
-    // 🌙 The Snooze Ritual - Thread-safe state update
+    // ─────────────────────────────────────────────────────────
+    // MARK: - 💤 Snooze Task
+    // ─────────────────────────────────────────────────────────
+
     func snoozeTask(id: UUID) async {
-        print("🌙 ✨ SNOOZE RITUAL AWAKENS! Searching for task \(id)...")
+        FlowLogger.task.info("💤 Snoozing task \(id)…")
         let descriptor = FetchDescriptor<Item>(predicate: #Predicate { $0.id == id })
         do {
-            if let task = try modelContext.fetch(descriptor).first {
-                print("🔍 🧙‍♂️ Found task: \(task.title). Current snooze count: \(task.snoozeCount)")
-
-                let lingering = await lingeringActor.stopTracking(taskId: id)
-                print("💎 Crystallized wisdom: \(lingering) seconds of lingering time gathered.")
-                task.totalLingeringTime += lingering
-
-                print("🔄 Enchanted alchemy: Incrementing snooze count for \(task.title)...")
-                task.snooze()
-                try modelContext.save()
-
-                print("🌐 ✨ Restarting cosmic tracking for snoozed task...")
-                await lingeringActor.startTracking(taskId: id)
-
-                print("🎨 Syncing state with the peripheral islands...")
-                await updateLiveActivity(for: task)
-                print("🎉 ✨ SNOOZE MASTERPIECE COMPLETE! Style: \(task.style.rawValue)")
-            } else {
-                print("🌙 ⚠️ Gentle reminder: Task \(id) not found in the mystical database.")
+            guard let task = try modelContext.fetch(descriptor).first else {
+                FlowLogger.task.warning("⚠️ snoozeTask: task \(id) not found")
+                return
             }
+
+            let lingering = await lingeringActor.stopTracking(taskId: id)
+            FlowLogger.task.info("💎 Lingering crystallised: \(lingering)s")
+            task.totalLingeringTime += lingering
+            task.snooze()
+            try modelContext.save()
+            FlowLogger.local.info("🏠 Snooze saved to SwiftData: '\(task.title)' count=\(task.snoozeCount)")
+
+            await lingeringActor.startTracking(taskId: id)
+            await writeSnapshotToStore(for: task)
+            await updateLiveActivity(for: task)
+
+            WidgetCenter.shared.reloadAllTimelines()
+            FlowLogger.task.info("🎉 Snooze complete: '\(task.title)' count=\(task.snoozeCount)")
         } catch {
-            print("🌩️ ⚠️ SNOOZE TEMPORARILY HALTED! A storm in the database: \(error.localizedDescription)")
+            FlowLogger.local.error("💥 snoozeTask save error: \(error.localizedDescription)")
         }
     }
 
-    // ✅ The Done Ritual
+    // ─────────────────────────────────────────────────────────
+    // MARK: - ✅ Complete Task
+    // ─────────────────────────────────────────────────────────
+
     func completeTask(id: UUID) async {
-        print("✅ ✨ COMPLETION RITUAL AWAKENS for task \(id)!")
+        FlowLogger.task.info("✅ Completing task \(id)…")
         let descriptor = FetchDescriptor<Item>(predicate: #Predicate { $0.id == id })
         do {
-            if let task = try modelContext.fetch(descriptor).first {
-                print("🌟 Grand attempt at digital magic: Completing \(task.title)...")
-
-                let lingering = await lingeringActor.stopTracking(taskId: id)
-                print("💎 Final wisdom crystallization: \(lingering) seconds added to total.")
-                task.totalLingeringTime += lingering
-
-                task.isCompleted = true
-                try modelContext.save()
-
-                print("🛑 Ending the Live Activity session...")
-                await endLiveActivity(for: task)
-                print("🎉 ✨ TASK COMPLETION MASTERPIECE COMPLETE! Great job, seeker of wisdom!")
+            guard let task = try modelContext.fetch(descriptor).first else {
+                FlowLogger.task.warning("⚠️ completeTask: task \(id) not found")
+                return
             }
+
+            let lingering = await lingeringActor.stopTracking(taskId: id)
+            FlowLogger.task.info("💎 Final lingering: \(lingering)s total=\(task.totalLingeringTime + lingering)s")
+            task.totalLingeringTime += lingering
+            task.isCompleted = true
+            try modelContext.save()
+            FlowLogger.local.info("🏠 Completion saved to SwiftData: '\(task.title)'")
+
+            await endLiveActivity(for: task)
+            await SharedTaskStore.shared.clear()
+            WidgetCenter.shared.reloadAllTimelines()
+            FlowLogger.task.info("🎉 Task completed: '\(task.title)'")
         } catch {
-            print("🌩️ ⚠️ COMPLETION TEMPORARILY HALTED! Our digital muses are confused: \(error.localizedDescription)")
+            FlowLogger.local.error("💥 completeTask save error: \(error.localizedDescription)")
         }
     }
 
-    // 🎨 Syncing the state with the Live Activity surface
-    private func updateLiveActivity(for task: Item) async {
-#if os(iOS)
-        // If we update, we should also push out the stale date slightly to maintain relevance
-        let staleDate = Calendar.current.date(byAdding: .hour, value: 4, to: Date())!
+    // ─────────────────────────────────────────────────────────
+    // MARK: - 🔒 Private Helpers
+    // ─────────────────────────────────────────────────────────
 
+    /// Write (or overwrite) the App Groups snapshot for this task.
+    private func writeSnapshotToStore(for task: Item) async {
+        let snapshot = ActiveTaskSnapshot(
+            taskId: task.id.uuidString,
+            title: task.title,
+            emoji: task.emoji,
+            styleRawValue: task.style.rawValue,
+            snoozeCount: task.snoozeCount,
+            moveCount: task.moveCount,
+            startDate: task.creationDate,
+            growthLevel: task.growthLevel,
+            lastInteractionDate: .now,
+            isCompleted: task.isCompleted
+        )
+        await SharedTaskStore.shared.save(snapshot)
+        FlowLogger.sync.info("🔃 Snapshot written for '\(task.title)'")
+    }
+
+    private func updateLiveActivity(for task: Item) async {
+        #if os(iOS)
+        let staleDate    = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
+        let updatedState = FlowAttributes.ContentState(
+            title: task.title,
+            snoozeCount: task.snoozeCount,
+            moveCount: task.moveCount,
+            startDate: task.creationDate,
+            emoji: task.emoji,
+            style: task.style,
+            lastInteractionDate: .now,
+            growthLevel: task.growthLevel
+        )
         for activity in Activity<FlowAttributes>.activities where activity.attributes.taskId == task.id.uuidString {
-            let updatedState = FlowAttributes.ContentState(
-                title: task.title,
-                snoozeCount: task.snoozeCount,
-                moveCount: task.moveCount,
-                startDate: task.creationDate,
-                emoji: task.emoji,
-                style: task.style,
-                lastInteractionDate: Date.now,
-                growthLevel: task.growthLevel
-            )
-            await activity.update(ActivityContent(state: updatedState, staleDate: staleDate)) // <--- FIX APPLIED HERE
+            await activity.update(ActivityContent(state: updatedState, staleDate: staleDate))
+            FlowLogger.liveActivity.info("🏝️ Updated Live Activity \(activity.id) for '\(task.title)'")
         }
-#endif
+        #endif
     }
 
     private func endLiveActivity(for task: Item) async {
-#if os(iOS)
+        #if os(iOS)
         for activity in Activity<FlowAttributes>.activities where activity.attributes.taskId == task.id.uuidString {
             await activity.end(nil, dismissalPolicy: .immediate)
+            FlowLogger.liveActivity.info("🏝️ Ended Live Activity \(activity.id)")
         }
-#endif
+        #endif
     }
 }

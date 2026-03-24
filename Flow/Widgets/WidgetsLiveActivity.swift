@@ -1,17 +1,45 @@
-//
-//  WidgetsLiveActivity.swift
-//  Widgets
-//
-//  Created by admin on 12/17/25.
-//
+/**
+ * 🏝️ WidgetsLiveActivity — The Peripheral Island Experience
+ *
+ * "A live window into your current focus session—visible on the
+ *  Lock Screen, in Dynamic Island, and on StandBy. Rich hierarchy,
+ *  purposeful motion, and one-tap actions that never open the app."
+ *
+ * Layout matrix
+ * ──────────────────────────────────────────────────────────────
+ *  Presentation           │ Primary content
+ * ──────────────────────────────────────────────────────────────
+ *  Lock Screen / Banner   │ StyleBackground + emoji + title +
+ *                         │ elapsed timer + Snooze / Done buttons
+ *  Dynamic Island Compact │ Leading: animated emoji
+ *                         │ Trailing: live elapsed timer
+ *  Dynamic Island Minimal │ Animated emoji only
+ *  Dynamic Island Expanded│ Leading: emoji | Center: title
+ *                         │ Trailing: timer | Bottom: progress +
+ *                         │ Liquid Glass action buttons
+ * ──────────────────────────────────────────────────────────────
+ *
+ * Motion principles (aligned with HIG "Motion" guidelines)
+ *   • SF Symbols `.pulse` — subtle on ambient state badges
+ *   • SF Symbols `.bounce` — momentary on button icon at appear
+ *   • SF Symbols `.wiggle` — calls out the snooze count increment
+ *   • `FluidWaveView` transition wave — fires only on state changes,
+ *     not on idle renders, so it never becomes gratuitous
+ *
+ * Action buttons
+ *   • Snooze / Done use `Button(intent:)` backed by SnoozeIntent /
+ *     DoneIntent — both have `openAppWhenRun = false`.
+ *   • Liquid Glass styling applied on iOS 26+ via `.glassEffect()`.
+ *
+ * HIG: developer.apple.com/design/human-interface-guidelines/live-activities
+ */
 
 import ActivityKit
 import WidgetKit
 import SwiftUI
 import AppIntents
 
-// Since FlowAttributes is defined publicly in SharedModels, we rely on it.
-// Removed struct WidgetsAttributes: ActivityAttributes { ... }
+// MARK: - 🏝️ Live Activity Widget
 
 struct WidgetsLiveActivity: Widget {
     var body: some WidgetConfiguration {
@@ -19,10 +47,10 @@ struct WidgetsLiveActivity: Widget {
             lockScreenView(context: context)
         } dynamicIsland: { context in
             DynamicIsland {
-                expandedLeadingRegion(context: context)
-                expandedTrailingRegion(context: context)
-                expandedCenterRegion(context: context)
-                expandedBottomRegion(context: context)
+                expandedLeading(context: context)
+                expandedTrailing(context: context)
+                expandedCenter(context: context)
+                expandedBottom(context: context)
             } compactLeading: {
                 compactLeadingView(context: context)
             } compactTrailing: {
@@ -30,144 +58,223 @@ struct WidgetsLiveActivity: Widget {
             } minimal: {
                 minimalView(context: context)
             }
-            .widgetURL(URL(string: "flow://task/\(context.attributes.taskId)"))
+            .widgetURL(FlowRoute.focus(
+                taskId: UUID(uuidString: context.attributes.taskId) ?? UUID()
+            ).customURL)
             .keylineTint(context.state.style.themeAccentColor())
         }
     }
-    
-    // MARK: - 📱 Lock Screen / Banner UI
-    
+
+    // ─────────────────────────────────────────────────────────
+    // MARK: - 📱 Lock Screen / Banner
+    // ─────────────────────────────────────────────────────────
+
     @ViewBuilder
     private func lockScreenView(context: ActivityViewContext<FlowAttributes>) -> some View {
+        let style = context.state.style
+
         ZStack {
-            StyleBackground(style: context.state.style)
-            
-            StyleTransitionWave(style: context.state.style, triggerDate: context.state.lastInteractionDate)
-            
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 15) {
+            StyleBackground(style: style)
+            StyleTransitionWave(style: style, triggerDate: context.state.lastInteractionDate)
+
+            VStack(spacing: 12) {
+                // ── Top row: emoji / title / metric ──────────────────
+                HStack(spacing: 12) {
                     BreathingEmojiView(
                         emoji: context.state.emoji,
-                        style: context.state.style,
+                        style: style,
                         compact: false,
                         growthLevel: context.state.growthLevel
                     )
-                    
-                    VStack(alignment: .leading, spacing: 2) {
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(style.rawValue.uppercased())
+                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .foregroundStyle(style.themeAccentColor())
+
                         Text(context.state.title)
-                            .font(context.state.style.themeFont(size: .headline))
-                            .foregroundStyle(context.state.style.themeForegroundColor())
-                        
-                        Text("Started \(context.state.startDate, style: .relative) ago")
-                            .font(.caption2)
-                            .foregroundStyle(context.state.style.themeForegroundColor().opacity(0.6))
+                            .font(style.themeFont(size: .headline))
+                            .foregroundStyle(style.themeForegroundColor())
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.8)
+
+                        HStack(spacing: 6) {
+                            Image(systemName: "timer")
+                                .symbolEffect(.pulse, isActive: true)
+                                .font(.caption2)
+                                .foregroundStyle(style.themeAccentColor())
+                            Text(context.state.startDate, style: .timer)
+                                .font(.caption2.monospacedDigit().bold())
+                                .foregroundStyle(style.themeForegroundColor().opacity(0.7))
+                        }
                     }
-                    
+
                     Spacer()
-                    
-                    StyleMetricView(style: context.state.style, snoozeCount: context.state.snoozeCount, moveCount: context.state.moveCount)
+
+                    StyleMetricView(
+                        style: style,
+                        snoozeCount: context.state.snoozeCount,
+                        moveCount: context.state.moveCount
+                    )
+                }
+
+                // ── Bottom row: action buttons ────────────────────────
+                HStack(spacing: 10) {
+                    Button(intent: SnoozeIntent(taskId: context.attributes.taskId)) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "bed.double.fill")
+                                .symbolEffect(.wiggle, value: context.state.snoozeCount)
+                            Text("Snooze")
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .foregroundStyle(style.themeForegroundColor())
+                    }
+                    .buttonStyle(.plain)
+                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 13))
+
+                    Button(intent: DoneIntent(taskId: context.attributes.taskId)) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .symbolEffect(.bounce, value: true)
+                            Text(doneLabel(for: style))
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .foregroundStyle(.white)
+                    }
+                    .buttonStyle(.plain)
+                    .background(style.themeAccentColor())
+                    .clipShape(RoundedRectangle(cornerRadius: 13))
+                    .glassEffect(.tinted(style.themeAccentColor()), in: RoundedRectangle(cornerRadius: 13))
                 }
             }
-            .padding()
+            .padding(14)
         }
-        .activityBackgroundTint(context.state.style.themeBackgroundColor())
-        .activitySystemActionForegroundColor(context.state.style.themeForegroundColor())
+        .activityBackgroundTint(style.themeBackgroundColor())
+        .activitySystemActionForegroundColor(style.themeForegroundColor())
     }
-    
-    // MARK: - 🌟 Dynamic Island - Expanded Regions
-    
+
+    // ─────────────────────────────────────────────────────────
+    // MARK: - 🌟 Dynamic Island — Expanded Regions
+    // ─────────────────────────────────────────────────────────
+
     @DynamicIslandExpandedContentBuilder
-    private func expandedLeadingRegion(context: ActivityViewContext<FlowAttributes>) -> DynamicIslandExpandedContent<some View> {
+    private func expandedLeading(context: ActivityViewContext<FlowAttributes>) -> DynamicIslandExpandedContent<some View> {
         DynamicIslandExpandedRegion(.leading) {
-            HStack {
-                BreathingEmojiView(
-                    emoji: context.state.emoji,
-                    style: context.state.style,
-                    compact: false,
-                    growthLevel: context.state.growthLevel
-                )
-                .frame(width: 32, height: 32)
-            }
-            .padding(.leading, 8)
-        }
-    }
-    
-    @DynamicIslandExpandedContentBuilder
-    private func expandedTrailingRegion(context: ActivityViewContext<FlowAttributes>) -> DynamicIslandExpandedContent<some View> {
-        DynamicIslandExpandedRegion(.trailing) {
-            Text(context.state.startDate, style: .timer)
-                .font(.system(size: 18, weight: .bold))
-                .monospacedDigit()
-                .foregroundStyle(context.state.style.themeForegroundColor())
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
-                .padding(.trailing, 4)
+            BreathingEmojiView(
+                emoji: context.state.emoji,
+                style: context.state.style,
+                compact: false,
+                growthLevel: context.state.growthLevel
+            )
+            .frame(width: 36, height: 36)
+            .padding(.leading, 6)
         }
     }
 
     @DynamicIslandExpandedContentBuilder
-    private func expandedCenterRegion(context: ActivityViewContext<FlowAttributes>) -> DynamicIslandExpandedContent<some View> {
-        DynamicIslandExpandedRegion(.center) {
-            Text(context.state.title)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(context.state.style.themeForegroundColor())
-                .lineLimit(2)
-                .truncationMode(.tail)
-                .frame(maxWidth: .infinity)
+    private func expandedTrailing(context: ActivityViewContext<FlowAttributes>) -> DynamicIslandExpandedContent<some View> {
+        DynamicIslandExpandedRegion(.trailing) {
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(context.state.startDate, style: .timer)
+                    .font(.system(size: 17, weight: .bold, design: .monospaced))
+                    .monospacedDigit()
+                    .foregroundStyle(context.state.style.themeAccentColor())
+
+                // Snooze count badge
+                if context.state.snoozeCount > 0 {
+                    HStack(spacing: 2) {
+                        Image(systemName: "zzz")
+                            .symbolEffect(.wiggle, value: context.state.snoozeCount)
+                            .font(.system(size: 9))
+                        Text("\(context.state.snoozeCount)")
+                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    }
+                    .foregroundStyle(context.state.style.themeForegroundColor().opacity(0.6))
+                }
+            }
+            .padding(.trailing, 6)
         }
     }
-    
+
     @DynamicIslandExpandedContentBuilder
-    private func expandedBottomRegion(context: ActivityViewContext<FlowAttributes>) -> DynamicIslandExpandedContent<some View> {
+    private func expandedCenter(context: ActivityViewContext<FlowAttributes>) -> DynamicIslandExpandedContent<some View> {
+        DynamicIslandExpandedRegion(.center) {
+            Text(context.state.title)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(context.state.style.themeForegroundColor())
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.8)
+        }
+    }
+
+    @DynamicIslandExpandedContentBuilder
+    private func expandedBottom(context: ActivityViewContext<FlowAttributes>) -> DynamicIslandExpandedContent<some View> {
         DynamicIslandExpandedRegion(.bottom) {
+            let style = context.state.style
             VStack(spacing: 8) {
-                // Progress Indicator
-                StyleProgressView(style: context.state.style)
-                    .frame(height: 4)
-                    .padding(.horizontal, 16)
-                
-                // Buttons Row
+                // Progress bar (elapsed time vs 30-min focus session target)
+                let elapsed  = min(Date().timeIntervalSince(context.state.startDate), 1800)
+                let progress = elapsed / 1800.0
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(style.themeForegroundColor().opacity(0.15))
+                        Capsule()
+                            .fill(style.themeAccentColor())
+                            .frame(width: geo.size.width * progress)
+                            .animation(.easeInOut(duration: 0.6), value: progress)
+                    }
+                }
+                .frame(height: 4)
+                .padding(.horizontal, 14)
+
+                // Action buttons with Liquid Glass
                 HStack(spacing: 8) {
-                    // Snooze Button
                     Button(intent: SnoozeIntent(taskId: context.attributes.taskId)) {
                         HStack(spacing: 4) {
                             Image(systemName: "bed.double.fill")
-                                .font(.system(size: 14))
+                                .symbolEffect(.wiggle, value: context.state.snoozeCount)
+                                .font(.system(size: 13))
                             Text("Snooze")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: 13, weight: .medium))
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(context.state.style.themeBackgroundColor().opacity(0.2))
-                        .foregroundStyle(context.state.style.themeForegroundColor())
-                        .cornerRadius(12)
+                        .padding(.vertical, 11)
+                        .foregroundStyle(style.themeForegroundColor())
                     }
                     .buttonStyle(.plain)
-                    
-                    // Done Button
+                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+
                     Button(intent: DoneIntent(taskId: context.attributes.taskId)) {
                         HStack(spacing: 4) {
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 14))
-                            Text(doneButtonLabel(for: context.state.style))
-                                .font(.system(size: 14, weight: .semibold))
+                                .symbolEffect(.bounce, value: true)
+                                .font(.system(size: 13))
+                            Text(doneLabel(for: style))
+                                .font(.system(size: 13, weight: .semibold))
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(context.state.style.themeAccentColor())
+                        .padding(.vertical, 11)
                         .foregroundStyle(.white)
-                        .cornerRadius(12)
                     }
                     .buttonStyle(.plain)
+                    .glassEffect(.tinted(style.themeAccentColor()), in: RoundedRectangle(cornerRadius: 12))
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 14)
             }
-            .padding(.bottom, 8)
+            .padding(.bottom, 10)
         }
     }
-    
-    // MARK: - 🔸 Dynamic Island - Compact & Minimal
-    
+
+    // ─────────────────────────────────────────────────────────
+    // MARK: - 🔸 Compact & Minimal
+    // ─────────────────────────────────────────────────────────
+
     @ViewBuilder
     private func compactLeadingView(context: ActivityViewContext<FlowAttributes>) -> some View {
         BreathingEmojiView(
@@ -176,18 +283,19 @@ struct WidgetsLiveActivity: Widget {
             compact: true,
             growthLevel: context.state.growthLevel
         )
+        .padding(.leading, 2)
     }
-    
+
     @ViewBuilder
     private func compactTrailingView(context: ActivityViewContext<FlowAttributes>) -> some View {
-        HStack(spacing: 2) {
-            Text("\(context.state.snoozeCount)")
-                .monospacedDigit()
-            Text(compactTrailingIcon(for: context.state.style))
-        }
-        .font(.caption2.bold())
+        // Live timer is more informative than a static snooze count in compact.
+        Text(context.state.startDate, style: .timer)
+            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+            .monospacedDigit()
+            .foregroundStyle(context.state.style.themeAccentColor())
+            .padding(.trailing, 2)
     }
-    
+
     @ViewBuilder
     private func minimalView(context: ActivityViewContext<FlowAttributes>) -> some View {
         BreathingEmojiView(
@@ -197,194 +305,119 @@ struct WidgetsLiveActivity: Widget {
             growthLevel: context.state.growthLevel
         )
     }
-    
-    // MARK: - 🎨 Helpers
-    
-    private func doneButtonLabel(for style: TaskStyle) -> String {
+
+    // ─────────────────────────────────────────────────────────
+    // MARK: - 🎨 Style Helpers
+    // ─────────────────────────────────────────────────────────
+
+    private func doneLabel(for style: TaskStyle) -> String {
         switch style {
-        case .questMode: return "Slay"
+        case .questMode:     return "Slay"
         case .magicalScroll: return "Cast"
-        case .volcanicFlow: return "Extinguish"
-        case .livingGarden: return "Harvest"
-        case .spaceMission: return "Deploy"
-        case .courierPrime: return "Delivered"
-        default: return "Done"
-        }
-    }
-    
-    private func compactTrailingIcon(for style: TaskStyle) -> String {
-        switch style {
-        case .livingGarden: return "🌿"
-        case .cosmicNebula, .cosmicVoid, .deepSpace: return "✨"
-        case .bioLuminescence, .oceanFlow, .liquidMetal: return "🫧"
-        case .volcanicFlow, .solarFlare: return "🔥"
-        case .spaceMission: return "🚀"
-        case .courierPrime: return "📦"
-        case .circuitBoard: return "🚥"
-        default: return "💤"
+        case .volcanicFlow:  return "Extinguish"
+        case .livingGarden:  return "Harvest"
+        case .spaceMission:  return "Deploy"
+        case .courierPrime:  return "Delivered"
+        default:             return "Done"
         }
     }
 }
 
-// MARK: - 🧪 Previews (Updated to use FlowAttributes)
+// MARK: - 🧪 Preview Support
 
-// 1. Create a concrete type alias for FlowAttributes used in the preview
-typealias LAAttributes = FlowAttributes
-
-// 2. Add static preview data to LAAttributes
 extension FlowAttributes {
-    static var preview: FlowAttributes {
-        FlowAttributes(taskId: UUID().uuidString)
-    }
+    static var preview: FlowAttributes { FlowAttributes(taskId: UUID().uuidString) }
 }
-// 3. Define content states using FlowAttributes.ContentState structure
-// 3. Define content states using FlowAttributes.ContentState structure
-extension LAAttributes.ContentState {
-    
-    static var focusSession: LAAttributes.ContentState {
-       make(emoji: "💻", title: "Review Codebase Logic", style: .cyberpunk)
+
+extension FlowAttributes.ContentState {
+
+    static var focusSession: FlowAttributes.ContentState {
+        make(emoji: "💻", title: "Review Codebase Logic", style: .cyberpunk)
     }
-    
-    static var gardenSession: LAAttributes.ContentState {
-       make(emoji: "🌿", title: "Write Weekly Report Structure", style: .livingGarden)
+    static var gardenSession: FlowAttributes.ContentState {
+        make(emoji: "🌿", title: "Write Weekly Report", style: .livingGarden)
     }
-    
-    // Generate individual states for each TaskStyle
-    static var cyberpunk: LAAttributes.ContentState {
+    static var cyberpunk: FlowAttributes.ContentState {
         make(emoji: "💻", title: "Cyberpunk Flow", style: .cyberpunk)
     }
-    
-    static var livingGarden: LAAttributes.ContentState {
+    static var livingGarden: FlowAttributes.ContentState {
         make(emoji: "🌿", title: "Living Garden", style: .livingGarden)
     }
-    
-    static var volcanicFlow: LAAttributes.ContentState {
+    static var volcanicFlow: FlowAttributes.ContentState {
         make(emoji: "🌋", title: "Volcanic Flow", style: .volcanicFlow)
     }
-    
-    static var cosmicNebula: LAAttributes.ContentState {
+    static var cosmicNebula: FlowAttributes.ContentState {
         make(emoji: "✨", title: "Cosmic Nebula", style: .cosmicNebula)
     }
-    
-    static var spaceMission: LAAttributes.ContentState {
+    static var spaceMission: FlowAttributes.ContentState {
         make(emoji: "🚀", title: "Space Mission", style: .spaceMission)
     }
-    
-    static var oceanFlow: LAAttributes.ContentState {
+    static var oceanFlow: FlowAttributes.ContentState {
         make(emoji: "🌊", title: "Ocean Flow", style: .oceanFlow)
     }
-    
-    static var solarFlare: LAAttributes.ContentState {
+    static var solarFlare: FlowAttributes.ContentState {
         make(emoji: "☀️", title: "Solar Flare", style: .solarFlare)
     }
-    
-    static var bioLuminescence: LAAttributes.ContentState {
-        make(emoji: "🦠", title: "Bio Luminescence", style: .bioLuminescence)
-    }
-    
-    static var deepSpace: LAAttributes.ContentState {
-        make(emoji: "🌌", title: "Deep Space", style: .deepSpace)
-    }
-    
-    static var cosmicVoid: LAAttributes.ContentState {
-        make(emoji: "🕳️", title: "Cosmic Void", style: .cosmicVoid)
-    }
-    
-    static var liquidMetal: LAAttributes.ContentState {
-        make(emoji: "💧", title: "Liquid Metal", style: .liquidMetal)
-    }
-    
-    static var circuitBoard: LAAttributes.ContentState {
-        make(emoji: "🔌", title: "Circuit Board", style: .circuitBoard)
-    }
-    
-    static var questMode: LAAttributes.ContentState {
+    static var questMode: FlowAttributes.ContentState {
         make(emoji: "⚔️", title: "Quest Mode", style: .questMode)
     }
-    
-    static var magicalScroll: LAAttributes.ContentState {
+    static var magicalScroll: FlowAttributes.ContentState {
         make(emoji: "📜", title: "Magical Scroll", style: .magicalScroll)
     }
-    
-    static var courierPrime: LAAttributes.ContentState {
+    static var courierPrime: FlowAttributes.ContentState {
         make(emoji: "📦", title: "Courier Prime", style: .courierPrime)
     }
 
-    static func make(
-        emoji: String,
-        title: String,
-        style: TaskStyle
-    ) -> LAAttributes.ContentState {
-        return LAAttributes.ContentState(
+    static func make(emoji: String, title: String, style: TaskStyle) -> FlowAttributes.ContentState {
+        FlowAttributes.ContentState(
             title: title,
-            snoozeCount: 0,
+            snoozeCount: 2,
             moveCount: 1,
-            startDate: Date().addingTimeInterval(-1800), // 30 minutes ago
+            startDate: Date().addingTimeInterval(-1800),
             emoji: emoji,
             style: style,
+            lastInteractionDate: .now,
             growthLevel: 1
         )
     }
 }
 
-// 1. Lock Screen / Banner UI
-#Preview("Lock Screen", as: .content, using: LAAttributes.preview) {
-   WidgetsLiveActivity()
+// MARK: Previews
+
+#Preview("Lock Screen", as: .content, using: FlowAttributes.preview) {
+    WidgetsLiveActivity()
 } contentStates: {
-    LAAttributes.ContentState.cyberpunk
-    LAAttributes.ContentState.livingGarden
-    LAAttributes.ContentState.volcanicFlow
-    LAAttributes.ContentState.cosmicNebula
-    LAAttributes.ContentState.spaceMission
+    FlowAttributes.ContentState.cyberpunk
+    FlowAttributes.ContentState.livingGarden
+    FlowAttributes.ContentState.volcanicFlow
+    FlowAttributes.ContentState.cosmicNebula
+    FlowAttributes.ContentState.spaceMission
+    FlowAttributes.ContentState.questMode
+    FlowAttributes.ContentState.courierPrime
 }
 
-// 2. Dynamic Island - Compact
-#Preview("Dynamic Island - Compact", as: .dynamicIsland(.compact), using: LAAttributes.preview) {
-   WidgetsLiveActivity()
+#Preview("Dynamic Island — Compact", as: .dynamicIsland(.compact), using: FlowAttributes.preview) {
+    WidgetsLiveActivity()
 } contentStates: {
-    LAAttributes.ContentState.cyberpunk
-    LAAttributes.ContentState.livingGarden
-    LAAttributes.ContentState.volcanicFlow
+    FlowAttributes.ContentState.cyberpunk
+    FlowAttributes.ContentState.livingGarden
+    FlowAttributes.ContentState.volcanicFlow
 }
 
-// 3. Dynamic Island - Minimal
-#Preview("Dynamic Island - Minimal", as: .dynamicIsland(.minimal), using: LAAttributes.preview) {
-   WidgetsLiveActivity()
+#Preview("Dynamic Island — Minimal", as: .dynamicIsland(.minimal), using: FlowAttributes.preview) {
+    WidgetsLiveActivity()
 } contentStates: {
-    LAAttributes.ContentState.cyberpunk
-    LAAttributes.ContentState.livingGarden
-    LAAttributes.ContentState.volcanicFlow
+    FlowAttributes.ContentState.cyberpunk
+    FlowAttributes.ContentState.livingGarden
 }
 
-// 4. Dynamic Island - Expanded
-#Preview("Dynamic Island - Expanded", as: .dynamicIsland(.expanded), using: LAAttributes.preview) {
-   WidgetsLiveActivity()
+#Preview("Dynamic Island — Expanded", as: .dynamicIsland(.expanded), using: FlowAttributes.preview) {
+    WidgetsLiveActivity()
 } contentStates: {
-    LAAttributes.ContentState.cyberpunk
-    LAAttributes.ContentState.livingGarden
-    LAAttributes.ContentState.volcanicFlow
-    LAAttributes.ContentState.cosmicNebula
-    LAAttributes.ContentState.spaceMission
+    FlowAttributes.ContentState.cyberpunk
+    FlowAttributes.ContentState.livingGarden
+    FlowAttributes.ContentState.volcanicFlow
+    FlowAttributes.ContentState.cosmicNebula
+    FlowAttributes.ContentState.spaceMission
+    FlowAttributes.ContentState.magicalScroll
 }
-
-// 5. All Styles - Lock Screen
-#Preview("All Styles - Lock Screen", as: .content, using: LAAttributes.preview) {
-   WidgetsLiveActivity()
-} contentStates: {
-    LAAttributes.ContentState.cyberpunk
-    LAAttributes.ContentState.livingGarden
-    LAAttributes.ContentState.volcanicFlow
-    LAAttributes.ContentState.cosmicNebula
-    LAAttributes.ContentState.spaceMission
-    LAAttributes.ContentState.oceanFlow
-    LAAttributes.ContentState.solarFlare
-    LAAttributes.ContentState.bioLuminescence
-    LAAttributes.ContentState.deepSpace
-    LAAttributes.ContentState.cosmicVoid
-    LAAttributes.ContentState.liquidMetal
-    LAAttributes.ContentState.circuitBoard
-    LAAttributes.ContentState.questMode
-    LAAttributes.ContentState.magicalScroll
-    LAAttributes.ContentState.courierPrime
-}
-

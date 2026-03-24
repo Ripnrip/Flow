@@ -1,20 +1,36 @@
+/**
+ * 🎯 LiveActivityIntents — Cross-Realm Action System
+ *
+ * "The intents that transcend process boundaries.
+ *  SnoozeIntent and DoneIntent complete without opening the app,
+ *  updating SharedTaskStore and pushing a new Live Activity content
+ *  state in one async perform() call."
+ *
+ * Targets: Flow (main app) AND WidgetsExtension
+ *   — LiveActivityIntents.swift is an exception-include for the
+ *     Flow target (see project.pbxproj 84D6DE8F) and is auto-synced
+ *     into WidgetsExtension via the Widgets/ folder sync.
+ *
+ * Intent matrix
+ * ─────────────
+ *  SnoozeIntent      — Live Activity button, widget button, Siri/Shortcuts
+ *  DoneIntent        — Live Activity button, widget button, Siri/Shortcuts
+ *  StartFocusIntent  — Siri, Shortcuts, Control Center (future)
+ *
+ * HIG ref: developer.apple.com/design/human-interface-guidelines/live-activities
+ * API ref: developer.apple.com/documentation/appintents
+ */
+
 import AppIntents
-import SwiftUI // Required for @Environment, though often omitted if using external manager access
-import ActivityKit // Required for LiveActivityIntent protocol (optional but good practice)
-import SwiftData // Assuming Item needs SwiftData ModelContext access
+import ActivityKit
+import SwiftUI
+import WidgetKit
 
-// MARK: - Error Definition (Fix for "Cannot find 'IntentError' in scope")
-private enum TaskIntentError: LocalizedError {
-    case invalidTaskID(String)
-    
-    var errorDescription: String? {
-        switch self {
-        case .invalidTaskID(let id):
-            return "The provided Task ID format is invalid: \(id)."
-        }
-    }
-}
+// MARK: - 🏷️ Activity Attributes (shared between app + widget)
 
+/// The ActivityKit attributes type for all Flow Live Activities.
+/// `taskId` is static (set once at activity creation);
+/// `ContentState` carries all mutable, live-updating fields.
 public struct FlowAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var title: String
@@ -29,84 +45,170 @@ public struct FlowAttributes: ActivityAttributes {
     var taskId: String
 }
 
+// MARK: - 🛠️ Helpers
 
-// MARK: - 🧙‍♀️ Task Action Intents
-
-// Utility function to check and retrieve the UUID
-private func validateTaskID(_ taskId: String) throws -> UUID {
-    guard let uuid = UUID(uuidString: taskId) else {
-        throw TaskIntentError.invalidTaskID(taskId)
-    }
-    return uuid
+private func makeContentState(from snapshot: ActiveTaskSnapshot) -> FlowAttributes.ContentState {
+    FlowAttributes.ContentState(
+        title: snapshot.title,
+        snoozeCount: snapshot.snoozeCount,
+        moveCount: snapshot.moveCount,
+        startDate: snapshot.startDate,
+        emoji: snapshot.emoji,
+        style: snapshot.style,
+        lastInteractionDate: snapshot.lastInteractionDate,
+        growthLevel: snapshot.growthLevel
+    )
 }
 
-// Base functionality placeholder to avoid repetition
-private struct SharedTaskIntentLogic {
-    static func perform(taskId: String, actionTitle: String) async throws -> some IntentResult {
-        let uuid = try validateTaskID(taskId)
-        
-        // **NOTE**: To properly call TaskService, it would need to be instantiated or fetched, 
-        // which requires accessing the ModelContainer. For a working solution, 
-        // you must ensure TaskService(modelContext:) is invoked correctly in the main app context.
-        
-        // Placeholder for actual service call:
-        // let taskService = // ... retrieve/initialize TaskService ...
-        // await taskService.handleIntent(uuid, type: actionTitle) // or specific implementation
-        
-        print("\(actionTitle) Intent performed for Task ID: \(uuid)")
+/// Push an updated state to all running Flow Live Activities.
+/// Safe to call from any target; guarded by `#if os(iOS)`.
+private func pushLiveActivityUpdate(state: FlowAttributes.ContentState) async {
+    #if os(iOS)
+    let staleDate = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
+    let content   = ActivityContent(state: state, staleDate: staleDate)
+    for activity in Activity<FlowAttributes>.activities {
+        await activity.update(content)
+        FlowLogger.liveActivity.info("🏝️ Updated Live Activity \(activity.id) snooze=\(state.snoozeCount)")
+    }
+    #endif
+}
+
+/// End all running Flow Live Activities immediately.
+private func endAllLiveActivities() async {
+    #if os(iOS)
+    for activity in Activity<FlowAttributes>.activities {
+        await activity.end(nil, dismissalPolicy: .immediate)
+        FlowLogger.liveActivity.info("🏝️ Ended Live Activity \(activity.id)")
+    }
+    #endif
+}
+
+// MARK: - 💤 SnoozeIntent
+
+/// Snoozes the active focus task **without opening the app**.
+///
+/// Execution flow:
+/// 1. Increments snooze count in `SharedTaskStore` (App Groups).
+/// 2. Pushes the updated state to all running Live Activities.
+/// 3. Requests a WidgetKit timeline refresh.
+/// 4. Returns without opening the app.
+///
+/// When the main app next foregrounds, `TaskService.reconcileFromSharedStore()`
+/// commits the pending snooze to SwiftData.
+struct SnoozeIntent: AppIntent {
+
+    static var openAppWhenRun: Bool = false
+    static var title: LocalizedStringResource = "Snooze Task"
+    static var description = IntentDescription(
+        "Snooze your active Flow task and keep your focus streak going.",
+        categoryName: "Focus"
+    )
+    static var isDiscoverable: Bool = true
+
+    @Parameter(title: "Task Identifier")
+    var taskId: String
+
+    init(taskId: String) { self.taskId = taskId }
+    init() { self.taskId = "" }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        FlowLogger.intent.info("💤 [SnoozeIntent] Performing for task: \(taskId)")
+
+        // 1. Mutate shared store (cross-process safe via App Groups)
+        guard let updated = await SharedTaskStore.shared.snooze() else {
+            FlowLogger.intent.warning("⚠️ [SnoozeIntent] No active task — nothing to snooze")
+            return .result(value: false)
+        }
+
+        // 2. Push updated state to running Live Activities
+        let newState = makeContentState(from: updated)
+        await pushLiveActivityUpdate(state: newState)
+
+        // 3. Invalidate widget timelines so they reflect the new snooze count
+        WidgetCenter.shared.reloadAllTimelines()
+
+        FlowLogger.intent.info("🎉 [SnoozeIntent] Snooze complete: '\(updated.title)' count=\(updated.snoozeCount)")
+        return .result(value: true)
+    }
+}
+
+// MARK: - ✅ DoneIntent
+
+/// Marks the active focus task as **complete without opening the app**.
+///
+/// Execution flow:
+/// 1. Sets `isCompleted = true` in `SharedTaskStore` (App Groups).
+/// 2. Ends all running Live Activities with `.immediate` dismissal.
+/// 3. Requests a WidgetKit timeline refresh.
+///
+/// The main app commits the completion to SwiftData on next foreground.
+struct DoneIntent: AppIntent {
+
+    static var openAppWhenRun: Bool = false
+    static var title: LocalizedStringResource = "Complete Task"
+    static var description = IntentDescription(
+        "Mark your active Flow task as done.",
+        categoryName: "Focus"
+    )
+    static var isDiscoverable: Bool = true
+
+    @Parameter(title: "Task Identifier")
+    var taskId: String
+
+    init(taskId: String) { self.taskId = taskId }
+    init() { self.taskId = "" }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        FlowLogger.intent.info("✅ [DoneIntent] Performing for task: \(taskId)")
+
+        // 1. Mark completed in shared store
+        guard let completed = await SharedTaskStore.shared.complete() else {
+            FlowLogger.intent.warning("⚠️ [DoneIntent] No active task — nothing to complete")
+            return .result(value: false)
+        }
+
+        // 2. End all running Live Activities
+        await endAllLiveActivities()
+
+        // 3. Invalidate widget timelines (they'll show empty-state)
+        WidgetCenter.shared.reloadAllTimelines()
+
+        FlowLogger.intent.info("🎉 [DoneIntent] Completed: '\(completed.title)'")
+        return .result(value: true)
+    }
+}
+
+// MARK: - 🚀 StartFocusIntent (Siri / Shortcuts / Control Center)
+
+/// Starts a focus session on a named task — exposed to Siri and Shortcuts.
+///
+/// ⚠️  This intent *does* open the app (`openAppWhenRun = true`) because
+///      creating / selecting a task requires the SwiftData ModelContext.
+///      When the OS supports in-extension model access this can be relaxed.
+struct StartFocusIntent: AppIntent {
+
+    static var openAppWhenRun: Bool = true
+    static var title: LocalizedStringResource = "Start Focus Session"
+    static var description = IntentDescription(
+        "Open Flow and start focusing on a specific task.",
+        categoryName: "Focus"
+    )
+    static var isDiscoverable: Bool = true
+
+    @Parameter(title: "Task Name", requestValueDialog: IntentDialog("What task would you like to focus on?"))
+    var taskName: String
+
+    init() { self.taskName = "" }
+    init(taskName: String) { self.taskName = taskName }
+
+    func perform() async throws -> some IntentResult & OpensIntent {
+        FlowLogger.intent.info("🚀 [StartFocusIntent] Opening app for task: '\(taskName)'")
+        // The app opens via openAppWhenRun = true; the DeepLink handler in
+        // FlowApp picks up the pending task name from SharedTaskStore.
+        // We write a hint so ContentView can pre-populate the task field.
+        if let defaults = UserDefaults(suiteName: kFlowAppGroup) {
+            defaults.set(taskName, forKey: "com.binarybros.Flow.pendingTaskName")
+        }
         return .result()
-    }
-}
-
-
-// 💤 Action to Snooze the task
-struct SnoozeIntent: AppIntent { // Struct conforming directly to AppIntent
-    
-    static var openAppWhenRun: Bool { false }
-    static var title: LocalizedStringResource = "Snooze"
-    
-    // Parameter injected by the Live Activity context.attributes
-    @Parameter(title: "Task Identifier")
-    var taskId: String
-
-    // Required by AppIntent standard conformance if non-default initializer exists, 
-    // but typically not needed if only using memberwise for parameters.
-    init(taskId: String) {
-        self.taskId = taskId
-    }
-    
-    // Memberwise initializer is synthesized if the above init() is removed, 
-    // but for clarity when integrating with Live Activities parameters, we keep it simple.
-    init() {
-        self.taskId = ""
-    }
-    
-    func perform() async throws -> some IntentResult {
-        // Delegate to shared logic
-        return try await SharedTaskIntentLogic.perform(taskId: taskId, actionTitle: "Snooze")
-    }
-}
-
-// ✅ Action to Complete the task
-struct DoneIntent: AppIntent { // Struct conforming directly to AppIntent
-    
-    static var openAppWhenRun: Bool { false }
-    static var title: LocalizedStringResource = "Complete"
-    
-    // Parameter injected by the Live Activity context.attributes
-    @Parameter(title: "Task Identifier")
-    var taskId: String
-    
-    init(taskId: String) {
-        self.taskId = taskId
-    }
-    
-    init() {
-        self.taskId = ""
-    }
-    
-    func perform() async throws -> some IntentResult {
-        // Delegate to shared logic
-        return try await SharedTaskIntentLogic.perform(taskId: taskId, actionTitle: "Done")
     }
 }
