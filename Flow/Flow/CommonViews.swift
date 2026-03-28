@@ -138,10 +138,12 @@ struct CompactStateBadge: View {
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 3)
+        .foregroundStyle(
+            // NeoBrutalism inverts fg/bg for high-contrast; others use accent-coloured text
+            style == .neoBrutalism ? style.themeBackgroundColor() : style.themeForegroundColor()
+        )
         .background(style.themeAccentColor().opacity(style == .neoBrutalism ? 1.0 : 0.2))
-        .cornerRadius(4)
-        .foregroundColor(style.themeForegroundColor())
-        .colorMultiply(style == .neoBrutalism ? style.themeBackgroundColor() : .white) // Brutalism high contrast fix
+        .clipShape(RoundedRectangle(cornerRadius: 4))
         .transition(.scale)
     }
 }
@@ -183,7 +185,7 @@ struct StyleProgressView: View {
     let style: TaskStyle
     var body: some View {
         ProgressView(value: progress)
-            .progressViewStyle(LinearProgressViewStyle(tint: progressColor))
+            .tint(progressColor)
     }
     private var progressColor: Color {
         switch style {
@@ -211,8 +213,8 @@ struct ThemeButtonStyle: ButtonStyle {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
             .background(buttonBackgroundColor)
-            .foregroundColor(buttonForegroundColor)
-            .cornerRadius(8)
+            .foregroundStyle(buttonForegroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             .opacity(configuration.isPressed ? 0.7 : 1.0)
     }
 
@@ -306,7 +308,7 @@ public struct FlowLiveActivityView: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
                         .background(style.themeForegroundColor().opacity(0.1))
-                        .cornerRadius(4)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
             }
             .padding(12)

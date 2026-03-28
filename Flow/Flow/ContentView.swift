@@ -304,10 +304,13 @@ struct TaskRow: View {
 
                 HStack(spacing: 12) {
                     Label("\(item.snoozeCount)", systemImage: "zzz")
+                        .contentTransition(.numericText())
                     Label("\(item.moveCount)", systemImage: "arrow.right.circle")
+                        .contentTransition(.numericText())
                     Spacer()
                     Text(formatDuration(item.totalLingeringTime))
                         .font(.caption2.monospaced())
+                        .contentTransition(.numericText())
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
