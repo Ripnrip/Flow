@@ -8,6 +8,7 @@ import { GardenIsland } from "@/components/garden-island"
 import { HolographicIsland } from "@/components/holographic-island"
 import { StickyIsland } from "@/components/sticky-island"
 import { TimelineIsland } from "@/components/timeline-island"
+import { AlcoveIsland } from "@/components/alcove-island"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Calendar, ListTodo, FileText } from "lucide-react"
 
@@ -64,6 +65,12 @@ export default function Home() {
       name: "Timeline",
       description: "Time-based visualization with urgency indicators",
       component: TimelineIsland,
+    },
+    {
+      id: 8,
+      name: "Alcove",
+      description: "Dynamic Island for Mac — Music, Calendar, and HUD",
+      component: AlcoveIsland,
     },
   ]
 
