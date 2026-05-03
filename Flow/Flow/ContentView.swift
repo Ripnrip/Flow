@@ -31,6 +31,7 @@ struct ContentView: View {
     @State private var newTaskTitle = ""
     @State private var newTaskEmoji = "🎯"
     @State private var newTaskStyle = TaskStyle.sleekModern
+    @State private var isInferringStyle = false
     @State private var selection: NavigationItem? = .inbox
 
     let emojis = ["🎯", "📝", "💪", "📚", "📧", "🚀", "🎨", "💻", "🧠", "🌌", "🏗️", "📰", "📜", "🔥", "🌿", "🐙", "🕹️", "⚙️", "💎", "📦", "🚥", "🪟", "⚔️", "💧", "☀️", "🖍️", "🖤"]
@@ -158,17 +159,26 @@ struct ContentView: View {
                     }
 
                     Section("Visual Resonance (Style)") {
-                        Picker("Style", selection: $newTaskStyle) {
-                            ForEach(TaskStyle.allCases, id: \.self) { style in
-                                Label(style.rawValue, systemImage: style.icon).tag(style)
+                        HStack {
+                            Picker("Style", selection: $newTaskStyle) {
+                                ForEach(TaskStyle.allCases, id: \.self) { style in
+                                    Label(style.rawValue, systemImage: style.icon).tag(style)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            if isInferringStyle {
+                                ProgressView()
+                                    .scaleEffect(0.7)
                             }
                         }
-                        .pickerStyle(.menu)
 
                         StylePreviewSnippet(style: newTaskStyle)
                     }
                 }
                 .navigationTitle("New Intent")
+                .onChange(of: newTaskTitle) { _, title in
+                    inferStyle(from: title)
+                }
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Cancel") { isAddingTask = false }
@@ -183,6 +193,18 @@ struct ContentView: View {
                 }
             }
             .presentationDetents([.medium, .large])
+        }
+    }
+
+    private func inferStyle(from title: String) {
+        guard title.count >= 4 else { return }
+        isInferringStyle = true
+        Task {
+            let suggested = await TaskStyleSuggester.shared.suggest(for: title)
+            await MainActor.run {
+                newTaskStyle = suggested
+                isInferringStyle = false
+            }
         }
     }
 

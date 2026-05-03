@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	    App Groups — gives WidgetsExtension read/write access to the same
+	    UserDefaults suite as the main Flow app.
+
+	    SharedTaskStore uses this suite so SnoozeIntent, DoneIntent, and
+	    ToggleFocusIntent can mutate task state without launching the app.
+	    Without this entitlement, UserDefaults(suiteName: kFlowAppGroup)
+	    returns nil in the extension process and all intent actions silently fail.
+
+	    ⚠️  The same group ID must be registered in the Apple Developer portal
+	        for your team, matching Flow.entitlements in the main app target.
+	-->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.binarybros.Flow</string>
+	</array>
+</dict>
+</plist>
