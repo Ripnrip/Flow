@@ -26,6 +26,10 @@
 	</array>
 	<key>MusicHapticsSupported</key>
 	<true/>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.binarybros.Flow.reconcile</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

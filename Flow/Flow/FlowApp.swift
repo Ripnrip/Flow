@@ -28,6 +28,7 @@
 import SwiftUI
 import SwiftData
 import UserNotifications
+import BackgroundTasks
 
 @main
 struct FlowApp: App {
@@ -50,6 +51,16 @@ struct FlowApp: App {
 
     init() {
         FlowLogger.lifecycle.info("🌐 ✨ FlowApp awakening…")
+
+        // Register background processing task so the system can wake the app
+        // to reconcile SharedTaskStore changes committed by AppIntents.
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: FlowApp.bgReconcileTaskId,
+            using: nil
+        ) { task in
+            guard let task = task as? BGProcessingTask else { return }
+            FlowApp.handleBGReconcileTask(task)
+        }
 
         let schema = Schema([Item.self])
 
@@ -125,11 +136,16 @@ struct FlowApp: App {
         .modelContainer(sharedModelContainer)
         // Reconcile on every foreground (catches intent-pending changes)
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active {
+            switch newPhase {
+            case .active:
                 FlowLogger.lifecycle.info("🔄 Scene became active — reconciling shared store")
-                Task {
-                    await taskService.reconcileFromSharedStore()
-                }
+                Task { await taskService.reconcileFromSharedStore() }
+            case .background:
+                // Schedule a background processing task so the system can
+                // wake us proactively if intents fired while we were suspended.
+                FlowApp.scheduleNextBGReconcile()
+            default:
+                break
             }
         }
 
@@ -185,6 +201,60 @@ struct FlowApp: App {
             } else {
                 FlowLogger.lifecycle.info("🌙 User declined notifications")
             }
+        }
+    }
+}
+
+// MARK: - Background Task
+
+extension FlowApp {
+    static let bgReconcileTaskId = "com.binarybros.Flow.reconcile"
+
+    /// Schedules a background processing task to run within the next hour.
+    /// Called after the app reconciles so the system can schedule the next
+    /// background wake before the app fully suspends.
+    static func scheduleNextBGReconcile() {
+        let request = BGProcessingTaskRequest(identifier: bgReconcileTaskId)
+        request.requiresNetworkConnectivity = false
+        request.requiresExternalPower = false
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 60 * 30) // 30 min
+        do {
+            try BGTaskScheduler.shared.submit(request)
+            FlowLogger.lifecycle.info("📅 BGProcessingTask scheduled")
+        } catch {
+            FlowLogger.lifecycle.warning("⚠️ BGTask schedule error: \(error.localizedDescription)")
+        }
+    }
+
+    /// Executed by the system when the background task fires.
+    static func handleBGReconcileTask(_ task: BGProcessingTask) {
+        scheduleNextBGReconcile() // always re-schedule before doing work
+
+        let container: ModelContainer
+        do {
+            let schema = Schema([Item.self])
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            container = try ModelContainer(for: schema, configurations: [config])
+        } catch {
+            FlowLogger.lifecycle.error("💥 BGTask: failed to create ModelContainer: \(error.localizedDescription)")
+            task.setTaskCompleted(success: false)
+            return
+        }
+
+        let work = Task {
+            let service = await TaskService(modelContext: container.mainContext)
+            await service.reconcileFromSharedStore()
+            FlowLogger.lifecycle.info("🔄 BGTask reconcile complete")
+        }
+
+        task.expirationHandler = {
+            work.cancel()
+            FlowLogger.lifecycle.warning("⚠️ BGTask expired before completion")
+        }
+
+        Task {
+            await work.value
+            task.setTaskCompleted(success: true)
         }
     }
 }

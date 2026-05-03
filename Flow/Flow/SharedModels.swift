@@ -8,9 +8,6 @@
  */
 
 import Foundation
-#if os(iOS)
-import ActivityKit
-#endif
 import SwiftUI
 
 // MARK: - 🎨 Visual Concept Alchemy

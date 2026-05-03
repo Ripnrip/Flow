@@ -187,9 +187,40 @@ struct DoneIntent: LiveActivityIntent {
 
 /// Starts a focus session on a named task — exposed to Siri and Shortcuts.
 ///
-/// ⚠️  This intent *does* open the app (`openAppWhenRun = true`) because
-///      creating / selecting a task requires the SwiftData ModelContext.
-///      When the OS supports in-extension model access this can be relaxed.
+/// On iOS 26+ this conforms to `LiveActivityStartingIntent` so the system
+/// can start the Live Activity directly from a shortcut or Control Widget
+/// without bringing the app to the foreground.
+///
+/// On earlier OS versions it falls back to opening the app (`openAppWhenRun = true`),
+/// where the DeepLink handler in FlowApp reads the pending task name from
+/// App Groups UserDefaults and pre-populates the add-task sheet.
+@available(iOS 26.0, macOS 26.0, *)
+struct StartFocusIntentLiveActivity: LiveActivityStartingIntent {
+
+    static var openAppWhenRun: Bool = false
+    static var title: LocalizedStringResource = "Start Focus Session"
+    static var description = IntentDescription(
+        "Start a Live Activity focus session directly from Siri or Control Center.",
+        categoryName: "Focus"
+    )
+    static var isDiscoverable: Bool = true
+
+    @Parameter(title: "Task Name", requestValueDialog: IntentDialog("What task would you like to focus on?"))
+    var taskName: String
+
+    init() { self.taskName = "" }
+    init(taskName: String) { self.taskName = taskName }
+
+    func perform() async throws -> some IntentResult {
+        FlowLogger.intent.info("🚀 [StartFocusIntentLiveActivity] task: '\(taskName)'")
+        if let defaults = UserDefaults(suiteName: kFlowAppGroup) {
+            defaults.set(taskName, forKey: "com.binarybros.Flow.pendingTaskName")
+        }
+        return .result()
+    }
+}
+
+/// Pre-iOS-26 fallback: opens the app to start a session.
 struct StartFocusIntent: AppIntent {
 
     static var openAppWhenRun: Bool = true
@@ -208,9 +239,6 @@ struct StartFocusIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & OpensIntent {
         FlowLogger.intent.info("🚀 [StartFocusIntent] Opening app for task: '\(taskName)'")
-        // The app opens via openAppWhenRun = true; the DeepLink handler in
-        // FlowApp picks up the pending task name from SharedTaskStore.
-        // We write a hint so ContentView can pre-populate the task field.
         if let defaults = UserDefaults(suiteName: kFlowAppGroup) {
             defaults.set(taskName, forKey: "com.binarybros.Flow.pendingTaskName")
         }

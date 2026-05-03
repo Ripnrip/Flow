@@ -6,7 +6,7 @@
  * appropriate context (Home Screen, Lock Screen, StandBy, Control Center).
  *
  *  FlowWidget         — Home/Lock Screen task state mirror (.systemSmall/Medium/Large + accessory)
- *  WidgetsControl     — Control Center focus-session toggle
+ *  FlowFocusControl   — Control Center focus-session toggle (reads SharedTaskStore)
  *  WidgetsLiveActivity— Dynamic Island + Lock Screen Live Activity
  */
 
@@ -19,8 +19,8 @@ struct WidgetsBundle: WidgetBundle {
         // 📱 Task state widget (replaces old placeholder Widgets())
         FlowWidget()
 
-        // 🎛️ Control Center toggle
-        WidgetsControl()
+        // 🎛️ Control Center toggle (replaces boilerplate WidgetsControl)
+        FlowFocusControl()
 
         // 🏝️ Live Activity (Dynamic Island + Lock Screen banner)
         WidgetsLiveActivity()

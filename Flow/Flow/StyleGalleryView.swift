@@ -31,9 +31,8 @@ struct StyleGalleryView: View {
         .navigationTitle("The Visual Vault")
 #if os(iOS)
         .background(Color(uiColor: .systemGroupedBackground))
-#elseif (os(macOS))
-        .background(Color.teal)
-        
+#elseif os(macOS)
+        .background(Color(nsColor: .windowBackgroundColor))
 #endif
     }
 }
@@ -76,10 +75,23 @@ struct StyleCard: View {
             }
             .padding(.horizontal, 5)
             
-            // 🧪 State Permutation Preview
-            HStack(spacing: 8) {
-                CompactStateBadge(style: style, label: "Compact")
-                CompactStateBadge(style: style, label: "Minimal")
+            // 🧪 State Permutation Preview — Liquid Glass on iOS 26+
+            if #available(iOS 26.0, *) {
+                GlassEffectContainer {
+                    HStack(spacing: 8) {
+                        CompactStateBadge(style: style, label: "Compact")
+                        CompactStateBadge(style: style, label: "Minimal")
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .glassEffect(.regular.tint(style.themeAccentColor().opacity(0.15)),
+                                 in: RoundedRectangle(cornerRadius: 10))
+                }
+            } else {
+                HStack(spacing: 8) {
+                    CompactStateBadge(style: style, label: "Compact")
+                    CompactStateBadge(style: style, label: "Minimal")
+                }
             }
         }
         .padding(12)
