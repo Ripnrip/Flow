@@ -67,24 +67,33 @@ final class Item: TaskProtocol {
     }
 
     // 🌟 The Alchemy of Postponement - When a task is snoozed
-    func snooze() {
-        snoozeCount += 1
-        updateLingeringTime()
-        lastInteractionDate = .now
-        FlowLogger.task.info("🌙 Snooze recorded for '\(self.title, privacy: .public)' (count=\(self.snoozeCount))")
+    /// Records one or more snooze gestures without changing lingering time.
+    ///
+    /// TaskService owns time accounting through `TaskLingeringActor`, so this
+    /// method only updates interaction metadata and counters. Keeping the timer
+    /// out of the model prevents a single snooze from being counted twice — the
+    /// bug goblin tried to invoice us twice, and we politely declined. 🧾✨
+    func snooze(times count: Int = 1, at date: Date = .now) {
+        let safeCount = max(0, count)
+        guard safeCount > 0 else {
+            FlowLogger.task.debug("🌙 Snooze skipped for '\(self.title, privacy: .public)' because count was zero")
+            return
+        }
+
+        snoozeCount += safeCount
+        lastInteractionDate = date
+        FlowLogger.task.info("🌙 Snooze recorded for '\(self.title, privacy: .public)' (+\(safeCount), count=\(self.snoozeCount))")
     }
 
     // 🎨 The Dance of Priorities - When a task is moved
-    func move() {
+    /// Records one move gesture without changing lingering time.
+    ///
+    /// Movement is an analytics event, while elapsed focus time is measured by
+    /// `TaskLingeringActor`; separating them keeps counters crisp and avoids
+    /// temporal soup. Chronos brought a ladle anyway. 🥣⏳
+    func move(at date: Date = .now) {
         moveCount += 1
-        updateLingeringTime()
-        lastInteractionDate = .now
+        lastInteractionDate = date
         FlowLogger.task.info("🎪 Move recorded for '\(self.title, privacy: .public)' (count=\(self.moveCount))")
-    }
-
-    // 🧪 Calculating the lingering presence
-    private func updateLingeringTime() {
-        let interval = Date().timeIntervalSince(lastInteractionDate)
-        totalLingeringTime += interval
     }
 }
