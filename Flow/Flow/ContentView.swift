@@ -90,6 +90,7 @@ struct ContentView: View {
                         } label: {
                             Label("Sync All", systemImage: "arrow.triangle.2.circlepath.circle.fill")
                         }
+                        .accessibilityHint("Imports tasks from Calendar, Reminders, and Todoist")
                     }
 
                     // Replaced .navigationBarTrailing with .primaryAction and made EditButton iOS/visionOS only
@@ -105,6 +106,7 @@ struct ContentView: View {
                             Label("Add Task", systemImage: "plus.circle.fill")
                                 .font(.title3)
                         }
+                        .accessibilityHint("Opens a form to create a new focus task")
                     }
                 }
             case .gallery:
@@ -339,6 +341,22 @@ struct TaskRow: View {
             }
         }
         .padding(.vertical, 4)
+        // ── VoiceOver: read the row as one meaningful element ──
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(item.title), \(item.style.rawValue) style")
+        .accessibilityValue(accessibilityValueText)
+        .accessibilityAddTraits(item.isCompleted ? [.isButton, .isSelected] : .isButton)
+    }
+
+    /// Spoken summary of the task's lingering analytics for assistive tech.
+    private var accessibilityValueText: String {
+        var parts: [String] = [
+            "\(item.snoozeCount) snoozes",
+            "\(item.moveCount) moves",
+            "focused for \(formatDuration(item.totalLingeringTime))"
+        ]
+        if item.isCompleted { parts.append("completed") }
+        return parts.joined(separator: ", ")
     }
 
     private var styleColor: Color {

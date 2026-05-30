@@ -155,14 +155,18 @@ struct BreathingEmojiView: View {
     let emoji: String
     let style: TaskStyle
     var compact: Bool
-    var growthLevel: Int 
-    @State private var breath: CGFloat = 1.0 
+    var growthLevel: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var breath: CGFloat = 1.0
 
     var body: some View {
         Text(emoji)
             .font(compact ? .title2 : .largeTitle)
-            .scaleEffect(1 + (breath * 0.1))
+            .scaleEffect(reduceMotion ? 1 : 1 + (breath * 0.1))
+            .accessibilityHidden(true)
             .onAppear {
+                // Honor Reduce Motion: skip the perpetual breathing animation.
+                guard !reduceMotion else { return }
                 withAnimation(.easeInOut(duration: breathingDuration).repeatForever(autoreverses: true)) {
                     breath = 0.0
                 }
@@ -365,13 +369,19 @@ struct ForestParticleSystem: View {
 
 // Helper modifier for particle movement placeholder
 private struct MovingParticle: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var phase: CGFloat = 0
     let delay: Double
 
     func body(content: Content) -> some View {
         content
-            .offset(x: sin(phase * 0.5) * 50, y: cos(phase * 0.7) * 50)
+            .offset(
+                x: reduceMotion ? 0 : sin(phase * 0.5) * 50,
+                y: reduceMotion ? 0 : cos(phase * 0.7) * 50
+            )
             .onAppear {
+                // Honor Reduce Motion: leave particles static instead of looping.
+                guard !reduceMotion else { return }
                 withAnimation(.linear(duration: 5.0).delay(delay).repeatForever(autoreverses: true)) {
                     phase = .pi * 2
                 }

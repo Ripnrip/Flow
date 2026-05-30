@@ -5,6 +5,10 @@
 `swift-dev` skill (`SKILL.md`, `swift_guidelines.md`, `hig_accessibility.md`,
 `testing_automation.md`).
 
+> **Remediation status (this PR):** Most findings below have since been addressed on
+> the `claude/swift-dev-skill-audit` branch. See **Remediation status** immediately
+> after the verdict for what changed and what intentionally remains.
+
 ## Verdict
 
 **Partially up to par — strong architecture, three blocking gaps.**
@@ -16,6 +20,26 @@ view-model services, `actor`-isolated concurrency, a rich `enum`-driven domain
 three areas the skill treats as non-negotiable: **strict concurrency is not actually
 enabled**, **accessibility is effectively absent**, and **there is no real test
 coverage**. There is also a **committed API secret** that should be treated as urgent.
+
+## Remediation status
+
+| Finding | Status | What changed |
+| --- | --- | --- |
+| Strict concurrency not enabled | 🟡 Partially done | `SWIFT_STRICT_CONCURRENCY = complete` set on all 8 build configs. Kept Swift 5 language mode (non-breaking) so diagnostics surface as warnings; the final `SWIFT_VERSION = 6.0` flip + zero-warning pass needs a local Xcode build. |
+| Accessibility absent | 🟡 Largely done | VoiceOver label/value/traits on inbox rows, hints on Sync/Add toolbar buttons, and Reduce Motion fallbacks for `BreathingEmojiView` + particle motion. Full 40-style gallery not exhaustively swept. |
+| No real tests | ✅ Done | Added `FlowTests/FlowDomainTests.swift` (Swift Testing) covering `FlowRoute` parsing/generation, `Item` growth thresholds, `ActiveTaskSnapshot` Codable + fallback, and the suggester blank-title guard. |
+| `print()` instead of `Logger` | ✅ Done | All 26 `print()` calls replaced with `FlowLogger` channels (privacy-annotated). |
+| README inaccurate | ✅ Done | Badges + tech-stack table now reflect Swift 6 / `@Observable`+SwiftData / iOS 26, no Combine. |
+| Force unwraps | 🟡 Partially done | Removed the calendar-window date force unwrap. Left two known-safe constants (`URL(string: <literal>)!`, `applicationSupportDirectory.first!`) to avoid destabilizing app launch. |
+| Todoist token committed | ⚪ Deferred | Left in place at the owner's explicit request. |
+
+### Known remaining concurrency item
+The `BGProcessingTask` reconcile path in `FlowApp.handleBGReconcileTask` captures a
+non-`Sendable` `BGProcessingTask` across a `Task` boundary. Under *complete* checking
+this is a warning; it becomes an error under full Swift 6 language mode and is the main
+thing to resolve (likely with `@preconcurrency`/explicit isolation) before flipping
+`SWIFT_VERSION` to `6.0`. Left untouched here because the fix can't be compile-verified
+in this environment.
 
 ## Scorecard
 
