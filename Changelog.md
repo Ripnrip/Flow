@@ -1,5 +1,31 @@
 # Changelog
 
+## May 30, 2026: 🕶️ Hacker Hat — Snooze Delta Heist Foiled
+
+### Commit Message of the Day
+`Fix snooze reconciliation before the time goblin invoices twice`
+
+### Steps Taken
+- `2026-05-30 05:02:24 UTC` — Confirmed the session date before writing this top-of-file journal entry.
+- Audited task snooze timing and widget-intent reconciliation paths.
+- Added focused domain tests so the fix has a tiny bouncer at the velvet rope.
+
+### What Changed
+- Fixed snooze analytics so `Item.snooze` records interaction counts without also mutating lingering time; `TaskLingeringActor` remains the single clock keeper.
+- Added snapshot delta math so multiple widget-side snoozes made before app foregrounding reconcile into SwiftData without being lost or replayed.
+- Updated reconciliation to apply only unapplied snoozes and avoid restarting lingering tracking when a completion is already pending.
+- Added regression coverage for lingering-time double-count prevention and multi-snooze snapshot deltas.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, the time goblin tried to charge one snooze twice: once through the actor and once through the model. We confiscated its calculator, taught the snapshot to count deltas, and sent the goblin to remedial arithmetic camp. 🧌📚
+
+### Reflection
+I felt proud we finally tamed that wild bug 🐛 and made the island taps reconcile like polite little packets.
+
+### Easter Egg
+Gator count stable: 3 seen, 1 suspicious ripple 🐊
+
+
 ## December 17, 2025: 🎨 The Dynamic Island Refinement - FROM CHAOS TO CLARITY 🎨
 
 ### 🎭 The Spellbinding Museum Director's Reflections

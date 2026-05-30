@@ -53,6 +53,17 @@ struct ActiveTaskSnapshot: Codable, Sendable, Hashable {
     var style: TaskStyle {
         TaskStyle(rawValue: styleRawValue) ?? .sleekModern
     }
+
+    /// Calculates how many intent-side snoozes still need to be applied locally.
+    ///
+    /// Widget intents may fire several times before the app foregrounds. The
+    /// snapshot carries the latest cross-process count, while SwiftData may still
+    /// have an older value. This delta keeps reconciliation idempotent: no lost
+    /// taps, no duplicate goblin math, just tidy little integers in formation. 🧮🪄
+    func pendingSnoozeDelta(comparedTo currentCount: Int) -> Int {
+        guard pendingSnooze else { return 0 }
+        return max(0, snoozeCount - currentCount)
+    }
 }
 
 // MARK: - 🔃 The Cross-Realm Actor

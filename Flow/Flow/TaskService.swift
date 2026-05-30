@@ -127,11 +127,18 @@ class TaskService {
             }
 
             if snapshot.pendingSnooze {
-                FlowLogger.task.info("💤 Reconcile: applying snooze to '\(task.title)'")
-                let lingering = await lingeringActor.stopTracking(taskId: uuid)
-                task.totalLingeringTime += lingering
-                task.snooze()
-                await lingeringActor.startTracking(taskId: uuid)
+                let snoozeDelta = snapshot.pendingSnoozeDelta(comparedTo: task.snoozeCount)
+                FlowLogger.task.info("💤 Reconcile: applying \(snoozeDelta) snooze(s) to '\(task.title)'")
+
+                if snoozeDelta > 0 {
+                    let lingering = await lingeringActor.stopTracking(taskId: uuid)
+                    task.totalLingeringTime += lingering
+                    task.snooze(times: snoozeDelta, at: snapshot.lastInteractionDate)
+
+                    if !snapshot.pendingComplete {
+                        await lingeringActor.startTracking(taskId: uuid)
+                    }
+                }
             }
 
             if snapshot.pendingComplete {

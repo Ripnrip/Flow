@@ -142,6 +142,56 @@ struct ActiveTaskSnapshotTests {
     }
 }
 
+
+// MARK: - 💤 Snooze reconciliation
+
+@Suite("Snooze reconciliation")
+@MainActor
+struct SnoozeReconciliationTests {
+
+    @Test("Model snooze records analytics without double-counting lingering time")
+    func modelSnoozeDoesNotMutateLingeringTime() {
+        let item = Item(title: "Keep the clock honest", style: .livingGarden)
+        item.totalLingeringTime = 120
+
+        // 🧪 The service/actor layer owns elapsed-time accounting, so the model
+        // should only count the interaction. If this expectation fails, the time
+        // goblin has snuck back in and is billing the same seconds twice. ⏱️🧌
+        item.snooze(at: Date(timeIntervalSince1970: 1_700_001_000))
+
+        #expect(item.snoozeCount == 1)
+        #expect(item.totalLingeringTime == 120)
+        #expect(item.lastInteractionDate == Date(timeIntervalSince1970: 1_700_001_000))
+    }
+
+    @Test("Snapshot delta preserves multiple widget snoozes during reconciliation")
+    func snapshotDeltaCapturesOnlyUnappliedSnoozes() {
+        var snapshot = ActiveTaskSnapshot(
+            taskId: UUID().uuidString,
+            title: "Tap the island",
+            emoji: "🏝️",
+            styleRawValue: TaskStyle.sleekModern.rawValue,
+            snoozeCount: 4,
+            moveCount: 0,
+            startDate: Date(timeIntervalSince1970: 1_700_000_000),
+            growthLevel: 0,
+            lastInteractionDate: Date(timeIntervalSince1970: 1_700_000_300),
+            isCompleted: false
+        )
+
+        // 🧪 Three widget taps can arrive before the app wakes up. The delta is
+        // the breadcrumb trail home: apply what SwiftData lacks, never replay
+        // what it already knows. Tiny math cape, big hero energy. 🦸‍♀️➖
+        snapshot.pendingSnooze = true
+        #expect(snapshot.pendingSnoozeDelta(comparedTo: 1) == 3)
+        #expect(snapshot.pendingSnoozeDelta(comparedTo: 4) == 0)
+        #expect(snapshot.pendingSnoozeDelta(comparedTo: 5) == 0)
+
+        snapshot.pendingSnooze = false
+        #expect(snapshot.pendingSnoozeDelta(comparedTo: 1) == 0)
+    }
+}
+
 // MARK: - 🧠 Style suggester fast path
 
 @Suite("TaskStyleSuggester guards")
