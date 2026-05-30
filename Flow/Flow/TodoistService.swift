@@ -9,6 +9,7 @@
  */
 
 import Foundation
+import OSLog
 import SwiftData
 import Observation
 
@@ -17,16 +18,21 @@ import Observation
 class TodoistService {
     private var modelContext: ModelContext
     private let apiKey = "9fe3eb435d47590292a3c17ee2cde591e2bd5be7"
-    private let apiURL = URL(string: "https://api.todoist.com/rest/v2/tasks")!
+    private let apiURL = URL(string: "https://api.todoist.com/rest/v2/tasks")
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
-        print("🌐 ✨ TODOIST SERVICE AWAKENS!")
+        FlowLogger.lifecycle.info("🌐 TodoistService initialised")
     }
 
     // 🌐 Inhale tasks from Todoist
     func inhaleTasks() async {
-        print("📥 ✨ COMMENCING TODOIST INHALATION...")
+        FlowLogger.network.info("📥 Importing Todoist tasks…")
+
+        guard let apiURL else {
+            FlowLogger.network.error("💥 Invalid Todoist API URL — skipping import")
+            return
+        }
 
         var request = URLRequest(url: apiURL)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -35,14 +41,14 @@ class TodoistService {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                print("🌩️ ⚠️ Todoist portal rejected our request. Status: \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+                FlowLogger.network.warning("🌩️ Todoist request rejected. Status: \((response as? HTTPURLResponse)?.statusCode ?? 0)")
                 return
             }
 
             let decoder = JSONDecoder()
             let todoistTasks = try decoder.decode([TodoistTask].self, from: data)
 
-            print("✨ Found \(todoistTasks.count) tasks in the Shadow Realm.")
+            FlowLogger.network.info("✨ Found \(todoistTasks.count) Todoist tasks")
 
             for task in todoistTasks {
                 let title = task.content
@@ -53,15 +59,15 @@ class TodoistService {
                     let style = autoPrioritize(priority: task.priority)
                     let newItem = Item(title: title, emoji: "sf:circle.inset.filled", style: style, timestamp: .now)
                     modelContext.insert(newItem)
-                    print("💎 Crystallized Todoist task: \(title)")
+                    FlowLogger.local.info("💎 Imported Todoist task: \(title, privacy: .public)")
                 }
             }
 
             try modelContext.save()
-            print("🎉 ✨ TODOIST INHALATION COMPLETE!")
+            FlowLogger.network.info("🎉 Todoist import complete")
 
         } catch {
-            print("💥 😭 TODOIST PORTAL COLLAPSED: \(error.localizedDescription)")
+            FlowLogger.network.error("💥 Todoist import failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 

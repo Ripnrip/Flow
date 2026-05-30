@@ -8,6 +8,7 @@
  */
 
 import Foundation
+import OSLog
 import SwiftData
 
 @Model
@@ -62,7 +63,7 @@ final class Item: TaskProtocol {
         self.timestamp = timestamp
         self.creationDate = .now
         self.lastInteractionDate = .now
-        print("🌟 ✨ NEW ITEM CRYSTALLIZED: \(title) [\(self.style.rawValue)]")
+        FlowLogger.task.debug("🌟 New item crystallized: \(title, privacy: .public) [\(self.style.rawValue, privacy: .public)]")
     }
 
     // 🌟 The Alchemy of Postponement - When a task is snoozed
@@ -70,7 +71,7 @@ final class Item: TaskProtocol {
         snoozeCount += 1
         updateLingeringTime()
         lastInteractionDate = .now
-        print("🌙 ✨ SNOOZE RITUAL COMPLETE for [\(title)]! Style: \(style.rawValue)")
+        FlowLogger.task.info("🌙 Snooze recorded for '\(self.title, privacy: .public)' (count=\(self.snoozeCount))")
     }
 
     // 🎨 The Dance of Priorities - When a task is moved
@@ -78,7 +79,7 @@ final class Item: TaskProtocol {
         moveCount += 1
         updateLingeringTime()
         lastInteractionDate = .now
-        print("🎪 📦 TASK SHIFTED IN THE COSMIC RING: [\(title)]!")
+        FlowLogger.task.info("🎪 Move recorded for '\(self.title, privacy: .public)' (count=\(self.moveCount))")
     }
 
     // 🧪 Calculating the lingering presence

@@ -9,6 +9,7 @@
  */
 
 import Foundation
+import OSLog
 
 actor TaskLingeringActor {
     // 🌟 A mystical map of active focus sessions and their start times
@@ -17,24 +18,24 @@ actor TaskLingeringActor {
     // 🔮 Recording the moment a task enters the ring of awareness
     func startTracking(taskId: UUID) {
         activeSessions[taskId] = .now
-        print("⏳ ✨ TRACKING AWAKENS for task \(taskId) at \(Date())")
+        FlowLogger.task.debug("⏳ Lingering tracking started for task \(taskId, privacy: .public)")
     }
 
     // 🧪 Calculating the accumulated lingering time since tracking began
     func stopTracking(taskId: UUID) -> TimeInterval {
         guard let startTime = activeSessions.removeValue(forKey: taskId) else {
-            print("🌙 ⚠️ No active session found for task \(taskId) to stop.")
+            FlowLogger.task.warning("🌙 No active lingering session found for task \(taskId, privacy: .public) to stop")
             return 0
         }
         let duration = Date().timeIntervalSince(startTime)
-        print("💎 ✨ TRACKING CRYSTALLIZED: \(duration)s for \(taskId)")
+        FlowLogger.task.debug("💎 Lingering measured: \(duration)s for \(taskId, privacy: .public)")
         return duration
     }
 
     // 🔍 Peek into the current duration without stopping the clock
     func currentLingeringTime(for taskId: UUID) -> TimeInterval {
         guard let startTime = activeSessions[taskId] else {
-            print("🔍 🧙‍♂️ Peering into void: No active session for \(taskId)")
+            FlowLogger.task.debug("🔍 No active lingering session for \(taskId, privacy: .public)")
             return 0
         }
         return Date().timeIntervalSince(startTime)

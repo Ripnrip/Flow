@@ -8,9 +8,9 @@
 
 <br />
 
-[![Swift](https://img.shields.io/badge/Swift-5.9-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
-[![SwiftUI](https://img.shields.io/badge/SwiftUI-5.0-007AFF?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/swiftui/)
-[![iOS](https://img.shields.io/badge/iOS-17+-000000?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/ios/)
+[![Swift](https://img.shields.io/badge/Swift-6-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
+[![SwiftUI](https://img.shields.io/badge/SwiftUI-Observable-007AFF?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/swiftui/)
+[![iOS](https://img.shields.io/badge/iOS-26+-000000?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/ios/)
 [![Dynamic Island](https://img.shields.io/badge/Dynamic_Island-Supported-9E7AFF?style=for-the-badge)](https://developer.apple.com/documentation/activitykit)
 
 *A uniquely Apple iOS app that transforms the Dynamic Island into a living, breathing interface — combining fluid animations, haptic feedback, and contextual awareness into an experience that feels like it was designed in Cupertino.*
@@ -39,11 +39,12 @@ Built entirely in SwiftUI with a focus on Apple's Human Interface Guidelines, Fl
 
 | Layer | Technology |
 |-------|-----------|
-| **UI Framework** | SwiftUI 5, WidgetKit, ActivityKit |
-| **Architecture** | MVVM + Combine reactive streams |
-| **Animations** | Spring physics, matched geometry effects |
-| **Platform APIs** | Dynamic Island, Live Activities, Haptics |
-| **Minimum Target** | iOS 17.0+ |
+| **UI Framework** | SwiftUI (`@Observable`), WidgetKit, ActivityKit |
+| **Architecture** | `@Observable` services + SwiftData, `actor`-isolated concurrency |
+| **Persistence** | SwiftData (App Groups bridge for cross-process intents) |
+| **Animations** | Spring physics, matched geometry, SF Symbol effects |
+| **Platform APIs** | Dynamic Island, Live Activities, App Intents, Haptics |
+| **Minimum Target** | iOS 26.0+ |
 
 ## Architecture
 
