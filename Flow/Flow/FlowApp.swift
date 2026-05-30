@@ -66,8 +66,8 @@ struct FlowApp: App {
 
         do {
             let fileManager = FileManager.default
-            let appSupport  = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            if !fileManager.fileExists(atPath: appSupport.path) {
+            if let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first,
+               !fileManager.fileExists(atPath: appSupport.path) {
                 try? fileManager.createDirectory(at: appSupport, withIntermediateDirectories: true)
                 FlowLogger.local.info("🏗️ Created Application Support directory")
             }
@@ -208,12 +208,12 @@ struct FlowApp: App {
 // MARK: - Background Task
 
 extension FlowApp {
-    static let bgReconcileTaskId = "com.binarybros.Flow.reconcile"
+    nonisolated static let bgReconcileTaskId = "com.binarybros.Flow.reconcile"
 
     /// Schedules a background processing task to run within the next hour.
     /// Called after the app reconciles so the system can schedule the next
     /// background wake before the app fully suspends.
-    static func scheduleNextBGReconcile() {
+    nonisolated static func scheduleNextBGReconcile() {
         let request = BGProcessingTaskRequest(identifier: bgReconcileTaskId)
         request.requiresNetworkConnectivity = false
         request.requiresExternalPower = false
@@ -226,35 +226,41 @@ extension FlowApp {
         }
     }
 
-    /// Executed by the system when the background task fires.
-    static func handleBGReconcileTask(_ task: BGProcessingTask) {
+    /// Executed by the system on a background context when the task fires.
+    nonisolated static func handleBGReconcileTask(_ task: BGProcessingTask) {
         scheduleNextBGReconcile() // always re-schedule before doing work
 
-        let container: ModelContainer
-        do {
-            let schema = Schema([Item.self])
-            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-            container = try ModelContainer(for: schema, configurations: [config])
-        } catch {
-            FlowLogger.lifecycle.error("💥 BGTask: failed to create ModelContainer: \(error.localizedDescription)")
-            task.setTaskCompleted(success: false)
-            return
-        }
+        // `BGProcessingTask` is not `Sendable`. The system delivers and only
+        // ever touches this handle from a single background context, so we
+        // forward it into the completion `Task` via `nonisolated(unsafe)`.
+        nonisolated(unsafe) let bgTask = task
 
         let work = Task {
-            let service = await TaskService(modelContext: container.mainContext)
-            await service.reconcileFromSharedStore()
-            FlowLogger.lifecycle.info("🔄 BGTask reconcile complete")
+            let success = await performBackgroundReconcile()
+            bgTask.setTaskCompleted(success: success)
         }
 
         task.expirationHandler = {
             work.cancel()
             FlowLogger.lifecycle.warning("⚠️ BGTask expired before completion")
         }
+    }
 
-        Task {
-            await work.value
-            task.setTaskCompleted(success: true)
+    /// Builds a fresh container, reconciles the shared store on the main
+    /// actor, and reports whether the pass succeeded.
+    @MainActor
+    private static func performBackgroundReconcile() async -> Bool {
+        do {
+            let schema = Schema([Item.self])
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            let container = try ModelContainer(for: schema, configurations: [config])
+            let service = TaskService(modelContext: container.mainContext)
+            await service.reconcileFromSharedStore()
+            FlowLogger.lifecycle.info("🔄 BGTask reconcile complete")
+            return true
+        } catch {
+            FlowLogger.lifecycle.error("💥 BGTask: reconcile failed: \(error.localizedDescription)")
+            return false
         }
     }
 }

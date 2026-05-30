@@ -25,6 +25,7 @@ final class StyleSnapshotTests: XCTestCase {
         print("📸 ✨ SNAPSHOT SANCTUARY PREPARED AT: \(snapshotDirectory.path)")
     }
     
+    @MainActor
     func testGenerateAllStyleSnapshots() {
         let allStyles = TaskStyle.allCases
         
@@ -44,6 +45,7 @@ final class StyleSnapshotTests: XCTestCase {
         print("🏁 ✨ ALL RESONANCES ARCHIVED AT: \(snapshotDirectory.path)")
     }
     
+    @MainActor
     private func captureSnapshot(for style: TaskStyle, growthLevel: Int) {
         // 🎭 Create a view for the style
         // We use a custom card that shows growth if applicable
@@ -73,6 +75,7 @@ final class StyleSnapshotTests: XCTestCase {
 // MARK: - 📸 Snapshot Helper
 
 extension View {
+    @MainActor
     func snapshot() -> UIImage {
         let controller = UIHostingController(rootView: self)
         let view = controller.view

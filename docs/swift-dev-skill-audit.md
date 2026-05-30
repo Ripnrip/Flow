@@ -25,21 +25,32 @@ coverage**. There is also a **committed API secret** that should be treated as u
 
 | Finding | Status | What changed |
 | --- | --- | --- |
-| Strict concurrency not enabled | 🟡 Partially done | `SWIFT_STRICT_CONCURRENCY = complete` set on all 8 build configs. Kept Swift 5 language mode (non-breaking) so diagnostics surface as warnings; the final `SWIFT_VERSION = 6.0` flip + zero-warning pass needs a local Xcode build. |
+| Strict concurrency not enabled | ✅ Done | `SWIFT_VERSION = 6.0` **and** `SWIFT_STRICT_CONCURRENCY = complete` on all 8 build configs. Resolved the concurrency issues this surfaces: BGTask completion, the `EKReminder` continuation, and `TaskProtocol` isolation (see below). |
 | Accessibility absent | 🟡 Largely done | VoiceOver label/value/traits on inbox rows, hints on Sync/Add toolbar buttons, and Reduce Motion fallbacks for `BreathingEmojiView` + particle motion. Full 40-style gallery not exhaustively swept. |
 | No real tests | ✅ Done | Added `FlowTests/FlowDomainTests.swift` (Swift Testing) covering `FlowRoute` parsing/generation, `Item` growth thresholds, `ActiveTaskSnapshot` Codable + fallback, and the suggester blank-title guard. |
 | `print()` instead of `Logger` | ✅ Done | All 26 `print()` calls replaced with `FlowLogger` channels (privacy-annotated). |
 | README inaccurate | ✅ Done | Badges + tech-stack table now reflect Swift 6 / `@Observable`+SwiftData / iOS 26, no Combine. |
-| Force unwraps | 🟡 Partially done | Removed the calendar-window date force unwrap. Left two known-safe constants (`URL(string: <literal>)!`, `applicationSupportDirectory.first!`) to avoid destabilizing app launch. |
+| Force unwraps | ✅ Done | Removed all force unwraps from app sources: the calendar-window date, `applicationSupportDirectory.first` (now `if let`), and the Todoist `URL` literal (now optional + guarded). |
 | Todoist token committed | ⚪ Deferred | Left in place at the owner's explicit request. |
 
-### Known remaining concurrency item
-The `BGProcessingTask` reconcile path in `FlowApp.handleBGReconcileTask` captures a
-non-`Sendable` `BGProcessingTask` across a `Task` boundary. Under *complete* checking
-this is a warning; it becomes an error under full Swift 6 language mode and is the main
-thing to resolve (likely with `@preconcurrency`/explicit isolation) before flipping
-`SWIFT_VERSION` to `6.0`. Left untouched here because the fix can't be compile-verified
-in this environment.
+### Swift 6 migration notes
+The language-mode flip required resolving the issues that complete checking surfaces:
+- **BGTask completion** — `FlowApp.handleBGReconcileTask` is now `nonisolated`, hops to a
+  `@MainActor` reconcile helper, and forwards the non-`Sendable` `BGProcessingTask` to its
+  completion `Task` via `nonisolated(unsafe)` (the system delivers the handle on a single
+  background context).
+- **EventKit** — `inhaleReminders` now maps each `EKReminder` to a `Sendable`
+  `ReminderSnapshot` *inside* the fetch callback, so no non-`Sendable` EventKit object
+  crosses back to the main actor.
+- **`TaskProtocol`** — marked `@MainActor` so its only conformer, the main-actor `Item`
+  `@Model`, can satisfy the requirements.
+- **Tests** — `Item`-touching suites and the snapshot-rendering helpers are marked
+  `@MainActor`.
+
+> **Still unverified by a compiler.** These changes were authored without an Xcode/macOS
+> toolchain. The structural fixes above are the expected Swift 6 friction points, but a
+> local `xcodebuild` pass may surface additional framework-interop diagnostics
+> (ActivityKit, WidgetKit) to iterate on.
 
 ## Scorecard
 

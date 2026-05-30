@@ -18,7 +18,7 @@ import Observation
 class TodoistService {
     private var modelContext: ModelContext
     private let apiKey = "9fe3eb435d47590292a3c17ee2cde591e2bd5be7"
-    private let apiURL = URL(string: "https://api.todoist.com/rest/v2/tasks")!
+    private let apiURL = URL(string: "https://api.todoist.com/rest/v2/tasks")
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
@@ -28,6 +28,11 @@ class TodoistService {
     // 🌐 Inhale tasks from Todoist
     func inhaleTasks() async {
         FlowLogger.network.info("📥 Importing Todoist tasks…")
+
+        guard let apiURL else {
+            FlowLogger.network.error("💥 Invalid Todoist API URL — skipping import")
+            return
+        }
 
         var request = URLRequest(url: apiURL)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")

@@ -192,7 +192,10 @@ extension TaskStyle {
     }
 }
 
-protocol TaskProtocol: Sendable {
+// Main-actor isolated: the only conformer, `Item`, is a SwiftData @Model
+// isolated to the main actor, so its accessors satisfy these requirements.
+@MainActor
+protocol TaskProtocol {
     var id: UUID { get }
     var title: String { get }
     var emoji: String { get }

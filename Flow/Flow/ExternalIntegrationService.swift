@@ -14,6 +14,14 @@ import OSLog
 import SwiftData
 import Observation
 
+/// Sendable projection of an `EKReminder`, extracted inside EventKit's
+/// completion handler so non-Sendable EventKit objects never cross actors.
+private struct ReminderSnapshot: Sendable {
+    let title: String
+    let isCompleted: Bool
+    let dueDate: Date?
+}
+
 @MainActor
 @Observable
 class ExternalIntegrationService {
@@ -90,14 +98,23 @@ class ExternalIntegrationService {
         let predicate = eventStore.predicateForReminders(in: nil)
 
         do {
-            let reminders: [EKReminder] = await withCheckedContinuation { continuation in
-                eventStore.fetchReminders(matching: predicate) { reminders in
-                    continuation.resume(returning: reminders ?? [])
+            // Map `EKReminder` (not Sendable) to a Sendable snapshot inside the
+            // callback so only Sendable values cross back to the main actor.
+            let reminders: [ReminderSnapshot] = await withCheckedContinuation { continuation in
+                eventStore.fetchReminders(matching: predicate) { ekReminders in
+                    let mapped = (ekReminders ?? []).map { reminder in
+                        ReminderSnapshot(
+                            title: reminder.title ?? "Untitled",
+                            isCompleted: reminder.isCompleted,
+                            dueDate: reminder.dueDateComponents?.date
+                        )
+                    }
+                    continuation.resume(returning: mapped)
                 }
             }
-            
+
             for reminder in reminders where !reminder.isCompleted {
-                let title = reminder.title ?? "Untitled"
+                let title = reminder.title
                 let descriptor = FetchDescriptor<Item>(
                     predicate: #Predicate<Item> { item in
                         item.title == title
@@ -106,7 +123,7 @@ class ExternalIntegrationService {
 
                 let existing = try modelContext.fetch(descriptor)
                 if existing.isEmpty {
-                    let newItem = Item(title: title, emoji: "sf:checklist", style: .zenFocus, timestamp: reminder.dueDateComponents?.date ?? .now)
+                    let newItem = Item(title: title, emoji: "sf:checklist", style: .zenFocus, timestamp: reminder.dueDate ?? .now)
                     modelContext.insert(newItem)
                     FlowLogger.local.info("💎 Imported reminder into task: \(title, privacy: .public)")
                 }

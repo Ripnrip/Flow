@@ -77,6 +77,7 @@ struct FlowRouteParsingTests {
 // MARK: - 🌱 Item growth thresholds
 
 @Suite("Item growth level")
+@MainActor  // `Item` is a SwiftData @Model isolated to the main actor in the app module.
 struct ItemGrowthTests {
 
     private func makeItem(style: TaskStyle, lingering: TimeInterval) -> Item {
