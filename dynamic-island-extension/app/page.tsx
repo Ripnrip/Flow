@@ -100,7 +100,7 @@ export default function Home() {
               </span>
             </h1>
             <p className="text-xl text-zinc-400 max-w-2xl mx-auto text-pretty">
-              Explore 7 unique concepts for a Dynamic Island productivity extension. Each brings a different personality
+              Explore 8 unique concepts for a Dynamic Island productivity extension. Each brings a different personality
               to your task management experience.
             </p>
           </section>
