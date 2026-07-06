@@ -350,8 +350,9 @@ struct WidgetsLiveActivity: Widget {
                     )
                     .frame(width: 28, height: 28)
                 } else {
-                    let elapsed  = min(Date().timeIntervalSince(context.state.startDate), 1800)
-                    let progress = elapsed / 1800.0
+                    // 🎯 Linear fallback uses the same progress math as the ring,
+                    //    honoring pause time and the user's focus target.
+                    let progress = context.state.progress
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Capsule()

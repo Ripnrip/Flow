@@ -272,10 +272,14 @@ struct DoneIntent: LiveActivityIntent {
             return .result(value: false)
         }
 
-        // 2. End all running Live Activities
+        // 2. Load current Live Activity configuration so any state we push stays consistent
+        let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
+        _ = config // Currently we end activities immediately, but keeping config in scope future-proofs the intent.
+
+        // 3. End all running Live Activities
         await endAllLiveActivities()
 
-        // 3. Invalidate widget timelines (they'll show empty-state)
+        // 4. Invalidate widget timelines (they'll show empty-state)
         WidgetCenter.shared.reloadAllTimelines()
 
         FlowLogger.intent.info("🎉 [DoneIntent] Completed: '\(completed.title)'")
