@@ -62,6 +62,11 @@ struct ActiveTaskSnapshot: Sendable {
     var focusTargetMinutes: Int = 25
     var elapsedPauseSeconds: TimeInterval = 0
 
+    /// When the current pause began. `nil` when the timer is running.
+    /// Used to freeze `effectiveElapsed` while paused and to accumulate
+    /// the correct pause duration on resume. ⏸️🧊
+    var pauseStartDate: Date? = nil
+
     // MARK: Pending Flags (set by intents, cleared by app after reconcile)
     var pendingSnooze: Bool = false   // set by SnoozeIntent
     var pendingComplete: Bool = false // set by DoneIntent
@@ -104,6 +109,7 @@ extension ActiveTaskSnapshot: Equatable {
         lhs.isPaused == rhs.isPaused &&
         lhs.focusTargetMinutes == rhs.focusTargetMinutes &&
         lhs.elapsedPauseSeconds == rhs.elapsedPauseSeconds &&
+        lhs.pauseStartDate == rhs.pauseStartDate &&
         lhs.pendingSnooze == rhs.pendingSnooze &&
         lhs.pendingComplete == rhs.pendingComplete
     }
@@ -125,6 +131,7 @@ extension ActiveTaskSnapshot: Codable {
         self.isPaused = try container.decodeIfPresent(Bool.self, forKey: .isPaused) ?? false
         self.focusTargetMinutes = try container.decodeIfPresent(Int.self, forKey: .focusTargetMinutes) ?? 25
         self.elapsedPauseSeconds = try container.decodeIfPresent(TimeInterval.self, forKey: .elapsedPauseSeconds) ?? 0
+        self.pauseStartDate = try container.decodeIfPresent(Date.self, forKey: .pauseStartDate)
         self.pendingSnooze = try container.decodeIfPresent(Bool.self, forKey: .pendingSnooze) ?? false
         self.pendingComplete = try container.decodeIfPresent(Bool.self, forKey: .pendingComplete) ?? false
     }
@@ -144,6 +151,7 @@ extension ActiveTaskSnapshot: Codable {
         try container.encode(isPaused, forKey: .isPaused)
         try container.encode(focusTargetMinutes, forKey: .focusTargetMinutes)
         try container.encode(elapsedPauseSeconds, forKey: .elapsedPauseSeconds)
+        try container.encode(pauseStartDate, forKey: .pauseStartDate)
         try container.encode(pendingSnooze, forKey: .pendingSnooze)
         try container.encode(pendingComplete, forKey: .pendingComplete)
     }
@@ -152,7 +160,7 @@ extension ActiveTaskSnapshot: Codable {
         case taskId, title, emoji, styleRawValue
         case snoozeCount, moveCount, startDate, growthLevel
         case lastInteractionDate, isCompleted
-        case isPaused, focusTargetMinutes, elapsedPauseSeconds
+        case isPaused, focusTargetMinutes, elapsedPauseSeconds, pauseStartDate
         case pendingSnooze, pendingComplete
     }
 }
@@ -275,12 +283,27 @@ actor SharedTaskStore {
     }
 
     /// Toggle the paused state of the active task snapshot.
+    /// Records `pauseStartDate` when entering pause, and accumulates the
+    /// elapsed pause interval into `elapsedPauseSeconds` on resume so the
+    /// Live Activity timer actually freezes. 🧊⏯️
     func togglePause(taskId: String) -> ActiveTaskSnapshot? {
-        guard var snapshot = load(), snapshot.taskId == taskId else {
-            FlowLogger.sync.warning("⚠️ [SharedTaskStore] Cannot toggle pause — no active task")
+        guard var snapshot = load(), snapshot.taskId == taskId, !snapshot.isCompleted else {
+            FlowLogger.sync.warning("⚠️ [SharedTaskStore] Cannot toggle pause — no active, incomplete task")
             return nil
         }
-        snapshot.isPaused.toggle()
+
+        if snapshot.isPaused {
+            // ⏯️ Resuming: book the time we spent paused.
+            let pauseStart = snapshot.pauseStartDate ?? .now
+            snapshot.elapsedPauseSeconds += Date().timeIntervalSince(pauseStart)
+            snapshot.pauseStartDate = nil
+            snapshot.isPaused = false
+        } else {
+            // ⏸️ Pausing: freeze the clock now.
+            snapshot.pauseStartDate = .now
+            snapshot.isPaused = true
+        }
+
         snapshot.lastInteractionDate = .now
         save(snapshot)
         FlowLogger.sync.info("⏸️ [SharedTaskStore] Pause toggled: \(snapshot.isPaused)")
@@ -289,8 +312,8 @@ actor SharedTaskStore {
 
     /// Extend the focus target by the given number of minutes.
     func extendFocus(taskId: String, additionalMinutes: Int) -> ActiveTaskSnapshot? {
-        guard var snapshot = load(), snapshot.taskId == taskId else {
-            FlowLogger.sync.warning("⚠️ [SharedTaskStore] Cannot extend focus — no active task")
+        guard var snapshot = load(), snapshot.taskId == taskId, !snapshot.isCompleted else {
+            FlowLogger.sync.warning("⚠️ [SharedTaskStore] Cannot extend focus — no active, incomplete task")
             return nil
         }
         // Cap total target at 60 minutes to prevent runaway timers.

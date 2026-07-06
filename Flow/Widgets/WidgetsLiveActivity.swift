@@ -43,9 +43,15 @@ import AppIntents
 
 extension FlowAttributes.ContentState {
     /// Elapsed focus time, excluding paused periods.
+    /// While paused we also subtract the in-progress pause interval so
+    /// the timer actually freezes instead of sneaking forward. 🧊⏱️
     var effectiveElapsed: TimeInterval {
         let raw = Date().timeIntervalSince(startDate)
-        return max(0, raw - elapsedPauseSeconds)
+        var pauseDuration = elapsedPauseSeconds
+        if isPaused, let pauseStartDate {
+            pauseDuration += Date().timeIntervalSince(pauseStartDate)
+        }
+        return max(0, raw - pauseDuration)
     }
 
     /// Progress toward the focus target (0...1).
@@ -63,8 +69,10 @@ struct ProgressRingView: View {
     let color: Color
     let lineWidth: CGFloat
     let animate: Bool
+    var intensity: LiveActivityAnimationIntensity = .normal
 
-    var body: some View {
+    /// The static ring — background track + progress arc.
+    private var ringContent: some View {
         ZStack {
             Circle()
                 .stroke(color.opacity(0.2), lineWidth: lineWidth)
@@ -73,6 +81,19 @@ struct ProgressRingView: View {
                 .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(animate ? .easeInOut(duration: 0.6) : .none, value: progress)
+        }
+    }
+
+    var body: some View {
+        if intensity == .lively {
+            // 🎠 Keep the ring twirling in the lively intensity so it feels
+            //    more energetic than the calm/normal variants.
+            TimelineView(.animation(minimumInterval: 0.05, paused: false)) { timeline in
+                ringContent
+                    .rotationEffect(.degrees(timeline.date.timeIntervalSinceReferenceDate * 180))
+            }
+        } else {
+            ringContent
         }
     }
 }
@@ -85,6 +106,7 @@ struct ProgressRingView: View {
 enum SymbolWiggleEffect {
     case wiggle(value: Int)
     case bounce(value: Bool)
+    case pulse(isActive: Bool)
 }
 
 extension Image {
@@ -95,6 +117,8 @@ extension Image {
             self.symbolEffect(.wiggle, value: value)
         case .bounce(let value):
             self.symbolEffect(.bounce, value: value)
+        case .pulse(let isActive):
+            self.symbolEffect(.pulse, isActive: isActive)
         case .none:
             self
         }
@@ -119,7 +143,9 @@ struct LiveActivityActionButton: View {
                 icon: "bed.double.fill",
                 label: "Snooze",
                 color: style.themeForegroundColor(),
-                symbolEffect: animationIntensity == .calm ? nil : .wiggle(value: snoozeCount)
+                symbolEffect: animationIntensity == .calm
+                    ? nil
+                    : .wiggle(value: animationIntensity == .lively ? snoozeCount + 1 : snoozeCount)
             )
         case .done:
             actionIntentButton(
@@ -128,7 +154,9 @@ struct LiveActivityActionButton: View {
                 label: liveActivityDoneLabel(for: style),
                 color: .white,
                 background: style.themeAccentColor(),
-                symbolEffect: animationIntensity == .calm ? nil : .bounce(value: true)
+                symbolEffect: animationIntensity == .calm
+                    ? nil
+                    : .bounce(value: animationIntensity == .lively ? snoozeCount.isMultiple(of: 2) : true)
             )
         case .pauseResume:
             actionIntentButton(
@@ -160,7 +188,7 @@ struct LiveActivityActionButton: View {
         Button(intent: intent) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
-                    .liveActivitySymbolEffect(symbolEffect)
+                    .liveActivitySymbolEffect(effectiveSymbolEffect(for: symbolEffect))
                     .font(.system(size: 13))
                 Text(label)
                     .font(.system(size: 13, weight: .medium))
@@ -168,10 +196,25 @@ struct LiveActivityActionButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 11)
             .foregroundStyle(color)
+            .scaleEffect(animationIntensity == .lively ? 1.05 : 1.0)
+            .animation(
+                animationIntensity == .lively
+                    ? .easeInOut(duration: 0.6).repeatForever(autoreverses: true)
+                    : .default,
+                value: animationIntensity == .lively
+            )
         }
         .buttonStyle(.plain)
         .background(background ?? style.themeForegroundColor().opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 13))
+    }
+
+    /// If the caller didn't supply a symbol effect, `.lively` gets a gentle
+    /// pulse so every button participates in the more energetic mode. ✨
+    private func effectiveSymbolEffect(for effect: SymbolWiggleEffect?) -> SymbolWiggleEffect? {
+        if let effect { return effect }
+        if animationIntensity == .lively { return .pulse(isActive: true) }
+        return nil
     }
 }
 
@@ -216,12 +259,26 @@ struct WidgetsLiveActivity: Widget {
             VStack(spacing: 12) {
                 // ── Top row: emoji / title / metric ──────────────────
                 HStack(spacing: 12) {
-                    BreathingEmojiView(
-                        emoji: context.state.emoji,
-                        style: style,
-                        compact: false,
-                        growthLevel: context.state.growthLevel
-                    )
+                    ZStack {
+                        if context.state.showProgressRing {
+                            ProgressRingView(
+                                progress: context.state.progress,
+                                color: style.themeAccentColor(),
+                                lineWidth: 5,
+                                animate: context.state.animationIntensity != .calm,
+                                intensity: context.state.animationIntensity
+                            )
+                            .frame(width: 62, height: 62)
+                        }
+
+                        BreathingEmojiView(
+                            emoji: context.state.emoji,
+                            style: style,
+                            compact: false,
+                            growthLevel: context.state.growthLevel
+                        )
+                        .frame(width: 48, height: 48)
+                    }
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(style.rawValue.uppercased())
@@ -276,6 +333,7 @@ struct WidgetsLiveActivity: Widget {
             }
             .padding(14)
         }
+        .overlay(completionFlash(didComplete: context.state.didComplete))
         .activityBackgroundTint(style.themeBackgroundColor())
         .activitySystemActionForegroundColor(style.themeForegroundColor())
     }
@@ -346,7 +404,8 @@ struct WidgetsLiveActivity: Widget {
                         progress: context.state.progress,
                         color: style.themeAccentColor(),
                         lineWidth: 4,
-                        animate: context.state.animationIntensity != .calm
+                        animate: context.state.animationIntensity != .calm,
+                        intensity: context.state.animationIntensity
                     )
                     .frame(width: 28, height: 28)
                 } else {
@@ -392,6 +451,7 @@ struct WidgetsLiveActivity: Widget {
                 .padding(.horizontal, 14)
             }
             .padding(.bottom, 10)
+            .overlay(completionFlash(didComplete: context.state.didComplete))
         }
     }
 
@@ -401,12 +461,26 @@ struct WidgetsLiveActivity: Widget {
 
     @ViewBuilder
     private func compactLeadingView(context: ActivityViewContext<FlowAttributes>) -> some View {
-        BreathingEmojiView(
-            emoji: context.state.emoji,
-            style: context.state.style,
-            compact: true,
-            growthLevel: context.state.growthLevel
-        )
+        ZStack {
+            if context.state.showProgressRing {
+                ProgressRingView(
+                    progress: context.state.progress,
+                    color: context.state.style.themeAccentColor(),
+                    lineWidth: 3,
+                    animate: context.state.animationIntensity != .calm,
+                    intensity: context.state.animationIntensity
+                )
+                .frame(width: 34, height: 34)
+            }
+
+            BreathingEmojiView(
+                emoji: context.state.emoji,
+                style: context.state.style,
+                compact: true,
+                growthLevel: context.state.growthLevel
+            )
+            .frame(width: 26, height: 26)
+        }
         .padding(.leading, 2)
     }
 
@@ -433,6 +507,27 @@ struct WidgetsLiveActivity: Widget {
     // ─────────────────────────────────────────────────────────
     // MARK: - 🎨 Style Helpers
     // ─────────────────────────────────────────────────────────
+
+    /// A brief green flash + checkmark burst shown the moment a task is
+    /// completed. `DoneIntent` sets `didComplete = true`, pushes the state,
+    /// waits ~0.6s, then ends the activity. 🎉✅
+    @ViewBuilder
+    private func completionFlash(didComplete: Bool) -> some View {
+        if didComplete {
+            ZStack {
+                Color.green.opacity(0.35)
+                    .ignoresSafeArea()
+
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 56, weight: .bold))
+                    .foregroundStyle(.white)
+                    .symbolEffect(.bounce, value: true)
+            }
+            .allowsHitTesting(false)
+            .transition(.opacity.combined(with: .scale))
+            .animation(.easeInOut(duration: 0.2), value: didComplete)
+        }
+    }
 }
 
 /// 🏷️ Maps a task style to a thematic "complete" label for the Done action.

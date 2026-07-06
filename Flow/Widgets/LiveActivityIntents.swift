@@ -101,6 +101,16 @@ public struct FlowAttributes: ActivityAttributes {
         var isPaused: Bool = false
         var focusTargetMinutes: Int = 25
         var elapsedPauseSeconds: TimeInterval = 0
+
+        /// The moment the current pause interval began. `nil` while running.
+        /// Carried over from `ActiveTaskSnapshot` so `effectiveElapsed` can
+        /// subtract the in-progress pause and keep the timer frozen. 🧊⏱️
+        var pauseStartDate: Date? = nil
+
+        /// Momentary triumph flag. Set by `DoneIntent` just before ending
+        /// activities so the UI can flash a green completion celebration. ✅🎉
+        var didComplete: Bool = false
+
         var leadingActionRawValue: String = LiveActivityAction.snooze.rawValue
         var trailingActionRawValue: String = LiveActivityAction.done.rawValue
         var showProgressRing: Bool = true
@@ -144,6 +154,7 @@ nonisolated func makeContentState(
         isPaused: snapshot.isPaused,
         focusTargetMinutes: snapshot.focusTargetMinutes,
         elapsedPauseSeconds: snapshot.elapsedPauseSeconds,
+        pauseStartDate: snapshot.pauseStartDate,
         leadingActionRawValue: configuration.leadingAction.rawValue,
         trailingActionRawValue: configuration.trailingAction.rawValue,
         showProgressRing: configuration.showProgressRing,
@@ -272,9 +283,14 @@ struct DoneIntent: LiveActivityIntent {
             return .result(value: false)
         }
 
-        // 2. Load current Live Activity configuration so any state we push stays consistent
+        // 2. Flash a brief completion celebration on all running Live Activities.
+        //    We push `didComplete = true`, let the UI render the green flash,
+        //    then end the activities a moment later. 🎉✨
         let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
-        _ = config // Currently we end activities immediately, but keeping config in scope future-proofs the intent.
+        var finalState = makeContentState(from: completed, configuration: config)
+        finalState.didComplete = true
+        await pushLiveActivityUpdate(state: finalState)
+        try? await Task.sleep(nanoseconds: 600_000_000) // ~0.6s victory lap
 
         // 3. End all running Live Activities
         await endAllLiveActivities()
