@@ -11,12 +11,13 @@ import WidgetKit
 struct CommandTileEditorView: View {
     @State private var tiles: [CommandTile] = []
     @State private var editingTile: CommandTile?
+    @State private var hasLoaded = false
 
     var body: some View {
         ScrollView {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                ForEach($tiles) { $tile in
-                    TileConfigCell(tile: $tile) {
+                ForEach(tiles) { tile in
+                    TileConfigCell(tile: tile) {
                         editingTile = tile
                     }
                 }
@@ -25,6 +26,7 @@ struct CommandTileEditorView: View {
         }
         .onAppear(perform: loadTiles)
         .onChange(of: tiles) { _, _ in
+            guard hasLoaded else { return }
             Task { await saveTiles() }
         }
         .sheet(item: $editingTile) { tile in
@@ -40,7 +42,8 @@ struct CommandTileEditorView: View {
         Task {
             let loaded = await SharedTaskStore.shared.loadCommandTiles()
             await MainActor.run {
-                tiles = loaded.isEmpty ? CommandTile.defaultSet : loaded
+                tiles = (loaded.count == 4) ? loaded : CommandTile.defaultSet
+                hasLoaded = true
             }
         }
     }
@@ -54,7 +57,7 @@ struct CommandTileEditorView: View {
 // MARK: - 📱 Tile Cell
 
 struct TileConfigCell: View {
-    @Binding var tile: CommandTile
+    let tile: CommandTile
     let onEdit: () -> Void
 
     var body: some View {
@@ -95,11 +98,23 @@ struct CommandTileEditSheet: View {
     let onSave: (CommandTile) -> Void
     @Environment(\.dismiss) private var dismiss
 
-    @State private var title: String = ""
-    @State private var icon: String = ""
-    @State private var isSFSymbol: Bool = false
-    @State private var selectedAction: CommandTileAction = .showStats
-    @State private var selectedStyle: TaskStyle = .sleekModern
+    @State private var title: String
+    @State private var icon: String
+    @State private var isSFSymbol: Bool
+    @State private var selectedAction: CommandTileAction
+    @State private var selectedStyle: TaskStyle
+    @State private var payload: String
+
+    init(tile: CommandTile, onSave: @escaping (CommandTile) -> Void) {
+        self.tile = tile
+        self.onSave = onSave
+        _title = State(initialValue: tile.title)
+        _icon = State(initialValue: tile.icon)
+        _isSFSymbol = State(initialValue: tile.isSFSymbol)
+        _selectedAction = State(initialValue: tile.action)
+        _selectedStyle = State(initialValue: tile.accentStyle)
+        _payload = State(initialValue: tile.payload ?? "")
+    }
 
     var body: some View {
         NavigationStack {
@@ -118,6 +133,12 @@ struct CommandTileEditSheet: View {
                         ForEach(CommandTileAction.allCases, id: \.self) { action in
                             Text(action.displayName).tag(action)
                         }
+                    }
+                }
+
+                if selectedAction == .openURL || selectedAction == .runShortcut {
+                    Section("Payload") {
+                        TextField(selectedAction == .openURL ? "URL" : "Shortcut name", text: $payload)
                     }
                 }
 
@@ -143,17 +164,11 @@ struct CommandTileEditSheet: View {
                         updated.isSFSymbol = isSFSymbol
                         updated.action = selectedAction
                         updated.accentStyle = selectedStyle
+                        updated.payload = payload.isEmpty ? nil : payload
                         onSave(updated)
                         dismiss()
                     }
                 }
-            }
-            .onAppear {
-                title = tile.title
-                icon = tile.icon
-                isSFSymbol = tile.isSFSymbol
-                selectedAction = tile.action
-                selectedStyle = tile.accentStyle
             }
         }
     }
