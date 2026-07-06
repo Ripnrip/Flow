@@ -16,6 +16,7 @@ import OSLog
 enum NavigationItem: Hashable {
     case inbox
     case gallery
+    case commandCenter
 }
 
 struct ContentView: View {
@@ -51,6 +52,10 @@ struct ContentView: View {
 
                 NavigationLink(value: NavigationItem.gallery) {
                     Label("Visual Vault", systemImage: "sparkles.rectangle.stack.fill")
+                }
+
+                NavigationLink(value: NavigationItem.commandCenter) {
+                    Label("Command Center", systemImage: "slider.horizontal.3")
                 }
             }
             .navigationTitle("Focus Flow")
@@ -125,6 +130,8 @@ struct ContentView: View {
                 }
             case .gallery:
                 StyleGalleryView()
+            case .commandCenter:
+                CommandCenterEditorView()
             case .none:
                 Text("Select a realm from the sidebar")
                     .font(.title3)
