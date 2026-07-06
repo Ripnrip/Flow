@@ -51,6 +51,9 @@ enum CommandTileAction: String, Codable, Sendable, CaseIterable {
         }
     }
 
+    /// Alias for `displayTitle` — keeps editor code aligned with the CommandTile contract. 🏷️
+    var displayName: String { displayTitle }
+
     /// Default SF Symbol for each action.
     var defaultIcon: String {
         switch self {
@@ -213,5 +216,15 @@ extension CommandTile {
             animation: .bounce,
             payload: name
         )
+    }
+
+    /// The default quartet of command tiles summoned when none have been configured. 🎛️✨
+    static var defaultSet: [CommandTile] {
+        [
+            .focusOnTask(id: UUID(), title: "Deep Work", emoji: "🎯", style: .cyberpunk),
+            .snooze(),
+            .syncAll(),
+            .showStats()
+        ]
     }
 }
