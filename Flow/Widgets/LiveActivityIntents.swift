@@ -27,6 +27,62 @@ import OSLog
 import SwiftUI
 import WidgetKit
 
+// MARK: - 🎛️ Live Activity Configuration
+
+/// An action that can appear on the Live Activity.
+enum LiveActivityAction: String, Sendable, Codable, CaseIterable {
+    case snooze
+    case done
+    case pauseResume
+    case extend
+}
+
+/// How much motion the Live Activity should use.
+enum LiveActivityAnimationIntensity: String, Sendable, Codable, CaseIterable {
+    case calm
+    case normal
+    case lively
+}
+
+/// User-facing configuration for the Live Activity.
+struct LiveActivityConfiguration: Sendable, Codable {
+    var leadingAction: LiveActivityAction
+    var trailingAction: LiveActivityAction
+    var showProgressRing: Bool
+    var animationIntensity: LiveActivityAnimationIntensity
+
+    nonisolated static var `default`: LiveActivityConfiguration {
+        LiveActivityConfiguration(
+            leadingAction: .snooze,
+            trailingAction: .done,
+            showProgressRing: true,
+            animationIntensity: .normal
+        )
+    }
+}
+
+extension LiveActivityConfiguration {
+    private enum CodingKeys: String, CodingKey {
+        case leadingAction, trailingAction, showProgressRing, animationIntensity
+    }
+
+    nonisolated init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.leadingAction = try container.decode(LiveActivityAction.self, forKey: .leadingAction)
+        self.trailingAction = try container.decode(LiveActivityAction.self, forKey: .trailingAction)
+        self.showProgressRing = try container.decode(Bool.self, forKey: .showProgressRing)
+        self.animationIntensity = try container.decode(LiveActivityAnimationIntensity.self, forKey: .animationIntensity)
+    }
+
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(leadingAction, forKey: .leadingAction)
+        try container.encode(trailingAction, forKey: .trailingAction)
+        try container.encode(showProgressRing, forKey: .showProgressRing)
+        try container.encode(animationIntensity, forKey: .animationIntensity)
+    }
+}
+
 // MARK: - 🏷️ Activity Attributes (shared between app + widget)
 
 /// The ActivityKit attributes type for all Flow Live Activities.
@@ -42,6 +98,9 @@ public struct FlowAttributes: ActivityAttributes {
         var style: TaskStyle
         var lastInteractionDate: Date = .now
         var growthLevel: Int = 0
+        var isPaused: Bool = false
+        var focusTargetMinutes: Int = 25
+        var elapsedPauseSeconds: TimeInterval = 0
     }
     var taskId: String
 }
@@ -57,7 +116,10 @@ nonisolated func makeContentState(from snapshot: ActiveTaskSnapshot) -> FlowAttr
         emoji: snapshot.emoji,
         style: snapshot.style,
         lastInteractionDate: snapshot.lastInteractionDate,
-        growthLevel: snapshot.growthLevel
+        growthLevel: snapshot.growthLevel,
+        isPaused: false,
+        focusTargetMinutes: 25,
+        elapsedPauseSeconds: 0
     )
 }
 

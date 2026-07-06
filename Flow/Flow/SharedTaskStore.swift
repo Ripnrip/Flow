@@ -364,4 +364,35 @@ actor SharedTaskStore {
             return []
         }
     }
+
+    // MARK: - 🎛️ Live Activity Configuration
+
+    private let liveActivityConfigKey = "com.binarybros.Flow.liveActivityConfiguration"
+
+    /// Persist Live Activity configuration to App Groups.
+    func saveLiveActivityConfiguration(_ configuration: LiveActivityConfiguration) {
+        guard let defaults else {
+            FlowLogger.sync.error("⚠️ [SharedTaskStore] App Groups unavailable — cannot save LA config")
+            return
+        }
+        do {
+            let data = try JSONEncoder().encode(configuration)
+            defaults.set(data, forKey: liveActivityConfigKey)
+            FlowLogger.sync.info("🎛️ [SharedTaskStore] Saved Live Activity configuration")
+        } catch {
+            FlowLogger.sync.error("⚠️ [SharedTaskStore] LA config encode failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Load Live Activity configuration from App Groups.
+    func loadLiveActivityConfiguration() -> LiveActivityConfiguration {
+        guard let defaults,
+              let data = defaults.data(forKey: liveActivityConfigKey) else { return .default }
+        do {
+            return try JSONDecoder().decode(LiveActivityConfiguration.self, from: data)
+        } catch {
+            FlowLogger.sync.error("⚠️ [SharedTaskStore] LA config decode failed: \(error.localizedDescription)")
+            return .default
+        }
+    }
 }
