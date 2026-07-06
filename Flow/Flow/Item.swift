@@ -12,7 +12,7 @@ import OSLog
 import SwiftData
 
 @Model
-final class Item: TaskProtocol {
+final class Item {
     // 🌟 Identity and conformance to TaskProtocol
     var id: UUID = UUID()
     var title: String
@@ -40,6 +40,10 @@ final class Item: TaskProtocol {
     // ⏳ Temporal markers
     var creationDate: Date
     var lastInteractionDate: Date
+
+    // 🔗 External source linkage (e.g., SuperProductivity task UUID)
+    var externalSourceId: String?
+    var externalSourceType: String?
 
     // ✨ Total time the task has 'lingered' in the active state (in seconds)
     var totalLingeringTime: TimeInterval = 0

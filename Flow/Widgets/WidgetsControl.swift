@@ -91,7 +91,7 @@ struct FocusControlProvider: AppIntentControlValueProvider {
 // MARK: - Control Widget
 
 struct FlowFocusControl: ControlWidget {
-    static let kind: String = "com.binarybros.Flow.FocusControl"
+    nonisolated static let kind: String = "com.binarybros.Flow.FocusControl"
 
     var body: some ControlWidgetConfiguration {
         AppIntentControlConfiguration(

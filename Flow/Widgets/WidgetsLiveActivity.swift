@@ -134,7 +134,8 @@ struct WidgetsLiveActivity: Widget {
                         .foregroundStyle(style.themeForegroundColor())
                     }
                     .buttonStyle(.plain)
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 13))
+                    .background(style.themeForegroundColor().opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 13))
 
                     Button(intent: DoneIntent(taskId: context.attributes.taskId)) {
                         HStack(spacing: 5) {
@@ -151,7 +152,6 @@ struct WidgetsLiveActivity: Widget {
                     .buttonStyle(.plain)
                     .background(style.themeAccentColor())
                     .clipShape(RoundedRectangle(cornerRadius: 13))
-                    .glassEffect(.regular.tint(style.themeAccentColor()), in: RoundedRectangle(cornerRadius: 13))
                 }
             }
             .padding(14)

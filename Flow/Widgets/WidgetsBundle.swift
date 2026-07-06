@@ -19,6 +19,15 @@ struct WidgetsBundle: WidgetBundle {
         // 📱 Task state widget (replaces old placeholder Widgets())
         FlowWidget()
 
+        // 🎛️ Configurable command-center grid
+        CommandCenterWidget()
+
+        // 📊 Daily focus stats
+        StatsWidget()
+
+        // 📌 Pinned tasks with Focus / Done actions
+        PinnedTasksWidget()
+
         // 🎛️ Control Center toggle (replaces boilerplate WidgetsControl)
         FlowFocusControl()
 

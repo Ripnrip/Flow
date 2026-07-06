@@ -23,6 +23,7 @@
 
 import AppIntents
 import ActivityKit
+import OSLog
 import SwiftUI
 import WidgetKit
 
@@ -32,7 +33,7 @@ import WidgetKit
 /// `taskId` is static (set once at activity creation);
 /// `ContentState` carries all mutable, live-updating fields.
 public struct FlowAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
+    public struct ContentState: Codable, Hashable, Sendable {
         var title: String
         var snoozeCount: Int
         var moveCount: Int
@@ -47,7 +48,7 @@ public struct FlowAttributes: ActivityAttributes {
 
 // MARK: - 🛠️ Helpers
 
-private func makeContentState(from snapshot: ActiveTaskSnapshot) -> FlowAttributes.ContentState {
+nonisolated func makeContentState(from snapshot: ActiveTaskSnapshot) -> FlowAttributes.ContentState {
     FlowAttributes.ContentState(
         title: snapshot.title,
         snoozeCount: snapshot.snoozeCount,
@@ -62,23 +63,31 @@ private func makeContentState(from snapshot: ActiveTaskSnapshot) -> FlowAttribut
 
 /// Push an updated state to all running Flow Live Activities.
 /// Safe to call from any target; guarded by `#if os(iOS)`.
-private func pushLiveActivityUpdate(state: FlowAttributes.ContentState) async {
+func pushLiveActivityUpdate(state: FlowAttributes.ContentState) async {
     #if os(iOS)
-    let staleDate = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
-    let content   = ActivityContent(state: state, staleDate: staleDate)
-    for activity in Activity<FlowAttributes>.activities {
-        await activity.update(content)
-        FlowLogger.liveActivity.info("🏝️ Updated Live Activity \(activity.id) snooze=\(state.snoozeCount)")
+    await MainActor.run {
+        let staleDate = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
+        let content   = ActivityContent(state: state, staleDate: staleDate)
+        for activity in Activity<FlowAttributes>.activities {
+            Task {
+                await activity.update(content)
+            }
+            FlowLogger.liveActivity.info("🏝️ Updated Live Activity \(activity.id) snooze=\(state.snoozeCount)")
+        }
     }
     #endif
 }
 
 /// End all running Flow Live Activities immediately.
-private func endAllLiveActivities() async {
+func endAllLiveActivities() async {
     #if os(iOS)
-    for activity in Activity<FlowAttributes>.activities {
-        await activity.end(nil, dismissalPolicy: .immediate)
-        FlowLogger.liveActivity.info("🏝️ Ended Live Activity \(activity.id)")
+    await MainActor.run {
+        for activity in Activity<FlowAttributes>.activities {
+            Task {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+            FlowLogger.liveActivity.info("🏝️ Ended Live Activity \(activity.id)")
+        }
     }
     #endif
 }
@@ -100,13 +109,13 @@ private func endAllLiveActivities() async {
 /// updates the Live Activity content state in the same pass.
 struct SnoozeIntent: LiveActivityIntent {
 
-    static var openAppWhenRun: Bool = false
-    static var title: LocalizedStringResource = "Snooze Task"
-    static var description = IntentDescription(
+    static let openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Snooze Task"
+    static let description = IntentDescription(
         "Snooze your active Flow task and keep your focus streak going.",
         categoryName: "Focus"
     )
-    static var isDiscoverable: Bool = true
+    static let isDiscoverable: Bool = true
 
     @Parameter(title: "Task Identifier")
     var taskId: String
@@ -118,8 +127,8 @@ struct SnoozeIntent: LiveActivityIntent {
         FlowLogger.intent.info("💤 [SnoozeIntent] Performing for task: \(taskId)")
 
         // 1. Mutate shared store (cross-process safe via App Groups)
-        guard let updated = await SharedTaskStore.shared.snooze() else {
-            FlowLogger.intent.warning("⚠️ [SnoozeIntent] No active task — nothing to snooze")
+        guard let updated = await SharedTaskStore.shared.snooze(taskId: taskId) else {
+            FlowLogger.intent.warning("⚠️ [SnoozeIntent] No active task matching \(taskId) — nothing to snooze")
             return .result(value: false)
         }
 
@@ -149,13 +158,13 @@ struct SnoozeIntent: LiveActivityIntent {
 /// widget extension and can update Live Activity state atomically.
 struct DoneIntent: LiveActivityIntent {
 
-    static var openAppWhenRun: Bool = false
-    static var title: LocalizedStringResource = "Complete Task"
-    static var description = IntentDescription(
+    static let openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Complete Task"
+    static let description = IntentDescription(
         "Mark your active Flow task as done.",
         categoryName: "Focus"
     )
-    static var isDiscoverable: Bool = true
+    static let isDiscoverable: Bool = true
 
     @Parameter(title: "Task Identifier")
     var taskId: String
@@ -167,8 +176,8 @@ struct DoneIntent: LiveActivityIntent {
         FlowLogger.intent.info("✅ [DoneIntent] Performing for task: \(taskId)")
 
         // 1. Mark completed in shared store
-        guard let completed = await SharedTaskStore.shared.complete() else {
-            FlowLogger.intent.warning("⚠️ [DoneIntent] No active task — nothing to complete")
+        guard let completed = await SharedTaskStore.shared.complete(taskId: taskId) else {
+            FlowLogger.intent.warning("⚠️ [DoneIntent] No active task matching \(taskId) — nothing to complete")
             return .result(value: false)
         }
 
@@ -195,15 +204,15 @@ struct DoneIntent: LiveActivityIntent {
 /// where the DeepLink handler in FlowApp reads the pending task name from
 /// App Groups UserDefaults and pre-populates the add-task sheet.
 @available(iOS 26.0, macOS 26.0, *)
-struct StartFocusIntentLiveActivity: LiveActivityStartingIntent {
+struct StartFocusIntentLiveActivity: LiveActivityIntent {
 
-    static var openAppWhenRun: Bool = false
-    static var title: LocalizedStringResource = "Start Focus Session"
-    static var description = IntentDescription(
+    static let openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Start Focus Session"
+    static let description = IntentDescription(
         "Start a Live Activity focus session directly from Siri or Control Center.",
         categoryName: "Focus"
     )
-    static var isDiscoverable: Bool = true
+    static let isDiscoverable: Bool = true
 
     @Parameter(title: "Task Name", requestValueDialog: IntentDialog("What task would you like to focus on?"))
     var taskName: String
@@ -223,13 +232,13 @@ struct StartFocusIntentLiveActivity: LiveActivityStartingIntent {
 /// Pre-iOS-26 fallback: opens the app to start a session.
 struct StartFocusIntent: AppIntent {
 
-    static var openAppWhenRun: Bool = true
-    static var title: LocalizedStringResource = "Start Focus Session"
-    static var description = IntentDescription(
+    static let openAppWhenRun: Bool = true
+    static let title: LocalizedStringResource = "Start Focus Session"
+    static let description = IntentDescription(
         "Open Flow and start focusing on a specific task.",
         categoryName: "Focus"
     )
-    static var isDiscoverable: Bool = true
+    static let isDiscoverable: Bool = true
 
     @Parameter(title: "Task Name", requestValueDialog: IntentDialog("What task would you like to focus on?"))
     var taskName: String

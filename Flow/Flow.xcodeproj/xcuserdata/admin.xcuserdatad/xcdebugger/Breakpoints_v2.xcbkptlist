@@ -16,8 +16,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "132"
             endingLineNumber = "132"
-            landmarkName = "requestNotificationPermissions()"
-            landmarkType = "7">
+            landmarkName = "body"
+            landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -32,8 +32,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "134"
             endingLineNumber = "134"
-            landmarkName = "requestNotificationPermissions()"
-            landmarkType = "7">
+            landmarkName = "body"
+            landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -48,8 +48,38 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "136"
             endingLineNumber = "136"
-            landmarkName = "requestNotificationPermissions()"
-            landmarkType = "7">
+            landmarkName = "body"
+            landmarkType = "24">
+            <Locations>
+               <Location
+                  uuid = "A26904C3-9E62-484B-A5DB-D2D3656E23E8 - 62719a56e57f1a1"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #1 () -&gt; &lt;&lt;opaque return type of SwiftUI.View.onContinueUserActivity(_: Swift.String, perform: (__C.NSUserActivity) -&gt; ()) -&gt; some&gt;&gt;.0 in Flow.FlowApp.body.getter : some"
+                  moduleName = "Flow.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/admin/Developer/Flow-GitHub/Flow/Flow/FlowApp.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "136"
+                  endingLineNumber = "136">
+               </Location>
+               <Location
+                  uuid = "A26904C3-9E62-484B-A5DB-D2D3656E23E8 - 833c884d57c6ec03"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #3 (__C.NSUserActivity) -&gt; () in closure #1 () -&gt; &lt;&lt;opaque return type of SwiftUI.View.onContinueUserActivity(_: Swift.String, perform: (__C.NSUserActivity) -&gt; ()) -&gt; some&gt;&gt;.0 in Flow.FlowApp.body.getter : some"
+                  moduleName = "Flow.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/admin/Developer/Flow-GitHub/Flow/Flow/FlowApp.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "136"
+                  endingLineNumber = "136">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -64,8 +94,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "36"
             endingLineNumber = "36"
-            landmarkName = "restoreActiveFocusSession()"
-            landmarkType = "7">
+            landmarkName = "unknown"
+            landmarkType = "0">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -80,8 +110,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "64"
             endingLineNumber = "64"
-            landmarkName = "restoreActiveFocusSession()"
-            landmarkType = "7">
+            landmarkName = "TaskService"
+            landmarkType = "3">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -96,8 +126,38 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "66"
             endingLineNumber = "66"
-            landmarkName = "restoreActiveFocusSession()"
-            landmarkType = "7">
+            landmarkName = "TaskService"
+            landmarkType = "3">
+            <Locations>
+               <Location
+                  uuid = "A74D23F8-9153-4A43-BCC7-03CD76CF4D3F - 807f825849a37521"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "Flow.TaskService.restoreActiveFocusSession() async -&gt; ()"
+                  moduleName = "Flow.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/admin/Developer/Flow-GitHub/Flow/Flow/TaskService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "67"
+                  endingLineNumber = "67">
+               </Location>
+               <Location
+                  uuid = "A74D23F8-9153-4A43-BCC7-03CD76CF4D3F - cce8ba06b7088f92"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for Flow.TaskService.restoreActiveFocusSession() async -&gt; ()"
+                  moduleName = "Flow.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/admin/Developer/Flow-GitHub/Flow/Flow/TaskService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "67"
+                  endingLineNumber = "67">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -114,6 +174,36 @@
             endingLineNumber = "69"
             landmarkName = "restoreActiveFocusSession()"
             landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "E91B5022-2CD7-4C69-A7F3-E88C61A5D3DF - cce8ba06b7088f16"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for Flow.TaskService.restoreActiveFocusSession() async -&gt; ()"
+                  moduleName = "Flow.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/admin/Developer/Flow-GitHub/Flow/Flow/TaskService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "71"
+                  endingLineNumber = "71">
+               </Location>
+               <Location
+                  uuid = "E91B5022-2CD7-4C69-A7F3-E88C61A5D3DF - 8dee8dfddf7ba1f3"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for Flow.TaskService.restoreActiveFocusSession() async -&gt; ()"
+                  moduleName = "Flow.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/admin/Developer/Flow-GitHub/Flow/Flow/TaskService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "71"
+                  endingLineNumber = "71">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

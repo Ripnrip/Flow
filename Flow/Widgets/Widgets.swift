@@ -22,6 +22,7 @@
 import WidgetKit
 import SwiftUI
 import AppIntents
+import OSLog
 
 // MARK: - 📅 Timeline Entry
 

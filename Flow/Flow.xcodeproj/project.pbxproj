@@ -89,6 +89,7 @@
 		84D6DE8F2EF37B0B0052F46B /* Exceptions for "Widgets" folder in "Flow" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CommandTileIntents.swift,
 				LiveActivityIntents.swift,
 			);
 			target = 84AD77222EF30E1A00FCC179 /* Flow */;
@@ -96,14 +97,13 @@
 		84D8EA7D2EF3705700125721 /* Exceptions for "Flow" folder in "WidgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CommandTile.swift,
 				CommonViews.swift,
+				DailyFocusSummary.swift,
 				FlowLogger.swift,
-				Item.swift,
+				FlowRoute.swift,
 				SharedModels.swift,
 				SharedTaskStore.swift,
-				TaskLingeringActor.swift,
-				TaskService.swift,
-				TodoistService.swift,
 			);
 			target = 8476DDFB2EF36CB900949AE5 /* WidgetsExtension */;
 		};
@@ -227,8 +227,6 @@
 				8476DDFF2EF36CB900949AE5 /* Widgets */,
 			);
 			name = WidgetsExtension;
-			packageProductDependencies = (
-			);
 			productName = WidgetsExtension;
 			productReference = 8476DDFC2EF36CB900949AE5 /* WidgetsExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -252,8 +250,6 @@
 				84AD77252EF30E1A00FCC179 /* Flow */,
 			);
 			name = Flow;
-			packageProductDependencies = (
-			);
 			productName = Flow;
 			productReference = 84AD77232EF30E1A00FCC179 /* Flow.app */;
 			productType = "com.apple.product-type.application";
@@ -275,8 +271,6 @@
 				84AD77372EF30E1D00FCC179 /* FlowTests */,
 			);
 			name = FlowTests;
-			packageProductDependencies = (
-			);
 			productName = FlowTests;
 			productReference = 84AD77342EF30E1D00FCC179 /* FlowTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -298,8 +292,6 @@
 				84AD77412EF30E1D00FCC179 /* FlowUITests */,
 			);
 			name = FlowUITests;
-			packageProductDependencies = (
-			);
 			productName = FlowUITests;
 			productReference = 84AD773E2EF30E1D00FCC179 /* FlowUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -457,8 +449,8 @@
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -489,8 +481,8 @@
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -511,14 +503,11 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
-				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Flow/Info.plist;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Sync Calendar with Flow";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Focus Flow needs access to your calendar to automatically prioritize your scheduled tasks. 📅✨";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Connect Flow with Location";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "Focus Flow needs access to your reminders to sync your tasks and give them a visual soul. 📝✨";
-				INFOPLIST_KEY_NSSiriUsageDescription = "Connect Flow with Siri";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -541,8 +530,8 @@
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -563,14 +552,11 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
-				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Flow/Info.plist;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Sync Calendar with Flow";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Focus Flow needs access to your calendar to automatically prioritize your scheduled tasks. 📅✨";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Connect Flow with Location";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "Focus Flow needs access to your reminders to sync your tasks and give them a visual soul. 📝✨";
-				INFOPLIST_KEY_NSSiriUsageDescription = "Connect Flow with Siri";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -593,8 +579,8 @@
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -736,8 +722,8 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -759,8 +745,8 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -780,8 +766,8 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -801,8 +787,8 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

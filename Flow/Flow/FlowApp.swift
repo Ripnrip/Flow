@@ -29,6 +29,7 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 import BackgroundTasks
+import OSLog
 
 @main
 struct FlowApp: App {
@@ -40,6 +41,7 @@ struct FlowApp: App {
     @State private var taskService: TaskService
     @State private var integrationService: ExternalIntegrationService
     @State private var todoistService: TodoistService
+    @State private var flowServerService: FlowServerService
 
     /// The pending route derived from an incoming Universal Link or deep link.
     /// Consumed by ContentView's `.onChange(of: activeRoute)` to navigate.
@@ -77,7 +79,9 @@ struct FlowApp: App {
             self.sharedModelContainer = container
             let ctx = container.mainContext
 
-            self._taskService        = State(initialValue: TaskService(modelContext: ctx))
+            let flowServerService = FlowServerService(modelContext: ctx)
+            self._flowServerService  = State(initialValue: flowServerService)
+            self._taskService        = State(initialValue: TaskService(modelContext: ctx, flowServerService: flowServerService))
             self._integrationService = State(initialValue: ExternalIntegrationService(modelContext: ctx))
             self._todoistService     = State(initialValue: TodoistService(modelContext: ctx))
 
@@ -93,7 +97,9 @@ struct FlowApp: App {
                 let tmp = try ModelContainer(for: schema, configurations: [fallback])
                 self.sharedModelContainer = tmp
                 let ctx = tmp.mainContext
-                self._taskService        = State(initialValue: TaskService(modelContext: ctx))
+                let flowServerService = FlowServerService(modelContext: ctx)
+                self._flowServerService  = State(initialValue: flowServerService)
+                self._taskService        = State(initialValue: TaskService(modelContext: ctx, flowServerService: flowServerService))
                 self._integrationService = State(initialValue: ExternalIntegrationService(modelContext: ctx))
                 self._todoistService     = State(initialValue: TodoistService(modelContext: ctx))
             } catch {
@@ -111,6 +117,7 @@ struct FlowApp: App {
                 .environment(taskService)
                 .environment(integrationService)
                 .environment(todoistService)
+                .environment(flowServerService)
                 .onAppear {
                     requestNotificationPermissions()
                     handleStartup()
@@ -178,14 +185,87 @@ struct FlowApp: App {
             FlowLogger.network.info("🌐 Syncing Todoist…")
             await todoistService.inhaleTasks()
 
-            // Handle App Clip → Full App handoff task name
-            if let defaults  = UserDefaults(suiteName: kFlowAppGroup),
-               let taskName  = defaults.string(forKey: "com.binarybros.Flow.pendingTaskName"),
-               !taskName.isEmpty {
-                FlowLogger.deepLink.info("🔗 App Clip handoff: pending task '\(taskName)'")
-                activeRoute = .inbox // Navigate to inbox; ContentView surfaces the sheet
-                defaults.removeObject(forKey: "com.binarybros.Flow.pendingTaskName")
+            FlowLogger.network.info("🌐 Syncing FlowServer…")
+            await flowServerService.inhaleTasks()
+
+            // Process any intents that set pending flags while the app was backgrounded
+            await processPendingIntentRequests()
+        }
+    }
+
+    /// Checks App Groups for flags left by AppIntents and performs the requested actions.
+    /// This is how command tiles, Siri, and Control Center reach the app when the
+    /// extension process cannot complete the action alone.
+    private func processPendingIntentRequests() async {
+        guard let defaults = UserDefaults(suiteName: kFlowAppGroup) else { return }
+
+        // 1. App Clip → Full App handoff task name
+        if let taskName = defaults.string(forKey: "com.binarybros.Flow.pendingTaskName"),
+           !taskName.isEmpty {
+            FlowLogger.deepLink.info("🔗 App Clip handoff: pending task '\(taskName)'")
+            activeRoute = .inbox
+            defaults.removeObject(forKey: "com.binarybros.Flow.pendingTaskName")
+        }
+
+        // 2. Start Focus intent requested a session by task name
+        if let taskName = defaults.string(forKey: "com.binarybros.Flow.pendingFocusTaskName"),
+           !taskName.isEmpty {
+            FlowLogger.intent.info("🚀 Handling pending focus request for '\(taskName)'")
+            await taskService.startFocusSessionIfMatching(taskName: taskName)
+            defaults.removeObject(forKey: "com.binarybros.Flow.pendingFocusTaskName")
+        }
+
+        // 3. Control Center toggle requested a fresh focus start
+        if defaults.bool(forKey: "com.binarybros.Flow.controlPendingStart") {
+            FlowLogger.intent.info("🎛️ Control Center requested focus start")
+            activeRoute = .inbox
+            defaults.removeObject(forKey: "com.binarybros.Flow.controlPendingStart")
+        }
+
+        // 4. Sync integrations intent requested a pull
+        if defaults.bool(forKey: "com.binarybros.Flow.pendingSync") {
+            FlowLogger.intent.info("🔄 Handling pending integration sync")
+            await integrationService.requestPermissions()
+            if integrationService.isAuthorized {
+                await integrationService.inhaleCalendarEvents()
+                await integrationService.inhaleReminders()
             }
+            await todoistService.inhaleTasks()
+            await flowServerService.inhaleTasks()
+            defaults.removeObject(forKey: "com.binarybros.Flow.pendingSync")
+        }
+
+        // 5. Command tile requested an action that needs the main app
+        if let actionRaw = defaults.string(forKey: "com.binarybros.Flow.pendingCommandAction"),
+           let action = CommandTileAction(rawValue: actionRaw) {
+            let payload = defaults.string(forKey: "com.binarybros.Flow.pendingCommandPayload")
+            FlowLogger.intent.info("🎛️ Handling pending command action: \(action.rawValue)")
+            handlePendingCommandAction(action, payload: payload)
+            defaults.removeObject(forKey: "com.binarybros.Flow.pendingCommandAction")
+            defaults.removeObject(forKey: "com.binarybros.Flow.pendingCommandPayload")
+        }
+    }
+
+    /// Performs command-tile actions that require the main app process.
+    private func handlePendingCommandAction(_ action: CommandTileAction, payload: String?) {
+        switch action {
+        case .openInbox:
+            activeRoute = .inbox
+        case .openURL:
+            if let payload,
+               let url = URL(string: payload),
+               UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            }
+        case .runShortcut:
+            if let payload,
+               let encoded = payload.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+               let url = URL(string: "shortcuts://run-shortcut?name=\(encoded)") {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            }
+        default:
+            // Other actions are handled directly by the widget extension intent.
+            break
         }
     }
 
@@ -235,7 +315,7 @@ extension FlowApp {
         // forward it into the completion `Task` via `nonisolated(unsafe)`.
         nonisolated(unsafe) let bgTask = task
 
-        let work = Task {
+        let work = Task { @Sendable in
             let success = await performBackgroundReconcile()
             bgTask.setTaskCompleted(success: success)
         }

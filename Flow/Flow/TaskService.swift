@@ -37,6 +37,7 @@ import SwiftUI
 import Observation
 import AppIntents
 import WidgetKit
+import OSLog
 
 @MainActor
 @Observable
@@ -48,8 +49,12 @@ class TaskService {
     @ObservationIgnored
     private let lingeringActor = TaskLingeringActor()
 
-    init(modelContext: ModelContext) {
+    @ObservationIgnored
+    private var flowServerService: FlowServerService?
+
+    init(modelContext: ModelContext, flowServerService: FlowServerService? = nil) {
         self.modelContext = modelContext
+        self.flowServerService = flowServerService
         FlowLogger.lifecycle.info("🌐 ✨ TaskService initialised")
     }
 
@@ -61,6 +66,9 @@ class TaskService {
     /// written by AppIntents while the app was not running.
     func restoreActiveFocusSession() async {
         FlowLogger.lifecycle.info("🔄 Restoring active focus session…")
+
+        // 0. Refresh today's focus summary so widgets show current data
+        await refreshDailySummary()
 
         // 1. Apply any intent-pending changes first
         await reconcileFromSharedStore()
@@ -167,24 +175,104 @@ class TaskService {
         }
     }
 
+    /// Computes today's focus summary from SwiftData and mirrors it to App Groups
+    /// so widgets and Live Activities can show stats without launching the app. 📊
+    func refreshDailySummary() async {
+        do {
+            let descriptor = FetchDescriptor<Item>(sortBy: [SortDescriptor(\Item.timestamp, order: .reverse)])
+            let items = try modelContext.fetch(descriptor)
+            let summary = computeDailySummary(from: items)
+            await SharedTaskStore.shared.saveDailySummary(summary)
+            FlowLogger.task.info("📊 Refreshed daily summary: \(summary.formattedDuration), \(summary.completed) completed, streak \(summary.streakDays)")
+        } catch {
+            FlowLogger.task.error("💥 refreshDailySummary fetch error: \(error.localizedDescription)")
+        }
+    }
+
+    /// Builds a daily focus summary from a collection of tasks.
+    private func computeDailySummary(from items: [Item], for date: Date = .now) -> DailyFocusSummary {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            return DailyFocusSummary.empty
+        }
+
+        var totalSeconds: TimeInterval = 0
+        var sessions = 0
+        var snoozes = 0
+        var completed = 0
+
+        for item in items {
+            let interactedToday = (startOfDay...endOfDay).contains(item.lastInteractionDate)
+            let createdToday = (startOfDay...endOfDay).contains(item.creationDate)
+
+            if interactedToday || createdToday {
+                totalSeconds += item.totalLingeringTime
+                snoozes += item.snoozeCount
+                if item.isCompleted && interactedToday {
+                    completed += 1
+                }
+                sessions += 1
+            }
+        }
+
+        return DailyFocusSummary(
+            totalFocusSeconds: totalSeconds,
+            sessionsCount: sessions,
+            snoozes: snoozes,
+            completed: completed,
+            streakDays: 0, // Streak calculation deferred to future milestone.
+            generatedAt: .now
+        )
+    }
+
     // ─────────────────────────────────────────────────────────
     // MARK: - 🚀 Start Focus Session
     // ─────────────────────────────────────────────────────────
 
+    /// Starts a focus session on the first task whose title contains the given name.
+    /// Used by Siri / Shortcuts intents that pass a task name rather than an ID. 🎤✨
+    func startFocusSessionIfMatching(taskName: String) async {
+        let descriptor = FetchDescriptor<Item>(
+            predicate: #Predicate { $0.isCompleted == false },
+            sortBy: [SortDescriptor(\Item.timestamp, order: .reverse)]
+        )
+        do {
+            let candidates = try modelContext.fetch(descriptor)
+            // Prefer an exact match, then a prefix match, then a contains match.
+            let task = candidates.first { $0.title.lowercased() == taskName.lowercased() }
+                ?? candidates.first { $0.title.lowercased().hasPrefix(taskName.lowercased()) }
+                ?? candidates.first { $0.title.lowercased().contains(taskName.lowercased()) }
+
+            if let task {
+                FlowLogger.task.info("🎯 Matched Siri focus request to: '\(task.title)'")
+                await startFocusSession(for: task)
+            } else {
+                FlowLogger.task.warning("⚠️ No matching task for Siri focus request: '\(taskName)'")
+            }
+        } catch {
+            FlowLogger.task.error("💥 startFocusSessionIfMatching fetch error: \(error.localizedDescription)")
+        }
+    }
+
     func startFocusSession(for task: Item) async {
         FlowLogger.task.info("🌐 Starting focus: '\(task.title)' style=\(task.style.rawValue)")
 
-        await lingeringActor.startTracking(taskId: task.id)
+        let focusStartDate = await lingeringActor.startTracking(taskId: task.id)
+        FlowLogger.task.debug("⏳ Tracking started at \(focusStartDate)")
 
         // Persist snapshot so widgets + intents can act without the app
-        await writeSnapshotToStore(for: task)
+        await writeSnapshotToStore(for: task, focusStartDate: focusStartDate)
+        FlowLogger.task.debug("💾 Snapshot written")
         WidgetCenter.shared.reloadAllTimelines()
+        FlowLogger.task.debug("🔄 Timelines reloaded")
 
         #if os(iOS)
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             FlowLogger.liveActivity.warning("⚠️ Live Activities disabled — focus session started locally only")
             return
         }
+        FlowLogger.liveActivity.debug("✅ Live Activities authorized")
 
         let attributes = FlowAttributes(taskId: task.id.uuidString)
         let staleDate  = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
@@ -193,12 +281,13 @@ class TaskService {
             title: task.title,
             snoozeCount: task.snoozeCount,
             moveCount: task.moveCount,
-            startDate: task.creationDate,
+            startDate: focusStartDate,
             emoji: task.emoji,
             style: task.style,
             lastInteractionDate: .now,
             growthLevel: task.growthLevel
         )
+        FlowLogger.liveActivity.debug("📦 Requesting Live Activity…")
 
         do {
             // End any existing Live Activities before starting a new one
@@ -240,6 +329,7 @@ class TaskService {
             await lingeringActor.startTracking(taskId: id)
             await writeSnapshotToStore(for: task)
             await updateLiveActivity(for: task)
+            await refreshDailySummary()
 
             WidgetCenter.shared.reloadAllTimelines()
             FlowLogger.task.info("🎉 Snooze complete: '\(task.title)' count=\(task.snoozeCount)")
@@ -270,7 +360,22 @@ class TaskService {
 
             await endLiveActivity(for: task)
             await SharedTaskStore.shared.clear()
+            await refreshDailySummary()
             WidgetCenter.shared.reloadAllTimelines()
+
+            // 🌐 Report the focus session back to the Hummingbird backend if this
+            // task originated from SuperProductivity.
+            if let externalId = task.externalSourceId,
+               task.externalSourceType == ExternalSourceType.superProductivity.rawValue,
+               let taskUUID = UUID(uuidString: externalId),
+               let flowServerService {
+                await flowServerService.reportFocusSession(
+                    taskId: taskUUID,
+                    durationSeconds: Int(task.totalLingeringTime),
+                    completed: true
+                )
+            }
+
             FlowLogger.task.info("🎉 Task completed: '\(task.title)'")
         } catch {
             FlowLogger.local.error("💥 completeTask save error: \(error.localizedDescription)")
@@ -282,7 +387,15 @@ class TaskService {
     // ─────────────────────────────────────────────────────────
 
     /// Write (or overwrite) the App Groups snapshot for this task.
-    private func writeSnapshotToStore(for task: Item) async {
+    /// Preserves the existing focus-session start date when one exists so
+    /// the Live Activity timer keeps measuring from the real moment focus
+    /// began, not from the task's creation date. 🕰️✨
+    private func writeSnapshotToStore(for task: Item, focusStartDate: Date? = nil) async {
+        let existingSnapshot = await SharedTaskStore.shared.load()
+        let startDate = focusStartDate
+            ?? existingSnapshot?.startDate
+            ?? .now
+
         let snapshot = ActiveTaskSnapshot(
             taskId: task.id.uuidString,
             title: task.title,
@@ -290,23 +403,26 @@ class TaskService {
             styleRawValue: task.style.rawValue,
             snoozeCount: task.snoozeCount,
             moveCount: task.moveCount,
-            startDate: task.creationDate,
+            startDate: startDate,
             growthLevel: task.growthLevel,
             lastInteractionDate: .now,
             isCompleted: task.isCompleted
         )
         await SharedTaskStore.shared.save(snapshot)
-        FlowLogger.sync.info("🔃 Snapshot written for '\(task.title)'")
+        FlowLogger.sync.info("🔃 Snapshot written for '\(task.title)' startDate=\(startDate)")
     }
 
     private func updateLiveActivity(for task: Item) async {
         #if os(iOS)
-        let staleDate    = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
+        // Read the shared snapshot so we use the real focus-session start date
+        // (not task.creationDate) and any intent-side mutations already committed.
+        let snapshot = await SharedTaskStore.shared.load()
+        let staleDate  = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
         let updatedState = FlowAttributes.ContentState(
             title: task.title,
-            snoozeCount: task.snoozeCount,
-            moveCount: task.moveCount,
-            startDate: task.creationDate,
+            snoozeCount: snapshot?.snoozeCount ?? task.snoozeCount,
+            moveCount: snapshot?.moveCount ?? task.moveCount,
+            startDate: snapshot?.startDate ?? .now,
             emoji: task.emoji,
             style: task.style,
             lastInteractionDate: .now,

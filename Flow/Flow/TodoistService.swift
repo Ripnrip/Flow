@@ -10,15 +10,20 @@
 
 import Foundation
 import OSLog
-import SwiftData
+@preconcurrency import SwiftData
 import Observation
 
 @MainActor
 @Observable
 class TodoistService {
     private var modelContext: ModelContext
-    private let apiKey = "9fe3eb435d47590292a3c17ee2cde591e2bd5be7"
     private let apiURL = URL(string: "https://api.todoist.com/rest/v2/tasks")
+
+    /// 🔑 The Todoist personal API token, read from Info.plist (`TodoistAPIKey`).
+    /// Keeping the secret out of source control avoids accidentally leaking it. 🕵️‍♂️
+    private var apiKey: String {
+        Bundle.main.object(forInfoDictionaryKey: "TodoistAPIKey") as? String ?? ""
+    }
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
@@ -34,8 +39,14 @@ class TodoistService {
             return
         }
 
+        let key = apiKey
+        guard !key.isEmpty else {
+            FlowLogger.network.warning("🌙 Todoist API key is empty — skipping import. Set TodoistAPIKey in Info.plist to enable the integration.")
+            return
+        }
+
         var request = URLRequest(url: apiURL)
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -52,10 +63,10 @@ class TodoistService {
 
             for task in todoistTasks {
                 let title = task.content
-                let descriptor = FetchDescriptor<Item>(predicate: #Predicate { $0.title == title })
+                let allItems = try modelContext.fetch(FetchDescriptor<Item>())
+                let existing = allItems.first { $0.title == title }
 
-                let existing = try modelContext.fetch(descriptor)
-                if existing.isEmpty {
+                if existing == nil {
                     let style = autoPrioritize(priority: task.priority)
                     let newItem = Item(title: title, emoji: "sf:circle.inset.filled", style: style, timestamp: .now)
                     modelContext.insert(newItem)

@@ -192,8 +192,6 @@ extension TaskStyle {
     }
 }
 
-// Main-actor isolated: the only conformer, `Item`, is a SwiftData @Model
-// isolated to the main actor, so its accessors satisfy these requirements.
 @MainActor
 protocol TaskProtocol {
     var id: UUID { get }

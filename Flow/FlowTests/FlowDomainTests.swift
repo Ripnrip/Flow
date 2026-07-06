@@ -14,6 +14,7 @@ import Testing
 // MARK: - 🔗 FlowRoute Parsing
 
 @Suite("FlowRoute parsing")
+@MainActor
 struct FlowRouteParsingTests {
 
     private let sampleID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
@@ -105,6 +106,7 @@ struct ItemGrowthTests {
 // MARK: - 🔃 ActiveTaskSnapshot
 
 @Suite("ActiveTaskSnapshot")
+@MainActor
 struct ActiveTaskSnapshotTests {
 
     private func makeSnapshot() -> ActiveTaskSnapshot {
@@ -195,6 +197,7 @@ struct SnoozeReconciliationTests {
 // MARK: - 🧠 Style suggester fast path
 
 @Suite("TaskStyleSuggester guards")
+@MainActor
 struct TaskStyleSuggesterTests {
 
     @Test("Blank titles short-circuit to the default style")

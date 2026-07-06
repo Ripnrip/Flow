@@ -11,6 +11,7 @@ import SwiftUI
 import SwiftData
 import ActivityKit
 import Observation
+import OSLog
 
 enum NavigationItem: Hashable {
     case inbox
@@ -22,6 +23,7 @@ struct ContentView: View {
     @Environment(TaskService.self) private var taskService: TaskService
     @Environment(ExternalIntegrationService.self) private var integrationService: ExternalIntegrationService
     @Environment(TodoistService.self) private var todoistService: TodoistService
+    @Environment(FlowServerService.self) private var flowServerService: FlowServerService
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
 
     /// Incoming deep-link / Universal Link route — set by FlowApp.onOpenURL.
@@ -58,7 +60,12 @@ struct ContentView: View {
             List {
                 ForEach(items) { item in
                         TaskRow(item: item)
-                            .swipeActions(edge: .leading) {
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    modelContext.delete(item)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                                 Button {
                                     Task {
                                         await taskService.startFocusSession(for: item)
@@ -67,13 +74,6 @@ struct ContentView: View {
                                     Label("Focus", systemImage: "target")
                                 }
                                 .tint(.blue)
-                            }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    modelContext.delete(item)
-                    } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
                             }
                     }
                 }
@@ -86,11 +86,12 @@ struct ContentView: View {
                                 await integrationService.inhaleCalendarEvents()
                                 await integrationService.inhaleReminders()
                                 await todoistService.inhaleTasks()
+                                await flowServerService.inhaleTasks()
                             }
                         } label: {
                             Label("Sync All", systemImage: "arrow.triangle.2.circlepath.circle.fill")
                         }
-                        .accessibilityHint("Imports tasks from Calendar, Reminders, and Todoist")
+                        .accessibilityHint("Imports tasks from Calendar, Reminders, Todoist, and FlowServer")
                     }
 
                     // Replaced .navigationBarTrailing with .primaryAction and made EditButton iOS/visionOS only
@@ -100,14 +101,27 @@ struct ContentView: View {
                         #endif
                     }
                 ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            isAddingTask = true
-                        } label: {
-                            Label("Add Task", systemImage: "plus.circle.fill")
-                                .font(.title3)
+                    Button {
+                        Task {
+                            if let first = items.first {
+                                await taskService.startFocusSession(for: first)
+                            }
                         }
-                        .accessibilityHint("Opens a form to create a new focus task")
+                    } label: {
+                        Label("Focus", systemImage: "target")
+                            .font(.title3)
                     }
+                    .accessibilityHint("Starts a focus session on the first task")
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        isAddingTask = true
+                    } label: {
+                        Label("Add Task", systemImage: "plus.circle.fill")
+                            .font(.title3)
+                    }
+                    .accessibilityHint("Opens a form to create a new focus task")
+                }
                 }
             case .gallery:
                 StyleGalleryView()
@@ -404,4 +418,5 @@ struct TaskRow: View {
         .modelContainer(container)
         .environment(TaskService(modelContext: container.mainContext))
         .environment(ExternalIntegrationService(modelContext: container.mainContext))
+        .environment(FlowServerService(modelContext: container.mainContext))
 }
