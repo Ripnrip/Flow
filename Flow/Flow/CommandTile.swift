@@ -140,8 +140,9 @@ extension CommandTile {
     }
 
     /// The gentle postponement ritual.
-    static func snooze(accentStyle: TaskStyle = .volcanicFlow) -> CommandTile {
+    static func snooze(id: UUID = UUID(), accentStyle: TaskStyle = .volcanicFlow) -> CommandTile {
         CommandTile(
+            id: id,
             title: "Snooze",
             icon: CommandTileAction.snooze.defaultIcon,
             action: .snooze,
@@ -173,8 +174,9 @@ extension CommandTile {
     }
 
     /// Pull fresh tasks from Calendar, Reminders, Todoist, and FlowServer.
-    static func syncAll() -> CommandTile {
+    static func syncAll(id: UUID = UUID()) -> CommandTile {
         CommandTile(
+            id: id,
             title: "Sync",
             icon: CommandTileAction.syncAll.defaultIcon,
             action: .syncAll,
@@ -184,8 +186,9 @@ extension CommandTile {
     }
 
     /// Reveal today’s focus statistics.
-    static func showStats() -> CommandTile {
+    static func showStats(id: UUID = UUID()) -> CommandTile {
         CommandTile(
+            id: id,
             title: "Stats",
             icon: CommandTileAction.showStats.defaultIcon,
             action: .showStats,
@@ -221,10 +224,15 @@ extension CommandTile {
     /// The default quartet of command tiles summoned when none have been configured. 🎛️✨
     static var defaultSet: [CommandTile] {
         [
-            .focusOnTask(id: UUID(), title: "Deep Work", emoji: "🎯", style: .cyberpunk),
-            .snooze(),
-            .syncAll(),
-            .showStats()
+            .focusOnTask(
+                id: UUID(uuidString: "A1B2C3D4-E5F6-7890-1234-567890ABCDEF")!,
+                title: "Deep Work",
+                emoji: "🎯",
+                style: .cyberpunk
+            ),
+            .snooze(id: UUID(uuidString: "B2C3D4E5-F6A7-8901-2345-67890BCDEF01")!),
+            .syncAll(id: UUID(uuidString: "C3D4E5F6-A789-0123-4567-890ABCDEF012")!),
+            .showStats(id: UUID(uuidString: "D4E5F6A7-8901-2345-6789-0BCDEF0123AB")!)
         ]
     }
 }

@@ -29,6 +29,11 @@ struct PinnedTaskPickerView: View {
         .onChange(of: pinnedTaskIds) { _, _ in
             Task { await savePinned() }
         }
+        .overlay {
+            if items.isEmpty {
+                emptyStateView
+            }
+        }
     }
 
     /// 📋 The scroll of every task, with a pin glyph marking the chosen few.
@@ -41,9 +46,21 @@ struct PinnedTaskPickerView: View {
                 ) {
                     togglePin(for: item)
                 }
+                .disabled(!pinnedTaskIds.contains(item.id.uuidString) && pinnedTaskIds.count >= maxPinned)
             }
         } header: {
             Text("Tap to pin/unpin (max \(maxPinned))")
+        } footer: {
+            if pinnedTaskIds.count == maxPinned {
+                Text("Max \(maxPinned) pinned tasks")
+            }
+        }
+    }
+
+    /// 🌙 Empty-state prompt for when no tasks exist yet.
+    private var emptyStateView: some View {
+        ContentUnavailableView {
+            Label("Add a task first", systemImage: "tray.fill")
         }
     }
 

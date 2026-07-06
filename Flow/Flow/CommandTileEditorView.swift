@@ -42,7 +42,20 @@ struct CommandTileEditorView: View {
         Task {
             let loaded = await SharedTaskStore.shared.loadCommandTiles()
             await MainActor.run {
-                tiles = (loaded.count == 4) ? loaded : CommandTile.defaultSet
+                if loaded.isEmpty {
+                    tiles = CommandTile.defaultSet
+                } else if loaded.count < 4 {
+                    var padded = loaded
+                    let defaults = CommandTile.defaultSet
+                    while padded.count < 4, let next = defaults.dropFirst(padded.count).first {
+                        padded.append(next)
+                    }
+                    tiles = padded
+                } else if loaded.count > 4 {
+                    tiles = Array(loaded.prefix(4))
+                } else {
+                    tiles = loaded
+                }
                 hasLoaded = true
             }
         }

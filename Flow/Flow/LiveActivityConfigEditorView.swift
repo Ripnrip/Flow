@@ -10,6 +10,7 @@ import WidgetKit
 
 struct LiveActivityConfigEditorView: View {
     @State private var config = LiveActivityConfiguration.default
+    @State private var hasLoaded = false
 
     var body: some View {
         Form {
@@ -40,6 +41,7 @@ struct LiveActivityConfigEditorView: View {
         .navigationTitle("Live Activity")
         .onAppear(perform: loadConfig)
         .onChange(of: config) { _, _ in
+            guard hasLoaded else { return }
             Task { await saveConfig() }
         }
     }
@@ -49,6 +51,7 @@ struct LiveActivityConfigEditorView: View {
             let loaded = await SharedTaskStore.shared.loadLiveActivityConfiguration()
             await MainActor.run {
                 config = loaded
+                hasLoaded = true
             }
         }
     }
