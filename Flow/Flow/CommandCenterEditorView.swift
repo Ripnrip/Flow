@@ -1,35 +1,51 @@
 /**
- * 🎭 The CommandCenterEditorView - The Focus Command Deck
+ * 🎛️ CommandCenterEditorView — The Focus Command Deck
  *
- * "Where seekers of wisdom shape their cosmic controls.
- * A stage for customization, a portal to flow-state mastery."
+ * "Where seekers of wisdom arrange their magical instruments:
+ *  tiles for quick conjurations, pinned quests for the launchpad,
+ *  and the Live Activity spirit for the lock screen ritual."
  *
- * - The Theatrical Command Virtuoso
+ * - The Theatrical Command Deck Architect
  */
 
 import SwiftUI
+import WidgetKit
 
-/// 🌟 A placeholder for the Phase 5 Command Center editor.
-/// This view will evolve into the in-app configuration surface for focus/timer controls.
+enum CommandCenterTab: String, CaseIterable {
+    case tiles = "Tiles"
+    case pinned = "Pinned Tasks"
+    case liveActivity = "Live Activity"
+}
+
 struct CommandCenterEditorView: View {
+    @State private var selectedTab: CommandCenterTab = .tiles
+
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "slider.horizontal.3")
-                .font(.system(size: 64))
-                .foregroundStyle(.secondary)
+        NavigationStack {
+            VStack(spacing: 0) {
+                Picker("Section", selection: $selectedTab) {
+                    ForEach(CommandCenterTab.allCases, id: \.self) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding()
 
-            Text("Command Center")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-
-            Text("Focus controls are under construction. ⚙️")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                Group {
+                    switch selectedTab {
+                    case .tiles:
+                        CommandTileEditorView()
+                    case .pinned:
+                        PinnedTaskPickerView()
+                    case .liveActivity:
+                        LiveActivityConfigEditorView()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .navigationTitle("Command Center")
+            .navigationBarTitleDisplayMode(.large)
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
     }
 }
 
