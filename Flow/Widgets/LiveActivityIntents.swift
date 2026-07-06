@@ -45,7 +45,7 @@ enum LiveActivityAnimationIntensity: String, Sendable, Codable, CaseIterable {
 }
 
 /// User-facing configuration for the Live Activity.
-struct LiveActivityConfiguration: Sendable, Codable {
+struct LiveActivityConfiguration: Sendable, Codable, Equatable {
     var leadingAction: LiveActivityAction
     var trailingAction: LiveActivityAction
     var showProgressRing: Bool
