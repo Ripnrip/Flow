@@ -277,15 +277,22 @@ class TaskService {
         let attributes = FlowAttributes(taskId: task.id.uuidString)
         let staleDate  = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
 
-        let initialState = FlowAttributes.ContentState(
-            title: task.title,
-            snoozeCount: task.snoozeCount,
-            moveCount: task.moveCount,
-            startDate: focusStartDate,
-            emoji: task.emoji,
-            style: task.style,
-            lastInteractionDate: .now,
-            growthLevel: task.growthLevel
+        let snapshot = await SharedTaskStore.shared.load()
+        let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
+        let initialState = makeContentState(
+            from: snapshot ?? ActiveTaskSnapshot(
+                taskId: task.id.uuidString,
+                title: task.title,
+                emoji: task.emoji,
+                styleRawValue: task.style.rawValue,
+                snoozeCount: task.snoozeCount,
+                moveCount: task.moveCount,
+                startDate: focusStartDate,
+                growthLevel: task.growthLevel,
+                lastInteractionDate: .now,
+                isCompleted: task.isCompleted
+            ),
+            configuration: config
         )
         FlowLogger.liveActivity.debug("📦 Requesting Live Activity…")
 
@@ -417,16 +424,22 @@ class TaskService {
         // Read the shared snapshot so we use the real focus-session start date
         // (not task.creationDate) and any intent-side mutations already committed.
         let snapshot = await SharedTaskStore.shared.load()
+        let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
         let staleDate  = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
-        let updatedState = FlowAttributes.ContentState(
-            title: task.title,
-            snoozeCount: snapshot?.snoozeCount ?? task.snoozeCount,
-            moveCount: snapshot?.moveCount ?? task.moveCount,
-            startDate: snapshot?.startDate ?? .now,
-            emoji: task.emoji,
-            style: task.style,
-            lastInteractionDate: .now,
-            growthLevel: task.growthLevel
+        let updatedState = makeContentState(
+            from: snapshot ?? ActiveTaskSnapshot(
+                taskId: task.id.uuidString,
+                title: task.title,
+                emoji: task.emoji,
+                styleRawValue: task.style.rawValue,
+                snoozeCount: task.snoozeCount,
+                moveCount: task.moveCount,
+                startDate: .now,
+                growthLevel: task.growthLevel,
+                lastInteractionDate: .now,
+                isCompleted: task.isCompleted
+            ),
+            configuration: config
         )
         for activity in Activity<FlowAttributes>.activities where activity.attributes.taskId == task.id.uuidString {
             await activity.update(ActivityContent(state: updatedState, staleDate: staleDate))

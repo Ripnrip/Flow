@@ -165,7 +165,8 @@ struct ExecuteCommandTileIntent: AppIntent {
         switch tile.action {
         case .snooze:
             if let updated = await SharedTaskStore.shared.snooze() {
-                await pushLiveActivityUpdate(state: makeContentState(from: updated))
+                let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
+                await pushLiveActivityUpdate(state: makeContentState(from: updated, configuration: config))
                 WidgetCenter.shared.reloadAllTimelines()
             }
         case .complete:

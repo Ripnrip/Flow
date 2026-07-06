@@ -101,13 +101,37 @@ public struct FlowAttributes: ActivityAttributes {
         var isPaused: Bool = false
         var focusTargetMinutes: Int = 25
         var elapsedPauseSeconds: TimeInterval = 0
+        var leadingActionRawValue: String = LiveActivityAction.snooze.rawValue
+        var trailingActionRawValue: String = LiveActivityAction.done.rawValue
+        var showProgressRing: Bool = true
+        var animationIntensityRawValue: String = LiveActivityAnimationIntensity.normal.rawValue
     }
     var taskId: String
 }
 
+extension FlowAttributes.ContentState {
+    /// 🎛️ The leading action configured for this Live Activity.
+    var leadingAction: LiveActivityAction {
+        LiveActivityAction(rawValue: leadingActionRawValue) ?? .snooze
+    }
+
+    /// 🎛️ The trailing action configured for this Live Activity.
+    var trailingAction: LiveActivityAction {
+        LiveActivityAction(rawValue: trailingActionRawValue) ?? .done
+    }
+
+    /// ✨ How lively the Live Activity's motion should be.
+    var animationIntensity: LiveActivityAnimationIntensity {
+        LiveActivityAnimationIntensity(rawValue: animationIntensityRawValue) ?? .normal
+    }
+}
+
 // MARK: - 🛠️ Helpers
 
-nonisolated func makeContentState(from snapshot: ActiveTaskSnapshot) -> FlowAttributes.ContentState {
+nonisolated func makeContentState(
+    from snapshot: ActiveTaskSnapshot,
+    configuration: LiveActivityConfiguration = .default
+) -> FlowAttributes.ContentState {
     FlowAttributes.ContentState(
         title: snapshot.title,
         snoozeCount: snapshot.snoozeCount,
@@ -119,7 +143,11 @@ nonisolated func makeContentState(from snapshot: ActiveTaskSnapshot) -> FlowAttr
         growthLevel: snapshot.growthLevel,
         isPaused: snapshot.isPaused,
         focusTargetMinutes: snapshot.focusTargetMinutes,
-        elapsedPauseSeconds: snapshot.elapsedPauseSeconds
+        elapsedPauseSeconds: snapshot.elapsedPauseSeconds,
+        leadingActionRawValue: configuration.leadingAction.rawValue,
+        trailingActionRawValue: configuration.trailingAction.rawValue,
+        showProgressRing: configuration.showProgressRing,
+        animationIntensityRawValue: configuration.animationIntensity.rawValue
     )
 }
 
@@ -194,8 +222,9 @@ struct SnoozeIntent: LiveActivityIntent {
             return .result(value: false)
         }
 
-        // 2. Push updated state to running Live Activities
-        let newState = makeContentState(from: updated)
+        // 2. Push updated state to running Live Activities (with current config baked in)
+        let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
+        let newState = makeContentState(from: updated, configuration: config)
         await pushLiveActivityUpdate(state: newState)
 
         // 3. Invalidate widget timelines so they reflect the new snooze count
@@ -289,7 +318,8 @@ struct PauseResumeIntent: LiveActivityIntent {
             return .result(value: false)
         }
 
-        let newState = makeContentState(from: updated)
+        let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
+        let newState = makeContentState(from: updated, configuration: config)
         await pushLiveActivityUpdate(state: newState)
         WidgetCenter.shared.reloadAllTimelines()
 
@@ -331,7 +361,8 @@ struct ExtendFocusIntent: LiveActivityIntent {
             return .result(value: false)
         }
 
-        let newState = makeContentState(from: updated)
+        let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
+        let newState = makeContentState(from: updated, configuration: config)
         await pushLiveActivityUpdate(state: newState)
         WidgetCenter.shared.reloadAllTimelines()
 
