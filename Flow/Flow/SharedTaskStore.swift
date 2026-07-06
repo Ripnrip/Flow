@@ -58,6 +58,9 @@ struct ActiveTaskSnapshot: Sendable {
     var growthLevel: Int
     var lastInteractionDate: Date
     var isCompleted: Bool
+    var isPaused: Bool = false
+    var focusTargetMinutes: Int = 25
+    var elapsedPauseSeconds: TimeInterval = 0
 
     // MARK: Pending Flags (set by intents, cleared by app after reconcile)
     var pendingSnooze: Bool = false   // set by SnoozeIntent
@@ -98,6 +101,9 @@ extension ActiveTaskSnapshot: Equatable {
         lhs.growthLevel == rhs.growthLevel &&
         lhs.lastInteractionDate == rhs.lastInteractionDate &&
         lhs.isCompleted == rhs.isCompleted &&
+        lhs.isPaused == rhs.isPaused &&
+        lhs.focusTargetMinutes == rhs.focusTargetMinutes &&
+        lhs.elapsedPauseSeconds == rhs.elapsedPauseSeconds &&
         lhs.pendingSnooze == rhs.pendingSnooze &&
         lhs.pendingComplete == rhs.pendingComplete
     }
@@ -116,6 +122,9 @@ extension ActiveTaskSnapshot: Codable {
         self.growthLevel = try container.decode(Int.self, forKey: .growthLevel)
         self.lastInteractionDate = try container.decode(Date.self, forKey: .lastInteractionDate)
         self.isCompleted = try container.decode(Bool.self, forKey: .isCompleted)
+        self.isPaused = try container.decodeIfPresent(Bool.self, forKey: .isPaused) ?? false
+        self.focusTargetMinutes = try container.decodeIfPresent(Int.self, forKey: .focusTargetMinutes) ?? 25
+        self.elapsedPauseSeconds = try container.decodeIfPresent(TimeInterval.self, forKey: .elapsedPauseSeconds) ?? 0
         self.pendingSnooze = try container.decodeIfPresent(Bool.self, forKey: .pendingSnooze) ?? false
         self.pendingComplete = try container.decodeIfPresent(Bool.self, forKey: .pendingComplete) ?? false
     }
@@ -132,6 +141,9 @@ extension ActiveTaskSnapshot: Codable {
         try container.encode(growthLevel, forKey: .growthLevel)
         try container.encode(lastInteractionDate, forKey: .lastInteractionDate)
         try container.encode(isCompleted, forKey: .isCompleted)
+        try container.encode(isPaused, forKey: .isPaused)
+        try container.encode(focusTargetMinutes, forKey: .focusTargetMinutes)
+        try container.encode(elapsedPauseSeconds, forKey: .elapsedPauseSeconds)
         try container.encode(pendingSnooze, forKey: .pendingSnooze)
         try container.encode(pendingComplete, forKey: .pendingComplete)
     }
@@ -140,6 +152,7 @@ extension ActiveTaskSnapshot: Codable {
         case taskId, title, emoji, styleRawValue
         case snoozeCount, moveCount, startDate, growthLevel
         case lastInteractionDate, isCompleted
+        case isPaused, focusTargetMinutes, elapsedPauseSeconds
         case pendingSnooze, pendingComplete
     }
 }
@@ -258,6 +271,33 @@ actor SharedTaskStore {
         snapshot.lastInteractionDate = .now
         save(snapshot)
         FlowLogger.intent.info("✅ [SharedTaskStore] Completed '\(snapshot.title)'")
+        return snapshot
+    }
+
+    /// Toggle the paused state of the active task snapshot.
+    func togglePause(taskId: String) -> ActiveTaskSnapshot? {
+        guard var snapshot = load(), snapshot.taskId == taskId else {
+            FlowLogger.sync.warning("⚠️ [SharedTaskStore] Cannot toggle pause — no active task")
+            return nil
+        }
+        snapshot.isPaused.toggle()
+        snapshot.lastInteractionDate = .now
+        save(snapshot)
+        FlowLogger.sync.info("⏸️ [SharedTaskStore] Pause toggled: \(snapshot.isPaused)")
+        return snapshot
+    }
+
+    /// Extend the focus target by the given number of minutes.
+    func extendFocus(taskId: String, additionalMinutes: Int) -> ActiveTaskSnapshot? {
+        guard var snapshot = load(), snapshot.taskId == taskId else {
+            FlowLogger.sync.warning("⚠️ [SharedTaskStore] Cannot extend focus — no active task")
+            return nil
+        }
+        // Cap total target at 60 minutes to prevent runaway timers.
+        snapshot.focusTargetMinutes = min((snapshot.focusTargetMinutes) + additionalMinutes, 60)
+        snapshot.lastInteractionDate = .now
+        save(snapshot)
+        FlowLogger.sync.info("⏱️ [SharedTaskStore] Focus target extended to \(snapshot.focusTargetMinutes) min")
         return snapshot
     }
 

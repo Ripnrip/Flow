@@ -117,9 +117,9 @@ nonisolated func makeContentState(from snapshot: ActiveTaskSnapshot) -> FlowAttr
         style: snapshot.style,
         lastInteractionDate: snapshot.lastInteractionDate,
         growthLevel: snapshot.growthLevel,
-        isPaused: false,
-        focusTargetMinutes: 25,
-        elapsedPauseSeconds: 0
+        isPaused: snapshot.isPaused,
+        focusTargetMinutes: snapshot.focusTargetMinutes,
+        elapsedPauseSeconds: snapshot.elapsedPauseSeconds
     )
 }
 
@@ -250,6 +250,92 @@ struct DoneIntent: LiveActivityIntent {
         WidgetCenter.shared.reloadAllTimelines()
 
         FlowLogger.intent.info("🎉 [DoneIntent] Completed: '\(completed.title)'")
+        return .result(value: true)
+    }
+}
+
+// MARK: - ⏸️ Pause / Resume
+
+/// Pauses or resumes the active focus session **without opening the app**.
+///
+/// Execution flow:
+/// 1. Toggles `isPaused` in `SharedTaskStore` (App Groups).
+/// 2. Pushes the updated state to all running Live Activities.
+/// 3. Requests a WidgetKit timeline refresh.
+/// 4. Returns without opening the app.
+///
+/// The main app will reconcile the paused state back to SwiftData on next foreground.
+struct PauseResumeIntent: LiveActivityIntent {
+
+    static let openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Pause or Resume Focus"
+    static let description = IntentDescription(
+        "Pause or resume your active Flow focus session.",
+        categoryName: "Focus"
+    )
+    static let isDiscoverable: Bool = true
+
+    @Parameter(title: "Task Identifier")
+    var taskId: String
+
+    init(taskId: String) { self.taskId = taskId }
+    init() { self.taskId = "" }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        FlowLogger.intent.info("⏸️ [PauseResumeIntent] Performing for task: \(taskId)")
+
+        guard let updated = await SharedTaskStore.shared.togglePause(taskId: taskId) else {
+            FlowLogger.intent.warning("⚠️ [PauseResumeIntent] No active task matching \(taskId)")
+            return .result(value: false)
+        }
+
+        let newState = makeContentState(from: updated)
+        await pushLiveActivityUpdate(state: newState)
+        WidgetCenter.shared.reloadAllTimelines()
+
+        FlowLogger.intent.info("🎉 [PauseResumeIntent] Paused=\(updated.isPaused)")
+        return .result(value: true)
+    }
+}
+
+// MARK: - ⏱️ Extend Focus
+
+/// Adds five minutes to the current focus target **without opening the app**.
+///
+/// Execution flow:
+/// 1. Extends `focusTargetMinutes` in `SharedTaskStore` (App Groups), capped at 60 minutes.
+/// 2. Pushes the updated state to all running Live Activities.
+/// 3. Requests a WidgetKit timeline refresh.
+/// 4. Returns without opening the app.
+struct ExtendFocusIntent: LiveActivityIntent {
+
+    static let openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Extend Focus Session"
+    static let description = IntentDescription(
+        "Add five more minutes to your current focus target.",
+        categoryName: "Focus"
+    )
+    static let isDiscoverable: Bool = true
+
+    @Parameter(title: "Task Identifier")
+    var taskId: String
+
+    init(taskId: String) { self.taskId = taskId }
+    init() { self.taskId = "" }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        FlowLogger.intent.info("⏱️ [ExtendFocusIntent] Performing for task: \(taskId)")
+
+        guard let updated = await SharedTaskStore.shared.extendFocus(taskId: taskId, additionalMinutes: 5) else {
+            FlowLogger.intent.warning("⚠️ [ExtendFocusIntent] No active task matching \(taskId)")
+            return .result(value: false)
+        }
+
+        let newState = makeContentState(from: updated)
+        await pushLiveActivityUpdate(state: newState)
+        WidgetCenter.shared.reloadAllTimelines()
+
+        FlowLogger.intent.info("🎉 [ExtendFocusIntent] Target=\(updated.focusTargetMinutes) min")
         return .result(value: true)
     }
 }
