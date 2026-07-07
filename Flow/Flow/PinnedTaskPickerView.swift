@@ -72,7 +72,7 @@ struct PinnedTaskPickerView: View {
                 ForEach(pinnedTaskIds, id: \.self) { id in
                     if let item = items.first(where: { $0.id.uuidString == id }) {
                         HStack {
-                            Text(item.emoji)
+                            EmojiLabel(item.emoji)
                             Text(item.title)
                         }
                     }
@@ -136,7 +136,7 @@ private struct TaskPickerRow: View {
 
     var body: some View {
         HStack {
-            Text(item.emoji)
+            EmojiLabel(item.emoji)
             Text(item.title)
                 .lineLimit(1)
             Spacer()
@@ -147,6 +147,27 @@ private struct TaskPickerRow: View {
         }
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
+    }
+}
+
+// MARK: - 🔣 Emoji / SF Symbol Label
+
+/// Renders an emoji verbatim, or an SF Symbol when the value carries the `sf:` prefix.
+private struct EmojiLabel: View {
+    let value: String
+
+    init(_ value: String) { self.value = value }
+
+    var body: some View {
+        if value.hasPrefix("sf:") {
+            Image(systemName: String(value.dropFirst(3)))
+                .font(.body)
+                .frame(minWidth: 22, alignment: .center)
+        } else {
+            Text(value)
+                .font(.body)
+                .frame(minWidth: 22, alignment: .center)
+        }
     }
 }
 

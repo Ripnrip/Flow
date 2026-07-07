@@ -102,7 +102,7 @@ class FlowServerService {
                     let style = autoPrioritize(priority: serverTask.priority)
                     let newItem = Item(
                         title: serverTask.name,
-                        emoji: "sf:bolt.circle.fill",
+                        emoji: "⚡️",
                         style: style,
                         timestamp: serverTask.dueDate ?? .now
                     )

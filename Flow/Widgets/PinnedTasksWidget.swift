@@ -97,7 +97,7 @@ struct PinnedTaskRow: View {
     var body: some View {
         Button(intent: OpenInboxIntent()) {
             HStack(spacing: 10) {
-                Text(task.emoji)
+                EmojiLabel(task.emoji)
                     .font(.title3)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -145,6 +145,23 @@ struct PinnedTaskRow: View {
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - 🔣 Emoji / SF Symbol Label
+
+/// Renders an emoji verbatim, or an SF Symbol when the value carries the `sf:` prefix.
+private struct EmojiLabel: View {
+    let value: String
+
+    init(_ value: String) { self.value = value }
+
+    var body: some View {
+        if value.hasPrefix("sf:") {
+            Image(systemName: String(value.dropFirst(3)))
+        } else {
+            Text(value)
+        }
     }
 }
 

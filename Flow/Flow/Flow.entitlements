@@ -2,46 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!--
-	    🌉 App Groups — shared UserDefaults between Flow app and WidgetsExtension.
-	    SharedTaskStore uses this suite so AppIntents (SnoozeIntent, DoneIntent)
-	    can mutate task state without launching the main app.
-
-	    ⚠️  Register this group ID in the Apple Developer portal for your team,
-	        and add the same entitlement to the WidgetsExtension target's .entitlements.
-	-->
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.com.binarybros.Flow</string>
-	</array>
-
-	<!--
-	    🔗 Associated Domains — Universal Links + App Clips.
-
-	    Requires an apple-app-site-association (AASA) file hosted at:
-	      https://flow.app/.well-known/apple-app-site-association
-
-	    AASA content (paths map to FlowRoute cases):
-	    {
-	      "applinks": {
-	        "details": [{
-	          "appIDs": ["<TEAM_ID>.com.binarybros.Flow"],
-	          "components": [
-	            { "/": "/task/*",   "comment": "FlowRoute.focus(taskId:)" },
-	            { "/": "/gallery",  "comment": "FlowRoute.styleGallery"   },
-	            { "/": "/join/*",   "comment": "FlowRoute.join(code:)"    }
-	          ]
-	        }]
-	      }
-	    }
-
-	    ⚠️  Replace <TEAM_ID> with your Apple Developer Team ID and verify the AASA
-	        file is reachable before submitting. Hosting must use valid TLS and no redirects.
-	-->
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>applinks:flow.app</string>
-		<string>webcredentials:flow.app</string>
 	</array>
 </dict>
 </plist>
