@@ -100,14 +100,17 @@ class ExternalIntegrationService {
         do {
             // Map `EKReminder` (not Sendable) to a Sendable snapshot inside the
             // callback so only Sendable values cross back to the main actor.
+            // A plain `for` loop avoids a `.map` closure inheriting `@MainActor`
+            // isolation and then running on EventKit's background queue.
             let reminders: [ReminderSnapshot] = await withCheckedContinuation { continuation in
                 eventStore.fetchReminders(matching: predicate) { ekReminders in
-                    let mapped = (ekReminders ?? []).map { reminder in
-                        ReminderSnapshot(
+                    var mapped: [ReminderSnapshot] = []
+                    for reminder in ekReminders ?? [] {
+                        mapped.append(ReminderSnapshot(
                             title: reminder.title ?? "Untitled",
                             isCompleted: reminder.isCompleted,
                             dueDate: reminder.dueDateComponents?.date
-                        )
+                        ))
                     }
                     continuation.resume(returning: mapped)
                 }
