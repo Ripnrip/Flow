@@ -22,6 +22,7 @@
 import WidgetKit
 import SwiftUI
 import AppIntents
+import OSLog
 
 // MARK: - 📅 Timeline Entry
 
@@ -139,7 +140,7 @@ struct FlowWidgetEntryView: View {
             Text(snapshot.emoji)
                 .font(.title2)
         }
-        .widgetURL(FlowRoute.focus(taskId: UUID(uuidString: snapshot.taskId) ?? UUID()).customURL)
+        .widgetURL(URL(string: "flow://task/\(snapshot.taskId)"))
     }
 
     private func accessoryRectangularView(_ snapshot: ActiveTaskSnapshot, style: TaskStyle) -> some View {
@@ -156,7 +157,7 @@ struct FlowWidgetEntryView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .widgetURL(FlowRoute.focus(taskId: UUID(uuidString: snapshot.taskId) ?? UUID()).customURL)
+        .widgetURL(URL(string: "flow://task/\(snapshot.taskId)"))
     }
 
     private func accessoryInlineView(_ snapshot: ActiveTaskSnapshot) -> some View {
@@ -165,7 +166,7 @@ struct FlowWidgetEntryView: View {
         } icon: {
             Text(snapshot.emoji)
         }
-        .widgetURL(FlowRoute.focus(taskId: UUID(uuidString: snapshot.taskId) ?? UUID()).customURL)
+        .widgetURL(URL(string: "flow://task/\(snapshot.taskId)"))
     }
 
     // MARK: System Small
@@ -194,7 +195,7 @@ struct FlowWidgetEntryView: View {
             .padding(12)
         }
         .containerBackground(style.themeBackgroundColor(), for: .widget)
-        .widgetURL(FlowRoute.focus(taskId: UUID(uuidString: snapshot.taskId) ?? UUID()).customURL)
+        .widgetURL(URL(string: "flow://task/\(snapshot.taskId)"))
     }
 
     // MARK: System Medium
@@ -259,7 +260,7 @@ struct FlowWidgetEntryView: View {
             .padding(14)
         }
         .containerBackground(style.themeBackgroundColor(), for: .widget)
-        .widgetURL(FlowRoute.focus(taskId: UUID(uuidString: snapshot.taskId) ?? UUID()).customURL)
+        .widgetURL(URL(string: "flow://task/\(snapshot.taskId)"))
     }
 
     // MARK: System Large
@@ -344,7 +345,7 @@ struct FlowWidgetEntryView: View {
             .padding(16)
         }
         .containerBackground(style.themeBackgroundColor(), for: .widget)
-        .widgetURL(FlowRoute.focus(taskId: UUID(uuidString: snapshot.taskId) ?? UUID()).customURL)
+        .widgetURL(URL(string: "flow://task/\(snapshot.taskId)"))
     }
 
     // MARK: Empty State

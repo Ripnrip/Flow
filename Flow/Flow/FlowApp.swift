@@ -29,6 +29,7 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 import BackgroundTasks
+import OSLog
 
 @main
 struct FlowApp: App {
@@ -40,6 +41,7 @@ struct FlowApp: App {
     @State private var taskService: TaskService
     @State private var integrationService: ExternalIntegrationService
     @State private var todoistService: TodoistService
+    @State private var amorService: AMORService
 
     /// The pending route derived from an incoming Universal Link or deep link.
     /// Consumed by ContentView's `.onChange(of: activeRoute)` to navigate.
@@ -50,19 +52,26 @@ struct FlowApp: App {
     // MARK: - Init
 
     init() {
-        FlowLogger.lifecycle.info("🌐 ✨ FlowApp awakening…")
-
-        // Register background processing task so the system can wake the app
-        // to reconcile SharedTaskStore changes committed by AppIntents.
-        BGTaskScheduler.shared.register(
-            forTaskWithIdentifier: FlowApp.bgReconcileTaskId,
-            using: nil
-        ) { task in
-            guard let task = task as? BGProcessingTask else { return }
-            FlowApp.handleBGReconcileTask(task)
-        }
-
-        let schema = Schema([Item.self])
+            FlowLogger.lifecycle.info("🌐 ✨ FlowApp awakening…")
+        
+            // Register background processing task so the system can wake the app
+            // to reconcile SharedTaskStore changes committed by AppIntents.
+            BGTaskScheduler.shared.register(
+                forTaskWithIdentifier: FlowApp.bgReconcileTaskId,
+                using: nil
+            ) { task in
+                guard let task = task as? BGProcessingTask else { return }
+                FlowApp.handleBGReconcileTask(task)
+            }
+        
+            let schema = Schema([
+                Item.self,
+                DailySession.self,
+                PracticeStreak.self,
+                CronJobHealth.self,
+                DailySummary.self,
+                SecondBrainEntry.self
+            ])
 
         do {
             let fileManager = FileManager.default
@@ -80,6 +89,7 @@ struct FlowApp: App {
             self._taskService        = State(initialValue: TaskService(modelContext: ctx))
             self._integrationService = State(initialValue: ExternalIntegrationService(modelContext: ctx))
             self._todoistService     = State(initialValue: TodoistService(modelContext: ctx))
+            self._amorService        = State(initialValue: AMORService(modelContext: ctx))
 
             FlowLogger.lifecycle.info("✅ ModelContainer crystallised")
 
@@ -111,6 +121,7 @@ struct FlowApp: App {
                 .environment(taskService)
                 .environment(integrationService)
                 .environment(todoistService)
+                .environment(amorService)
                 .onAppear {
                     requestNotificationPermissions()
                     handleStartup()
@@ -164,6 +175,9 @@ struct FlowApp: App {
 
     private func handleStartup() {
         Task {
+            // Seed default practices
+            amorService.seedDefaultPracticesIfNeeded()
+            
             // Restore any active focus session (also reconciles SharedTaskStore)
             await taskService.restoreActiveFocusSession()
 
@@ -232,12 +246,12 @@ extension FlowApp {
 
         // `BGProcessingTask` is not `Sendable`. The system delivers and only
         // ever touches this handle from a single background context, so we
-        // forward it into the completion `Task` via `nonisolated(unsafe)`.
-        nonisolated(unsafe) let bgTask = task
+        // forward it into the completion `Task` via a tiny unchecked box.
+        let bgTask = UnsafeBGProcessingTaskBox(task: task)
 
         let work = Task {
             let success = await performBackgroundReconcile()
-            bgTask.setTaskCompleted(success: success)
+            bgTask.task.setTaskCompleted(success: success)
         }
 
         task.expirationHandler = {
@@ -263,6 +277,10 @@ extension FlowApp {
             return false
         }
     }
+}
+
+nonisolated private struct UnsafeBGProcessingTaskBox: @unchecked Sendable {
+    nonisolated(unsafe) let task: BGProcessingTask
 }
 
 // MARK: - NSUserActivityTypes helper

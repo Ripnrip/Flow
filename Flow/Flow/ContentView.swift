@@ -11,10 +11,12 @@ import SwiftUI
 import SwiftData
 import ActivityKit
 import Observation
+import OSLog
 
 enum NavigationItem: Hashable {
     case inbox
     case gallery
+    case amor
 }
 
 struct ContentView: View {
@@ -43,14 +45,18 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             List(selection: $selection) {
-                NavigationLink(value: NavigationItem.inbox) {
-                    Label("Focus Inbox", systemImage: "tray.full.fill")
-                }
-
-                NavigationLink(value: NavigationItem.gallery) {
-                    Label("Visual Vault", systemImage: "sparkles.rectangle.stack.fill")
-                }
-            }
+                                NavigationLink(value: NavigationItem.inbox) {
+                                    Label("Focus Inbox", systemImage: "tray.full.fill")
+                                }
+                    
+                                NavigationLink(value: NavigationItem.gallery) {
+                                    Label("Visual Vault", systemImage: "sparkles.rectangle.stack.fill")
+                                }
+                    
+                                NavigationLink(value: NavigationItem.amor) {
+                                    Label("AMOR", systemImage: "flame.fill")
+                                }
+                            }
             .navigationTitle("Focus Flow")
         } content: {
             switch selection {
@@ -111,15 +117,22 @@ struct ContentView: View {
                 }
             case .gallery:
                 StyleGalleryView()
+            case .amor:
+                AMORView()
             case .none:
                 Text("Select a realm from the sidebar")
                     .font(.title3)
                     .foregroundStyle(.secondary)
             }
         } detail: {
-            Text("Select a task to see its journey")
-                .font(.title3)
-                .foregroundStyle(.secondary)
+            if case .amor = selection {
+                // AMORView is self-contained, no detail needed
+                EmptyView()
+            } else {
+                Text("Select a task to see its journey")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
         }
         // ── Deep-link / Universal Link routing ──────────────────
         .onChange(of: activeRoute) { _, newRoute in

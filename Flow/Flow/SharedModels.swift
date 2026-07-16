@@ -12,7 +12,7 @@ import SwiftUI
 
 // MARK: - 🎨 Visual Concept Alchemy
 
-enum TaskStyle: String, Codable, CaseIterable, Sendable {
+nonisolated enum TaskStyle: String, Codable, CaseIterable, Sendable {
     // 🌟 Original Classics
     case sleekModern = "Sleek Modern"
     case zenFocus = "Zen Focus"
@@ -192,10 +192,10 @@ extension TaskStyle {
     }
 }
 
-// Main-actor isolated: the only conformer, `Item`, is a SwiftData @Model
-// isolated to the main actor, so its accessors satisfy these requirements.
-@MainActor
-protocol TaskProtocol {
+// `Item` is a SwiftData @Model. Keep this protocol nonisolated so SwiftData's
+// generated `PersistentModel`/`Hashable`/`Identifiable` conformances don't cross
+// actor boundaries when the shared model files are compiled into extensions.
+nonisolated protocol TaskProtocol {
     var id: UUID { get }
     var title: String { get }
     var emoji: String { get }

@@ -19,10 +19,10 @@
  *
  * AASA paths (host: flow.app)
  * ───────────────────────────
- *  /task/*    → .focus(taskId:)
+ *  /task/{id} → .focus(taskId:)
  *  /gallery   → .styleGallery
- *  /join/*    → .join(code:)
- *  /clip/*    → .appClipCapture(source:)
+ *  /join/{code} → .join(code:)
+ *  /clip/{source} → .appClipCapture(source:)
  *  /          → .inbox
  *
  * Associated Domains entitlement:
@@ -32,11 +32,12 @@
  */
 
 import Foundation
+import OSLog
 
 // MARK: - 🔗 Typed Routes
 
 /// Every navigable destination in Flow, parsed from a URL or constructed in code.
-enum FlowRoute: Equatable, Hashable, Sendable {
+nonisolated enum FlowRoute: Equatable, Hashable, Sendable {
 
     /// The default inbox / task list.
     case inbox

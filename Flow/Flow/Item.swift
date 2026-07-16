@@ -12,7 +12,7 @@ import OSLog
 import SwiftData
 
 @Model
-final class Item: TaskProtocol {
+nonisolated final class Item: TaskProtocol {
     // 🌟 Identity and conformance to TaskProtocol
     var id: UUID = UUID()
     var title: String
@@ -32,6 +32,12 @@ final class Item: TaskProtocol {
 
     var timestamp: Date
     var isCompleted: Bool = false
+
+    // 🌐 External source metadata for imported Calendar/Reminder tasks
+    var sourceLabel: String? = nil
+    var externalIdentifier: String? = nil
+    var dueDate: Date? = nil
+    var notesPreview: String? = nil
 
     // 📊 Analytics: Tracking the lingering soul of the task
     var snoozeCount: Int = 0

@@ -19,7 +19,7 @@ import OSLog
 
 /// Structured `Logger` channels for every subsystem in Flow.
 /// Viewable in Console.app filtered by subsystem "com.binarybros.Flow".
-enum FlowLogger {
+nonisolated enum FlowLogger {
 
     // 🔄 App / extension lifecycle (launch, background, foreground)
     static let lifecycle = Logger(subsystem: "com.binarybros.Flow", category: "🔄 Lifecycle")

@@ -37,6 +37,7 @@ import SwiftUI
 import Observation
 import AppIntents
 import WidgetKit
+import OSLog
 
 @MainActor
 @Observable
@@ -189,6 +190,7 @@ class TaskService {
         let attributes = FlowAttributes(taskId: task.id.uuidString)
         let staleDate  = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
 
+        let reminderQueueTotal = reminderQueueTotal(for: task)
         let initialState = FlowAttributes.ContentState(
             title: task.title,
             snoozeCount: task.snoozeCount,
@@ -197,7 +199,12 @@ class TaskService {
             emoji: task.emoji,
             style: task.style,
             lastInteractionDate: .now,
-            growthLevel: task.growthLevel
+            growthLevel: task.growthLevel,
+            sourceLabel: task.sourceLabel,
+            dueDate: task.dueDate,
+            queueTotal: reminderQueueTotal,
+            notesPreview: task.notesPreview,
+            reminderQueue: reminderQueueItems()
         )
 
         do {
@@ -281,19 +288,56 @@ class TaskService {
     // MARK: - 🔒 Private Helpers
     // ─────────────────────────────────────────────────────────
 
+    private func reminderQueueTotal(for task: Item) -> Int? {
+        guard task.sourceLabel == "Reminders" else { return nil }
+        return reminderQueueItems().count
+    }
+
+    /// Fetches all incomplete reminder-sourced tasks and maps them into
+    /// `ReminderQueueItem`s for the Dynamic Island queue display.
+    /// The first item is the current/active reminder; the rest form the queue.
+    private func reminderQueueItems() -> [ReminderQueueItem] {
+        do {
+            let descriptor = FetchDescriptor<Item>(
+                predicate: #Predicate { $0.isCompleted == false && $0.sourceLabel == "Reminders" },
+                sortBy: [SortDescriptor(\Item.dueDate, order: .forward)]
+            )
+            let reminders = try modelContext.fetch(descriptor)
+            return reminders.map { item in
+                ReminderQueueItem(
+                    id: item.id.uuidString,
+                    title: item.title,
+                    emoji: item.emoji,
+                    styleRawValue: item.styleRawValue,
+                    dueDate: item.dueDate,
+                    isOverdue: item.dueDate.map { $0.timeIntervalSinceNow < -60 } ?? false,
+                    notesPreview: item.notesPreview
+                )
+            }
+        } catch {
+            FlowLogger.local.warning("⚠️ Reminder queue fetch failed: \(error.localizedDescription)")
+            return []
+        }
+    }
+
     /// Write (or overwrite) the App Groups snapshot for this task.
     private func writeSnapshotToStore(for task: Item) async {
         let snapshot = ActiveTaskSnapshot(
             taskId: task.id.uuidString,
             title: task.title,
             emoji: task.emoji,
-            styleRawValue: task.style.rawValue,
+            styleRawValue: task.styleRawValue,
             snoozeCount: task.snoozeCount,
             moveCount: task.moveCount,
             startDate: task.creationDate,
             growthLevel: task.growthLevel,
             lastInteractionDate: .now,
-            isCompleted: task.isCompleted
+            isCompleted: task.isCompleted,
+            sourceLabel: task.sourceLabel,
+            dueDate: task.dueDate,
+            queueTotal: reminderQueueTotal(for: task),
+            notesPreview: task.notesPreview,
+            reminderQueue: reminderQueueItems()
         )
         await SharedTaskStore.shared.save(snapshot)
         FlowLogger.sync.info("🔃 Snapshot written for '\(task.title)'")
@@ -310,7 +354,12 @@ class TaskService {
             emoji: task.emoji,
             style: task.style,
             lastInteractionDate: .now,
-            growthLevel: task.growthLevel
+            growthLevel: task.growthLevel,
+            sourceLabel: task.sourceLabel,
+            dueDate: task.dueDate,
+            queueTotal: reminderQueueTotal(for: task),
+            notesPreview: task.notesPreview,
+            reminderQueue: reminderQueueItems()
         )
         for activity in Activity<FlowAttributes>.activities where activity.attributes.taskId == task.id.uuidString {
             await activity.update(ActivityContent(state: updatedState, staleDate: staleDate))

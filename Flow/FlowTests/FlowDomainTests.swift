@@ -140,6 +140,36 @@ struct ActiveTaskSnapshotTests {
         broken.styleRawValue = "Not A Real Style"
         #expect(broken.style == .sleekModern)
     }
+
+    @Test("Reminder snapshots preserve rich Dynamic Island presentation metadata")
+    func reminderPresentationMetadata() throws {
+        var snapshot = makeSnapshot()
+        snapshot.sourceLabel = "Reminders"
+        snapshot.dueDate = Date(timeIntervalSince1970: 1_700_003_600)
+        snapshot.queueTotal = 7
+        snapshot.notesPreview = "Daily practice"
+
+        let data = try JSONEncoder().encode(snapshot)
+        let decoded = try JSONDecoder().decode(ActiveTaskSnapshot.self, from: data)
+
+        #expect(decoded.sourceLabel == "Reminders")
+        #expect(decoded.dueDate == Date(timeIntervalSince1970: 1_700_003_600))
+        #expect(decoded.queueTotal == 7)
+        #expect(decoded.notesPreview == "Daily practice")
+        #expect(decoded.isReminderImported)
+    }
+
+    @Test("Reminder snapshots generate deterministic island badges")
+    func reminderIslandBadges() {
+        var snapshot = makeSnapshot()
+        snapshot.sourceLabel = "Reminders"
+        snapshot.dueDate = Date(timeIntervalSince1970: 1_700_001_800)
+        snapshot.queueTotal = 3
+
+        #expect(snapshot.islandEyebrow == "REMINDER")
+        #expect(snapshot.dueBadge(now: Date(timeIntervalSince1970: 1_700_000_000)) == "Due soon")
+        #expect(snapshot.queueBadge == "3 reminders")
+    }
 }
 
 

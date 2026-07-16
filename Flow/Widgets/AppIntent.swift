@@ -16,8 +16,8 @@ import WidgetKit
 
 struct FlowWidgetConfiguration: WidgetConfigurationIntent {
 
-    static var title: LocalizedStringResource = "Flow Task Widget"
-    static var description = IntentDescription(
+    static let title: LocalizedStringResource = "Flow Task Widget"
+    static let description = IntentDescription(
         "Show your active focus task with live state and quick actions."
     )
 

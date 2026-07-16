@@ -63,7 +63,7 @@ struct ToggleFocusIntent: SetValueIntent {
             // Snooze via SharedTaskStore — app reconciles on foreground.
             await SharedTaskStore.shared.snooze()
         }
-        ControlCenter.shared.reloadControls(ofKind: FlowFocusControl.kind)
+        ControlCenter.shared.reloadControls(ofKind: "com.binarybros.Flow.FocusControl")
         return .result()
     }
 }

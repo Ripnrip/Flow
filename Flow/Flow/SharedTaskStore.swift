@@ -16,18 +16,19 @@
  */
 
 import Foundation
+import OSLog
 
 // MARK: - App Group Identifier
 
 /// Shared App Group suite name — must match the entitlement value.
-let kFlowAppGroup = "group.com.binarybros.Flow"
+nonisolated let kFlowAppGroup = "group.com.binarybros.Flow"
 
 // MARK: - 📸 Shared State Snapshot
 
 /// A lightweight, Codable mirror of an active `Item` focus session.
 /// Lives in App Groups UserDefaults so intents and widgets can read it
 /// without a SwiftData ModelContext.
-struct ActiveTaskSnapshot: Codable, Sendable, Hashable {
+nonisolated struct ActiveTaskSnapshot: Codable, Sendable, Hashable {
 
     // MARK: Identity
     var taskId: String          // UUID string of the `Item`
@@ -42,6 +43,13 @@ struct ActiveTaskSnapshot: Codable, Sendable, Hashable {
     var growthLevel: Int
     var lastInteractionDate: Date
     var isCompleted: Bool
+
+    // MARK: Rich Reminder Presentation
+    var sourceLabel: String? = nil
+    var dueDate: Date? = nil
+    var queueTotal: Int? = nil
+    var notesPreview: String? = nil
+    var reminderQueue: [ReminderQueueItem] = []
 
     // MARK: Pending Flags (set by intents, cleared by app after reconcile)
     var pendingSnooze: Bool = false   // set by SnoozeIntent
@@ -63,6 +71,29 @@ struct ActiveTaskSnapshot: Codable, Sendable, Hashable {
     func pendingSnoozeDelta(comparedTo currentCount: Int) -> Int {
         guard pendingSnooze else { return 0 }
         return max(0, snoozeCount - currentCount)
+    }
+
+    var isReminderImported: Bool {
+        sourceLabel == "Reminders"
+    }
+
+    var islandEyebrow: String {
+        isReminderImported ? "REMINDER" : style.rawValue.uppercased()
+    }
+
+    func dueBadge(now: Date = .now) -> String {
+        guard let dueDate else { return isReminderImported ? "No due time" : "Focus" }
+        let delta = dueDate.timeIntervalSince(now)
+        if delta < -60 { return "Overdue" }
+        if delta <= 60 * 60 { return "Due soon" }
+        if Calendar.current.isDateInToday(dueDate) { return "Today" }
+        if Calendar.current.isDateInTomorrow(dueDate) { return "Tomorrow" }
+        return "Upcoming"
+    }
+
+    var queueBadge: String? {
+        guard let queueTotal, queueTotal > 1 else { return nil }
+        return "\(queueTotal) reminders"
     }
 }
 
