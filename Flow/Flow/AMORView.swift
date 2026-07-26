@@ -55,13 +55,20 @@ struct AMORView: View {
                             Label("Dump", systemImage: "doc.text")
                         }
                         .tag(4)
-                    
+
+                    // Hermes Sync Tab (session-dump automation)
+                    HermesSessionSyncView()
+                        .tabItem {
+                            Label("Sync", systemImage: "antenna.radiowaves.left.and.right")
+                        }
+                        .tag(5)
+
                     // Health Tab
                     CronHealthView()
                         .tabItem {
                             Label("Systems", systemImage: AMORIconSet.settings)
                         }
-                        .tag(5)
+                        .tag(6)
                 }
                 .navigationTitle("AMOR")
                 .navigationBarTitleDisplayMode(.inline)
@@ -140,9 +147,12 @@ struct DashboardView: View {
                     PracticesDueSection(practices: practices.filter { $0.isDueToday })
                 }
                 
+                // Hermes Integration Card (session-dump automation)
+                HermesSyncCard()
+
                 // System Health Overview
                 SystemHealthOverview(jobs: cronJobs.filter { $0.healthStatus != "healthy" })
-                
+
                 // Reflective Quote
                 AMORComponents.ReflectiveQuote(
                     text: "The quieter you become, the more you are able to hear.",

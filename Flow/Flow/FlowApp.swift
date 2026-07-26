@@ -177,7 +177,7 @@ struct FlowApp: App {
         Task {
             // Seed default practices
             amorService.seedDefaultPracticesIfNeeded()
-            
+
             // Restore any active focus session (also reconciles SharedTaskStore)
             await taskService.restoreActiveFocusSession()
 
@@ -191,6 +191,13 @@ struct FlowApp: App {
 
             FlowLogger.network.info("🌐 Syncing Todoist…")
             await todoistService.inhaleTasks()
+
+            // Hermes integration auto-sync (session-dump automation)
+            FlowLogger.network.info("🌉 Syncing Hermes sessions…")
+            let hermesEngine = HermesIntegrationEngine()
+            if hermesEngine.isHermesAvailable {
+                hermesEngine.performFullSync(into: sharedModelContainer.mainContext)
+            }
 
             // Handle App Clip → Full App handoff task name
             if let defaults  = UserDefaults(suiteName: kFlowAppGroup),
