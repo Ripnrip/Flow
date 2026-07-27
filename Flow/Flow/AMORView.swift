@@ -63,12 +63,19 @@ struct AMORView: View {
                         }
                         .tag(5)
 
-                    // Health Tab
-                    CronHealthView()
+                    // Second Brain Tab (Obsidian vault integration)
+                    AMORSecondBrainView()
+                        .tabItem {
+                            Label("Brain", systemImage: "brain.head.profile")
+                        }
+                        .tag(6)
+
+                    // Health Tab (live cron status)
+                    AMORCronHealthDashboard()
                         .tabItem {
                             Label("Systems", systemImage: AMORIconSet.settings)
                         }
-                        .tag(6)
+                        .tag(7)
                 }
                 .navigationTitle("AMOR")
                 .navigationBarTitleDisplayMode(.inline)
@@ -150,7 +157,10 @@ struct DashboardView: View {
                 // Hermes Integration Card (session-dump automation)
                 HermesSyncCard()
 
-                // System Health Overview
+                // Second Brain status
+                SecondBrainCard()
+
+                // System Health Overview (from real cron data)
                 SystemHealthOverview(jobs: cronJobs.filter { $0.healthStatus != "healthy" })
 
                 // Reflective Quote
