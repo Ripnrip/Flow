@@ -76,6 +76,20 @@ struct AMORView: View {
                             Label("Systems", systemImage: AMORIconSet.settings)
                         }
                         .tag(7)
+
+                    // Activity Heatmap Tab
+                    AMORActivityHeatmapView()
+                        .tabItem {
+                            Label("Activity", systemImage: "flame.fill")
+                        }
+                        .tag(8)
+
+                    // Reflection Tab (guided contemplation)
+                    AMORReflectionView()
+                        .tabItem {
+                            Label("Reflect", systemImage: "moon.stars.fill")
+                        }
+                        .tag(9)
                 }
                 .navigationTitle("AMOR")
                 .navigationBarTitleDisplayMode(.inline)
@@ -154,6 +168,9 @@ struct DashboardView: View {
                     PracticesDueSection(practices: practices.filter { $0.isDueToday })
                 }
                 
+                // Activity Heatmap (compact)
+                ActivityHeatmapCard()
+
                 // Hermes Integration Card (session-dump automation)
                 HermesSyncCard()
 
@@ -662,5 +679,5 @@ struct CronJobDetailRow: View {
 
 #Preview {
     AMORView()
-        .modelContainer(for: [Item.self, DailySession.self, PracticeStreak.self, CronJobHealth.self, DailySummary.self, SecondBrainEntry.self])
+        .modelContainer(for: [Item.self, DailySession.self, PracticeStreak.self, CronJobHealth.self, DailySummary.self, SecondBrainEntry.self, ReflectionEntry.self])
 }

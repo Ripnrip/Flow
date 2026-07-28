@@ -70,7 +70,8 @@ struct FlowApp: App {
                 PracticeStreak.self,
                 CronJobHealth.self,
                 DailySummary.self,
-                SecondBrainEntry.self
+                SecondBrainEntry.self,
+                ReflectionEntry.self
             ])
 
         do {
