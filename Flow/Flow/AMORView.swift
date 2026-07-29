@@ -84,12 +84,19 @@ struct AMORView: View {
                         }
                         .tag(8)
 
+                    // Rhythm Tab (intelligence engine)
+                    AMORRhythmView()
+                        .tabItem {
+                            Label("Rhythm", systemImage: "waveform.path.ecg")
+                        }
+                        .tag(9)
+
                     // Reflection Tab (guided contemplation)
                     AMORReflectionView()
                         .tabItem {
                             Label("Reflect", systemImage: "moon.stars.fill")
                         }
-                        .tag(9)
+                        .tag(10)
                 }
                 .navigationTitle("AMOR")
                 .navigationBarTitleDisplayMode(.inline)
@@ -163,6 +170,9 @@ struct DashboardView: View {
                     streaks: activeStreaks
                 )
                 
+                // Rhythm Intelligence (compact score card)
+                RhythmScoreCompactCard()
+
                 // Practices Due Today
                 if !practices.filter({ $0.isDueToday }).isEmpty {
                     PracticesDueSection(practices: practices.filter { $0.isDueToday })
