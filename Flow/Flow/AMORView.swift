@@ -159,25 +159,23 @@ struct DashboardView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Header
-                HeaderSection()
-                
-                // Today's Summary Cards
+            VStack(alignment: .leading, spacing: 16) {
+                // v3.0.0: Daily Briefing — time-aware synthesis (replaces static header)
+                AMORBriefingView()
+                    .frame(maxWidth: .infinity)
+
+                // Today's Summary Cards (quick metrics)
                 TodaySummaryCard(
                     minutes: totalMinutesToday,
                     sessions: sessionsToday.count,
                     streaks: activeStreaks
                 )
-                
-                // Rhythm Intelligence (compact score card)
-                RhythmScoreCompactCard()
 
                 // Practices Due Today
                 if !practices.filter({ $0.isDueToday }).isEmpty {
                     PracticesDueSection(practices: practices.filter { $0.isDueToday })
                 }
-                
+
                 // Activity Heatmap (compact)
                 ActivityHeatmapCard()
 
@@ -190,13 +188,6 @@ struct DashboardView: View {
                 // System Health Overview (from real cron data)
                 SystemHealthOverview(jobs: cronJobs.filter { $0.healthStatus != "healthy" })
 
-                // Reflective Quote
-                AMORComponents.ReflectiveQuote(
-                    text: "The quieter you become, the more you are able to hear.",
-                    author: "Rumi"
-                )
-                .padding(.vertical)
-                
                 Spacer(minLength: 40)
             }
             .padding()
