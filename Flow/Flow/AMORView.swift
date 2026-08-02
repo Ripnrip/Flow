@@ -3,132 +3,309 @@
  *
  * "The heart of contemplation — where sessions are logged, practices honored,
  * and the health of systems silently watched over."
+ *
+ * v3.1.0 Navigation Architecture: 5 intentional primary tabs.
+ * Secondary destinations are reached through elegant sub-navigation
+ * within each tab — no buried "More" menu, no lost features.
+ *
+ * Primary Tabs:
+ *   Today     — Living briefing + quick metrics + glanceable health
+ *   Practice  — Practices + Activity Heatmap (the doing)
+ *   Review    — Sessions + Insights + Dump (the analysis)
+ *   Systems   — Cron Health + Hermes Sync + Second Brain (the infrastructure)
+ *   Reflect   — Guided Reflection + Rhythm Intelligence (the contemplation)
  */
 
 import SwiftUI
 import SwiftData
 
+// MARK: - AMOR Tab Definition
+
+enum AMORTab: Int, CaseIterable {
+    case today = 0
+    case practice = 1
+    case review = 2
+    case systems = 3
+    case reflect = 4
+
+    var label: String {
+        switch self {
+        case .today: return "Today"
+        case .practice: return "Practice"
+        case .review: return "Review"
+        case .systems: return "Systems"
+        case .reflect: return "Reflect"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .today: return AMORIconSet.meditation
+        case .practice: return AMORIconSet.streak
+        case .review: return AMORIconSet.clock
+        case .systems: return AMORIconSet.settings
+        case .reflect: return "moon.stars.fill"
+        }
+    }
+}
+
+// MARK: - Sub-Navigation Section (for multi-view tabs)
+
+enum AMORSubSection: String, CaseIterable, Hashable {
+    // Practice tab
+    case practices = "Streaks"
+    case activity = "Activity"
+    // Review tab
+    case sessions = "Sessions"
+    case insights = "Insights"
+    case dump = "Dump"
+    // Systems tab
+    case cron = "Cron"
+    case sync = "Sync"
+    case brain = "Brain"
+    // Reflect tab
+    case reflection = "Reflect"
+    case rhythm = "Rhythm"
+}
+
+// MARK: - AMORView (Main)
+
 struct AMORView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
     @Environment(\.dismiss) private var dismiss
-    
-    @State private var selectedTab = 0
+
+    @State private var selectedTab: AMORTab = .today
     @State private var isLoggingSession = false
     @State private var isCompletingPractice = false
-    
+
     var body: some View {
         AMORComponents.GradientBackground(gradient: AMORColorPalette.calmWaters) {
-            NavigationStack {
-                TabView(selection: $selectedTab) {
-                    // Dashboard Tab
-                    DashboardView()
-                        .tabItem {
-                            Label("Today", systemImage: AMORIconSet.meditation)
-                        }
-                        .tag(0)
-                    
-                    // Sessions Tab
-                    SessionsLogView()
-                        .tabItem {
-                            Label("Sessions", systemImage: AMORIconSet.clock)
-                        }
-                        .tag(1)
-                    
-                    // Practices Tab
-                    PracticesView()
-                        .tabItem {
-                            Label("Practices", systemImage: AMORIconSet.streak)
-                        }
-                        .tag(2)
+            TabView(selection: $selectedTab) {
+                // ── 1. Today ──────────────────────────────
+                DashboardView()
+                    .tabItem {
+                        Label(AMORTab.today.label, systemImage: AMORTab.today.icon)
+                    }
+                    .tag(AMORTab.today)
 
-                    // Insights Tab
-                    AMORInsightsView()
-                        .tabItem {
-                            Label("Insights", systemImage: AMORIconSet.chart)
-                        }
-                        .tag(3)
-
-                    // Dump Tab
-                    AMORDumpView()
-                        .tabItem {
-                            Label("Dump", systemImage: "doc.text")
-                        }
-                        .tag(4)
-
-                    // Hermes Sync Tab (session-dump automation)
-                    HermesSessionSyncView()
-                        .tabItem {
-                            Label("Sync", systemImage: "antenna.radiowaves.left.and.right")
-                        }
-                        .tag(5)
-
-                    // Second Brain Tab (Obsidian vault integration)
-                    AMORSecondBrainView()
-                        .tabItem {
-                            Label("Brain", systemImage: "brain.head.profile")
-                        }
-                        .tag(6)
-
-                    // Health Tab (live cron status)
-                    AMORCronHealthDashboard()
-                        .tabItem {
-                            Label("Systems", systemImage: AMORIconSet.settings)
-                        }
-                        .tag(7)
-
-                    // Activity Heatmap Tab
-                    AMORActivityHeatmapView()
-                        .tabItem {
-                            Label("Activity", systemImage: "flame.fill")
-                        }
-                        .tag(8)
-
-                    // Rhythm Tab (intelligence engine)
-                    AMORRhythmView()
-                        .tabItem {
-                            Label("Rhythm", systemImage: "waveform.path.ecg")
-                        }
-                        .tag(9)
-
-                    // Reflection Tab (guided contemplation)
-                    AMORReflectionView()
-                        .tabItem {
-                            Label("Reflect", systemImage: "moon.stars.fill")
-                        }
-                        .tag(10)
-                }
-                .navigationTitle("AMOR")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Menu {
-                            Button {
-                                isLoggingSession = true
-                            } label: {
-                                Label("Log Session", systemImage: "plus.circle")
-                            }
-                            
-                            Button {
-                                isCompletingPractice = true
-                            } label: {
-                                Label("Complete Practice", systemImage: "checkmark.circle")
-                            }
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(AMORColorPalette.deepIndigo)
-                        }
+                // ── 2. Practice (Practices + Activity) ───
+                AMORSubNavigationTab(
+                    tab: .practice,
+                    sections: [.practices, .activity],
+                    initialSection: .practices
+                ) { section in
+                    switch section {
+                    case .practices:
+                        PracticesView()
+                    case .activity:
+                        AMORActivityHeatmapView()
+                    default:
+                        EmptyView()
                     }
                 }
-                .sheet(isPresented: $isLoggingSession) {
-                    LogSessionSheet()
+                .tabItem {
+                    Label(AMORTab.practice.label, systemImage: AMORTab.practice.icon)
                 }
-                .sheet(isPresented: $isCompletingPractice) {
-                    CompletePracticeSheet()
+                .tag(AMORTab.practice)
+
+                // ── 3. Review (Sessions + Insights + Dump) ─
+                AMORSubNavigationTab(
+                    tab: .review,
+                    sections: [.sessions, .insights, .dump],
+                    initialSection: .sessions
+                ) { section in
+                    switch section {
+                    case .sessions:
+                        SessionsLogView()
+                    case .insights:
+                        AMORInsightsView()
+                    case .dump:
+                        AMORDumpView()
+                    default:
+                        EmptyView()
+                    }
+                }
+                .tabItem {
+                    Label(AMORTab.review.label, systemImage: AMORTab.review.icon)
+                }
+                .tag(AMORTab.review)
+
+                // ── 4. Systems (Cron + Sync + Brain) ──────
+                AMORSubNavigationTab(
+                    tab: .systems,
+                    sections: [.cron, .sync, .brain],
+                    initialSection: .cron
+                ) { section in
+                    switch section {
+                    case .cron:
+                        AMORCronHealthDashboard()
+                    case .sync:
+                        HermesSessionSyncView()
+                    case .brain:
+                        AMORSecondBrainView()
+                    default:
+                        EmptyView()
+                    }
+                }
+                .tabItem {
+                    Label(AMORTab.systems.label, systemImage: AMORTab.systems.icon)
+                }
+                .tag(AMORTab.systems)
+
+                // ── 5. Reflect (Reflection + Rhythm) ──────
+                AMORSubNavigationTab(
+                    tab: .reflect,
+                    sections: [.reflection, .rhythm],
+                    initialSection: .reflection
+                ) { section in
+                    switch section {
+                    case .reflection:
+                        AMORReflectionView()
+                    case .rhythm:
+                        AMORRhythmView()
+                    default:
+                        EmptyView()
+                    }
+                }
+                .tabItem {
+                    Label(AMORTab.reflect.label, systemImage: AMORTab.reflect.icon)
+                }
+                .tag(AMORTab.reflect)
+            }
+            .sheet(isPresented: $isLoggingSession) {
+                LogSessionSheet()
+            }
+            .sheet(isPresented: $isCompletingPractice) {
+                CompletePracticeSheet()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .amorLogSession)) { _ in
+                isLoggingSession = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .amorCompletePractice)) { _ in
+                isCompletingPractice = true
+            }
+        }
+    }
+}
+
+// MARK: - Sub-Navigation Tab Container
+
+/// A tab that hosts multiple sub-sections with an elegant segmented selector.
+/// Used for tabs that group related features (Review, Systems, Reflect, Practice).
+struct AMORSubNavigationTab<Content: View>: View {
+    let tab: AMORTab
+    let sections: [AMORSubSection]
+    let initialSection: AMORSubSection
+    @ViewBuilder let content: (AMORSubSection) -> Content
+
+    @State private var selectedSection: AMORSubSection
+
+    init(
+        tab: AMORTab,
+        sections: [AMORSubSection],
+        initialSection: AMORSubSection,
+        @ViewBuilder content: @escaping (AMORSubSection) -> Content
+    ) {
+        self.tab = tab
+        self.sections = sections
+        self.initialSection = initialSection
+        self.content = content
+        self._selectedSection = State(initialValue: initialSection)
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Sub-section selector — elegant segmented strip
+                if sections.count > 1 {
+                    AMORSectionSelector(
+                        sections: sections,
+                        selection: $selectedSection
+                    )
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+                }
+
+                // Active section content
+                content(selectedSection)
+            }
+            .navigationTitle(tab.label)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button {
+                            NotificationCenter.default.post(name: .amorLogSession, object: nil)
+                        } label: {
+                            Label("Log Session", systemImage: "plus.circle")
+                        }
+
+                        Button {
+                            NotificationCenter.default.post(name: .amorCompletePractice, object: nil)
+                        } label: {
+                            Label("Complete Practice", systemImage: "checkmark.circle")
+                        }
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(AMORColorPalette.deepIndigo)
+                    }
                 }
             }
         }
     }
+}
+
+// MARK: - Section Selector
+
+/// An elegant scrollable segmented selector for sub-navigation.
+/// Uses AMOR's contemplative aesthetic — no harsh system segmented picker.
+struct AMORSectionSelector: View {
+    let sections: [AMORSubSection]
+    @Binding var selection: AMORSubSection
+
+    @Namespace private var animationNamespace
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(sections, id: \.self) { section in
+                    let isSelected = section == selection
+                    Button {
+                        withAnimation(AMORAnimations.thoughtfulAppear) {
+                            selection = section
+                        }
+                    } label: {
+                        Text(section.rawValue)
+                            .font(AMORTypography.bodyFont)
+                            .foregroundStyle(isSelected ? .white : AMORColorPalette.deepIndigo)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background {
+                                if isSelected {
+                                    Capsule()
+                                        .fill(AMORColorPalette.deepIndigo)
+                                        .matchedGeometryEffect(id: "selector", in: animationNamespace)
+                                } else {
+                                    Capsule()
+                                        .fill(.ultraThinMaterial)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+}
+
+// MARK: - Notification Names (for cross-tab quick actions)
+
+extension Notification.Name {
+    static let amorLogSession = Notification.Name("amorLogSession")
+    static let amorCompletePractice = Notification.Name("amorCompletePractice")
 }
 
 // MARK: - Dashboard View
@@ -138,59 +315,83 @@ struct DashboardView: View {
     @Query private var sessions: [DailySession]
     @Query private var practices: [PracticeStreak]
     @Query private var cronJobs: [CronJobHealth]
-    
+
     var today: Date { Date() }
-    
+
     var sessionsToday: [DailySession] {
         sessions.filter { $0.date >= Calendar.current.startOfDay(for: today) }
     }
-    
+
     var totalMinutesToday: Int {
         sessionsToday.reduce(0) { $0 + $1.durationMinutes }
     }
-    
+
     var activeStreaks: Int {
         practices.filter { $0.isActive }.count
     }
-    
+
     var healthyJobs: Int {
         cronJobs.filter { $0.healthStatus == "healthy" }.count
     }
-    
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                // v3.0.0: Daily Briefing — time-aware synthesis (replaces static header)
-                AMORBriefingView()
-                    .frame(maxWidth: .infinity)
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // v3.0.0: Daily Briefing — time-aware synthesis (replaces static header)
+                    AMORBriefingView()
+                        .frame(maxWidth: .infinity)
 
-                // Today's Summary Cards (quick metrics)
-                TodaySummaryCard(
-                    minutes: totalMinutesToday,
-                    sessions: sessionsToday.count,
-                    streaks: activeStreaks
-                )
+                    // Today's Summary Cards (quick metrics)
+                    TodaySummaryCard(
+                        minutes: totalMinutesToday,
+                        sessions: sessionsToday.count,
+                        streaks: activeStreaks
+                    )
 
-                // Practices Due Today
-                if !practices.filter({ $0.isDueToday }).isEmpty {
-                    PracticesDueSection(practices: practices.filter { $0.isDueToday })
+                    // Practices Due Today
+                    if !practices.filter({ $0.isDueToday }).isEmpty {
+                        PracticesDueSection(practices: practices.filter { $0.isDueToday })
+                    }
+
+                    // Activity Heatmap (compact)
+                    ActivityHeatmapCard()
+
+                    // Hermes Integration Card (session-dump automation)
+                    HermesSyncCard()
+
+                    // Second Brain status
+                    SecondBrainCard()
+
+                    // System Health Overview (from real cron data)
+                    SystemHealthOverview(jobs: cronJobs.filter { $0.healthStatus != "healthy" })
+
+                    Spacer(minLength: 40)
                 }
-
-                // Activity Heatmap (compact)
-                ActivityHeatmapCard()
-
-                // Hermes Integration Card (session-dump automation)
-                HermesSyncCard()
-
-                // Second Brain status
-                SecondBrainCard()
-
-                // System Health Overview (from real cron data)
-                SystemHealthOverview(jobs: cronJobs.filter { $0.healthStatus != "healthy" })
-
-                Spacer(minLength: 40)
+                .padding()
             }
-            .padding()
+            .navigationTitle("Today")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button {
+                            NotificationCenter.default.post(name: .amorLogSession, object: nil)
+                        } label: {
+                            Label("Log Session", systemImage: "plus.circle")
+                        }
+
+                        Button {
+                            NotificationCenter.default.post(name: .amorCompletePractice, object: nil)
+                        } label: {
+                            Label("Complete Practice", systemImage: "checkmark.circle")
+                        }
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(AMORColorPalette.deepIndigo)
+                    }
+                }
+            }
         }
     }
 }
