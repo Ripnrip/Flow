@@ -385,56 +385,92 @@ final class HermesIntegrationEngine {
         }
     }
 
-    // MARK: - Cron Job Sync
+    // MARK: - Cron Job Sync (Real Data from jobs.json)
 
-    /// Parses cron job status from the Hermes cron list output.
-    /// Since Process is not available on iOS, this reads the cron config directly.
+    /// Syncs REAL cron job status from ~/.hermes/cron/jobs.json into SwiftData.
+    ///
+    /// This replaces the old hardcoded phantom-job approach (v2.1.0) that seeded
+    /// 11 fake entries with status="pending" — which meant the briefing engine,
+    /// progress tracker, and dump generator always saw stale data.
+    ///
+    /// Now reads from the same AMORCronStatusReader used by the Cron Health
+    /// Dashboard, ensuring a single source of truth.
     func syncCronJobs(into modelContext: ModelContext) {
-        // The cron jobs are defined in config.yaml, but their last-run status
-        // is tracked in state.db. We parse what we can from the filesystem.
-        let cronConfigPath = hermesHome.appendingPathComponent("config.yaml")
-        guard FileManager.default.fileExists(atPath: cronConfigPath) else {
+        let cronReader = AMORCronStatusReader()
+        cronReader.refresh()
+
+        guard cronReader.isHermesCronAvailable else {
+            totalCronJobsDiscovered = 0
             return
         }
 
-        // For now, we register the known default jobs based on the actual
-        // Hermes cron system. These are updated with real status when the
-        // dashboard API is available.
-        let knownJobs: [(name: String, schedule: String)] = [
-            ("Hermes hourly heartbeat", "every 1h"),
-            ("Bridge Watchdog", "every 30m"),
-            ("Daily Bhagavad Gita", "0 12 * * *"),
-            ("Daily Health Summary", "0 13 * * *"),
-            ("Strategic Heartbeat", "0 */2 * * *"),
-            ("Morning Gita + Practice", "30 10 * * *"),
-            ("Daily Gym Selfie Reminder", "0 17 * * *"),
-            ("Daily Monographs Reminder", "every 15m"),
-            ("Hermes Cron Failure Watchdog", "every 5m"),
-            ("End-of-Day Session Dump", "0 1 * * *"),
-            ("AMOR App Reminder", "0 20 * * *"),
-        ]
+        let realJobs = cronReader.jobs
+        totalCronJobsDiscovered = realJobs.count
 
-        totalCronJobsDiscovered = knownJobs.count
+        // Collect real job names for phantom cleanup
+        var realJobNames = Set<String>()
+        for realJob in realJobs {
+            realJobNames.insert(realJob.name)
 
-        for job in knownJobs {
-            // Check if job already exists
+            // Fetch existing entry by job name
+            let jobName = realJob.name
             let descriptor = FetchDescriptor<CronJobHealth>(
                 predicate: #Predicate<CronJobHealth> { cj in
-                    cj.jobName == job.name
+                    cj.jobName == jobName
                 }
             )
 
-            let existing = (try? modelContext.fetch(descriptor)) ?? []
+            let existing = (try? modelContext.fetch(descriptor))?.first
 
-            if existing.isEmpty {
-                // Create new job entry
+            // Normalize status: Hermes uses "ok"/"failed"/"pending"/"error"
+            // SwiftData CronJobHealth uses "success"/"failed"/"pending"
+            let normalizedStatus: String
+            switch realJob.lastStatus {
+            case "ok": normalizedStatus = "success"
+            case "failed", "error": normalizedStatus = "failed"
+            case "pending": normalizedStatus = "pending"
+            default: normalizedStatus = "pending"
+            }
+
+            if let existing = existing {
+                // Update existing entry with real data
+                existing.lastRunDate = realJob.lastRunAt
+                existing.lastStatus = normalizedStatus
+                existing.errorMessage = realJob.lastError
+                existing.schedule = realJob.scheduleDisplay
+                existing.isEnabled = realJob.enabled
+
+                // Compute consecutive failures from status
+                if realJob.lastStatus == "failed" || realJob.lastStatus == "error" {
+                    existing.consecutiveFailures = max(existing.consecutiveFailures, 1)
+                } else if realJob.lastStatus == "ok" {
+                    existing.consecutiveFailures = 0
+                    existing.lastSuccessDate = realJob.lastRunAt
+                }
+            } else {
+                // Create new entry with real data
                 let newJob = CronJobHealth(
-                    jobName: job.name,
-                    lastStatus: "pending",
-                    schedule: job.schedule,
-                    isEnabled: true
+                    jobName: realJob.name,
+                    lastRunDate: realJob.lastRunAt,
+                    lastStatus: normalizedStatus,
+                    errorMessage: realJob.lastError,
+                    schedule: realJob.scheduleDisplay,
+                    isEnabled: realJob.enabled,
+                    consecutiveFailures: (realJob.lastStatus == "failed" || realJob.lastStatus == "error") ? 1 : 0,
+                    lastSuccessDate: realJob.lastStatus == "ok" ? realJob.lastRunAt : nil
                 )
                 modelContext.insert(newJob)
+            }
+        }
+
+        // Purge phantom entries — SwiftData CronJobHealth records that don't
+        // exist in the real jobs.json. This cleans up old v2.1.0 hardcoded entries.
+        let allDescriptor = FetchDescriptor<CronJobHealth>()
+        if let allJobs = try? modelContext.fetch(allDescriptor) {
+            for job in allJobs {
+                if !realJobNames.contains(job.jobName) {
+                    modelContext.delete(job)
+                }
             }
         }
 
