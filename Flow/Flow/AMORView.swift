@@ -58,6 +58,7 @@ enum AMORSubSection: String, CaseIterable, Hashable {
     // Review tab
     case sessions = "Sessions"
     case insights = "Insights"
+    case timeline = "Timeline"
     case dump = "Dump"
     // Systems tab
     case cron = "Cron"
@@ -109,10 +110,10 @@ struct AMORView: View {
                 }
                 .tag(AMORTab.practice)
 
-                // ── 3. Review (Sessions + Insights + Dump) ─
+                // ── 3. Review (Sessions + Insights + Timeline + Dump)
                 AMORSubNavigationTab(
                     tab: .review,
-                    sections: [.sessions, .insights, .dump],
+                    sections: [.sessions, .insights, .timeline, .dump],
                     initialSection: .sessions
                 ) { section in
                     switch section {
@@ -120,6 +121,8 @@ struct AMORView: View {
                         SessionsLogView()
                     case .insights:
                         AMORInsightsView()
+                    case .timeline:
+                        AMORProgressTimelineView()
                     case .dump:
                         AMORDumpView()
                     default:
@@ -357,8 +360,11 @@ struct DashboardView: View {
                     // Activity Heatmap (compact)
                     ActivityHeatmapCard()
 
-                    // Hermes Integration Card (session-dump automation)
+                    // Hermes Integration card (session-dump automation)
                     HermesSyncCard()
+
+                    // v3.3.0: Auto-Dump Status card
+                    AutoDumpStatusCard()
 
                     // Second Brain status
                     SecondBrainCard()
@@ -673,6 +679,7 @@ struct LogSessionSheet: View {
             completedTasks: completedTasks
         )
         modelContext.insert(session)
+        try? modelContext.save()  // v3.3.0: fix missing save (DATA LOSS bug)
         dismiss()
     }
 }
@@ -690,6 +697,7 @@ struct CompletePracticeSheet: View {
                 ForEach(practices, id: \.id) { practice in
                     Button {
                         practice.complete()
+                        try? modelContext.save()  // v3.3.0: fix missing save (STREAK DATA LOSS bug)
                         dismiss()
                     } label: {
                         HStack {
