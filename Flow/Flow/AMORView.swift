@@ -58,6 +58,7 @@ enum AMORSubSection: String, CaseIterable, Hashable {
     // Review tab
     case sessions = "Sessions"
     case insights = "Insights"
+    case weekly = "Weekly"
     case timeline = "Timeline"
     case dump = "Dump"
     // Systems tab
@@ -110,10 +111,10 @@ struct AMORView: View {
                 }
                 .tag(AMORTab.practice)
 
-                // ── 3. Review (Sessions + Insights + Timeline + Dump)
+                // ── 3. Review (Sessions + Insights + Weekly + Timeline + Dump)
                 AMORSubNavigationTab(
                     tab: .review,
-                    sections: [.sessions, .insights, .timeline, .dump],
+                    sections: [.sessions, .insights, .weekly, .timeline, .dump],
                     initialSection: .sessions
                 ) { section in
                     switch section {
@@ -121,6 +122,8 @@ struct AMORView: View {
                         SessionsLogView()
                     case .insights:
                         AMORInsightsView()
+                    case .weekly:
+                        AMORWeeklyReviewView()
                     case .timeline:
                         AMORProgressTimelineView()
                     case .dump:
@@ -359,6 +362,9 @@ struct DashboardView: View {
 
                     // Activity Heatmap (compact)
                     ActivityHeatmapCard()
+
+                    // v3.4.0: Streak Intelligence card
+                    StreakIntelligenceCompactCard()
 
                     // Hermes Integration card (session-dump automation)
                     HermesSyncCard()
