@@ -157,13 +157,12 @@ final class AMORProgressTracker {
 
         // Tools and skills frequency
         let topTools = computeTopItems(from: weekSessions, extractor: { $0.toolsUsed })
-        let topSkills = computeTopItems(from: weekSessions, extractor: { $0.skillsLearned })
+        let topSkills = computeTopSkills(from: weekSessions, extractor: { $0.skillsLearned })
 
         // Mood distribution
         let moodDistribution = computeMoodDistribution(sessions: weekSessions)
 
         // Practices
-        let activePractices = practices.filter { $0.isActive }
         let practicesCompleted = practices.reduce(0) { $0 + $1.totalCompletions }
         let currentMaxStreak = practices.map { $0.currentStreak }.max() ?? 0
         let longestStreak = practices.map { $0.longestStreak }.max() ?? 0
@@ -290,6 +289,16 @@ final class AMORProgressTracker {
     }
 
     private func computeTopItems(from sessions: [DailySession], extractor: (DailySession) -> String) -> [ToolCount] {
+        computeItemCounts(from: sessions, extractor: extractor)
+            .map { ToolCount(tool: $0.key, count: $0.value) }
+    }
+
+    private func computeTopSkills(from sessions: [DailySession], extractor: (DailySession) -> String) -> [SkillCount] {
+        computeItemCounts(from: sessions, extractor: extractor)
+            .map { SkillCount(skill: $0.key, count: $0.value) }
+    }
+
+    private func computeItemCounts(from sessions: [DailySession], extractor: (DailySession) -> String) -> [(key: String, value: Int)] {
         var counts: [String: Int] = [:]
         for session in sessions {
             let items = parseCSV(extractor(session))
@@ -303,7 +312,7 @@ final class AMORProgressTracker {
         return counts
             .sorted { $0.value > $1.value }
             .prefix(5)
-            .map { ToolCount(tool: $0.key, count: $0.value) }
+            .map { (key: $0.key, value: $0.value) }
     }
 
     private func computeMoodDistribution(sessions: [DailySession]) -> [MoodCount] {
