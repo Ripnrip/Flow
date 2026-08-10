@@ -398,6 +398,10 @@ struct DashboardView: View {
                         } label: {
                             Label("Complete Practice", systemImage: "checkmark.circle")
                         }
+
+                        Divider()
+
+                        AMORSettingsButton()
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .foregroundStyle(AMORColorPalette.deepIndigo)
@@ -630,8 +634,11 @@ struct LogSessionSheet: View {
     @State private var skillsLearned = ""
     @State private var mood = "focused"
     @State private var completedTasks = 0
-    
-    var moodOptions = ["focused", "tired", "energized", "neutral", "stressed", "calm"]
+
+    // v3.5.0: Use configurable mood labels from settings
+    private var moodOptions: [String] {
+        AMORSettingsManager.shared.defaultMoodLabels
+    }
     
     var body: some View {
         NavigationStack {
