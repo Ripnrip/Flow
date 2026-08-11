@@ -27,6 +27,7 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 import UserNotifications
 import BackgroundTasks
 import OSLog
@@ -171,6 +172,10 @@ struct FlowApp: App {
                 // v3.4.0: Auto-generate weekly review dump.
                 // Deduplicates by ISO week — writes a new file each week.
                 autoGenerateWeeklyDump()
+
+                // v3.6.0: Sync AMOR widget snapshot to App Groups.
+                // Updates the Home Screen / Lock Screen widgets with fresh data.
+                syncAMORWidget()
             case .background:
                 // Schedule a background processing task so the system can
                 // wake us proactively if intents fired while we were suspended.
@@ -264,6 +269,27 @@ struct FlowApp: App {
         if let result = result, result.wasNew {
             FlowLogger.lifecycle.info("📊 Weekly review created: \(result.dumpPath ?? "?")")
         }
+    }
+
+    // MARK: - v3.6.0: AMOR Widget Snapshot Sync
+
+    /// Builds and writes the AMOR widget snapshot to App Groups UserDefaults.
+    /// Called on every foreground transition so Home Screen widgets stay fresh.
+    private func syncAMORWidget() {
+        let ctx = sharedModelContainer.mainContext
+
+        let sessions = (try? ctx.fetch(FetchDescriptor<DailySession>())) ?? []
+        let practices = (try? ctx.fetch(FetchDescriptor<PracticeStreak>())) ?? []
+        let cronJobs = (try? ctx.fetch(FetchDescriptor<CronJobHealth>())) ?? []
+
+        AMORWidgetBuilder.syncSnapshot(
+            sessions: sessions,
+            practices: practices,
+            cronJobs: cronJobs
+        )
+
+        // Tell WidgetKit to reload timelines
+        WidgetCenter.shared.reloadTimelines(ofKind: "AMORWidget")
     }
 
     // MARK: - Startup

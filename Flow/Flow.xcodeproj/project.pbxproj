@@ -96,6 +96,7 @@
 		84D8EA7D2EF3705700125721 /* Exceptions for "Flow" folder in "WidgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				AMORWidgetShared.swift,
 				CommonViews.swift,
 				FlowLogger.swift,
 				Item.swift,

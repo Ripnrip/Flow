@@ -8,6 +8,7 @@
  *  FlowWidget         — Home/Lock Screen task state mirror (.systemSmall/Medium/Large + accessory)
  *  FlowFocusControl   — Control Center focus-session toggle (reads SharedTaskStore)
  *  WidgetsLiveActivity— Dynamic Island + Lock Screen Live Activity
+ *  AMORWidget         — Daily rhythm: streaks, sessions, cron health (v3.6.0)
  */
 
 import WidgetKit
@@ -24,5 +25,8 @@ struct WidgetsBundle: WidgetBundle {
 
         // 🏝️ Live Activity (Dynamic Island + Lock Screen banner)
         WidgetsLiveActivity()
+
+        // 🧘 AMOR daily rhythm widget (Home Screen + Lock Screen)
+        AMORWidget()
     }
 }
