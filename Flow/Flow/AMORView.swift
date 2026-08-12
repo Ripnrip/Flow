@@ -348,6 +348,9 @@ struct DashboardView: View {
                     AMORBriefingView()
                         .frame(maxWidth: .infinity)
 
+                    // v3.7.0: Proactive Nudge Status — shows active alerts and notification health
+                    AMORNudgeStatusCard()
+
                     // Today's Summary Cards (quick metrics)
                     TodaySummaryCard(
                         minutes: totalMinutesToday,
@@ -895,6 +898,123 @@ struct CronJobDetailRow: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
+    }
+}
+
+// MARK: - v3.7.0: Nudge Status Card
+
+/// Dashboard card showing the current nudge/notification status.
+/// Displays active alerts (streaks at risk, cron failures) and notification health.
+struct AMORNudgeStatusCard: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var practices: [PracticeStreak]
+    @Query private var cronJobs: [CronJobHealth]
+    @Query private var sessions: [DailySession]
+
+    private var nudgeResult: AMORNudgeResult {
+        AMORNudgeEngine.evaluate(
+            practices: practices,
+            cronJobs: cronJobs,
+            sessions: sessions
+        )
+    }
+
+    private var immediateNudges: [AMORNudgeDescriptor] {
+        nudgeResult.allNudges.filter { $0.trigger == .immediate }
+    }
+
+    private var hasAlerts: Bool { !immediateNudges.isEmpty }
+
+    var body: some View {
+        AMORComponents.ContemplativeCard {
+            VStack(alignment: .leading, spacing: 12) {
+                // Header
+                HStack {
+                    Image(systemName: hasAlerts ? "bell.badge.fill" : "bell.fill")
+                        .foregroundStyle(hasAlerts ? AMORColorPalette.dawnOrange : AMORColorPalette.sageGreen)
+                        .font(.title3)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Proactive Nudges")
+                            .font(AMORTypography.titleFont)
+                            .foregroundStyle(.primary)
+                        Text(hasAlerts ? nudgeResult.summary : "All clear — no alerts")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    if !AMORNudgeEngine.isNotificationsEnabled() {
+                        Image(systemName: "bell.slash.fill")
+                            .foregroundStyle(.tertiary)
+                            .font(.caption)
+                    }
+                }
+
+                // Active alerts list (up to 3)
+                if hasAlerts {
+                    Divider()
+
+                    ForEach(Array(immediateNudges.prefix(3))) { nudge in
+                        HStack(spacing: 10) {
+                            Circle()
+                                .fill(priorityColor(nudge.priority))
+                                .frame(width: 8, height: 8)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(nudge.title)
+                                    .font(AMORTypography.bodyFont)
+                                    .foregroundStyle(.primary)
+                                if nudge.priority == .critical || nudge.priority == .high {
+                                    Text(nudge.body)
+                                        .font(AMORTypography.captionFont)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(2)
+                                }
+                            }
+
+                            Spacer()
+
+                            Image(systemName: nudge.category.icon)
+                                .foregroundStyle(.tertiary)
+                                .font(.caption)
+                        }
+                    }
+
+                    if immediateNudges.count > 3 {
+                        Text("+ \(immediateNudges.count - 3) more alert\(immediateNudges.count - 3 == 1 ? "" : "s")")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.tertiary)
+                            .padding(.top, 4)
+                    }
+                } else if AMORNudgeEngine.isNotificationsEnabled() {
+                    // Show scheduled notification count
+                    Divider()
+
+                    HStack(spacing: 8) {
+                        Image(systemName: "clock.badge.checkmark")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+
+                        Text("3 scheduled: morning briefing, evening review, weekly summary")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+                    }
+                }
+            }
+        }
+    }
+
+    private func priorityColor(_ priority: AMORNudgePriority) -> Color {
+        switch priority {
+        case .critical: return .red
+        case .high:     return AMORColorPalette.dawnOrange
+        case .normal:   return AMORColorPalette.sageGreen
+        case .low:      return .gray
+        }
     }
 }
 

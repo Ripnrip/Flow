@@ -44,6 +44,9 @@ struct FlowApp: App {
     @State private var todoistService: TodoistService
     @State private var amorService: AMORService
 
+    // v3.7.0: Proactive Notification & Nudge Engine
+    @State private var notificationManager = AMORNotificationManager()
+
     /// The pending route derived from an incoming Universal Link or deep link.
     /// Consumed by ContentView's `.onChange(of: activeRoute)` to navigate.
     @State private var activeRoute: FlowRoute?
@@ -176,6 +179,13 @@ struct FlowApp: App {
                 // v3.6.0: Sync AMOR widget snapshot to App Groups.
                 // Updates the Home Screen / Lock Screen widgets with fresh data.
                 syncAMORWidget()
+
+                // v3.7.0: Run proactive nudge cycle.
+                // Evaluates streak risk, cron failures, milestones, and scheduled
+                // reminders. Delivers immediate alerts and schedules recurring ones.
+                Task { @MainActor in
+                    await runNudgeCycle()
+                }
             case .background:
                 // Schedule a background processing task so the system can
                 // wake us proactively if intents fired while we were suspended.
@@ -292,6 +302,25 @@ struct FlowApp: App {
         WidgetCenter.shared.reloadTimelines(ofKind: "AMORWidget")
     }
 
+    // MARK: - v3.7.0: Nudge Cycle
+
+    /// Runs the proactive nudge evaluation cycle.
+    /// Fetches all SwiftData data, evaluates nudges, and delivers/schedules notifications.
+    @MainActor
+    private func runNudgeCycle() async {
+        let ctx = sharedModelContainer.mainContext
+
+        let practices = (try? ctx.fetch(FetchDescriptor<PracticeStreak>())) ?? []
+        let cronJobs = (try? ctx.fetch(FetchDescriptor<CronJobHealth>())) ?? []
+        let sessions = (try? ctx.fetch(FetchDescriptor<DailySession>())) ?? []
+
+        await notificationManager.runFullNudgeCycle(
+            practices: practices,
+            cronJobs: cronJobs,
+            sessions: sessions
+        )
+    }
+
     // MARK: - Startup
 
     private func handleStartup() {
@@ -335,7 +364,8 @@ struct FlowApp: App {
 
     private func requestNotificationPermissions() {
         FlowLogger.lifecycle.info("🔔 Requesting notification authorisation…")
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+        // v3.7.0: Added .timeSensitive for critical cron/streak alerts
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound, .timeSensitive]) { granted, error in
             if granted {
                 FlowLogger.lifecycle.info("🎉 Notifications authorised")
             } else if let error {

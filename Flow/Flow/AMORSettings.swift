@@ -529,23 +529,50 @@ struct AMORSettingsView: View {
             if settings.notificationsEnabled {
                 Divider()
 
-                Toggle(isOn: Binding(
-                    get: { settings.streakAlertsEnabled },
-                    set: { settings.streakAlertsEnabled = $0 }
-                )) {
-                    Text("Streak Break Alerts")
-                        .font(.subheadline)
-                }
-                .tint(AMORColorPalette.sageGreen)
+                Text("Nudge Categories")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.secondary)
 
-                Toggle(isOn: Binding(
-                    get: { settings.cronFailureAlertsEnabled },
-                    set: { settings.cronFailureAlertsEnabled = $0 }
-                )) {
-                    Text("Cron Job Failure Alerts")
-                        .font(.subheadline)
+                // v3.7.0: Per-category toggles from the nudge engine
+                ForEach(AMORNudgeCategory.allCases, id: \.rawValue) { category in
+                    Toggle(isOn: Binding(
+                        get: { AMORNudgeEngine.isCategoryEnabled(category) },
+                        set: { newValue in
+                            UserDefaults.standard.set(newValue, forKey: category.settingsKey)
+                        }
+                    )) {
+                        HStack(spacing: 10) {
+                            Image(systemName: category.icon)
+                                .foregroundStyle(AMORColorPalette.deepIndigo)
+                                .frame(width: 20)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(category.displayName)
+                                    .font(.subheadline)
+                                if category == .inactivity {
+                                    Text("Gentle reminder after 48h of no sessions")
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                }
+                            }
+                        }
+                    }
+                    .tint(AMORColorPalette.sageGreen)
                 }
-                .tint(AMORColorPalette.sageGreen)
+
+                Divider()
+
+                // Briefing time picker
+                HStack {
+                    Image(systemName: "sun.max")
+                        .foregroundStyle(.secondary)
+                    Text("Morning Briefing Time")
+                        .font(.subheadline)
+                    Spacer()
+                    Text(settings.briefingReminderTime)
+                        .font(.subheadline)
+                        .foregroundStyle(AMORColorPalette.dawnOrange)
+                }
             }
         }
     }
