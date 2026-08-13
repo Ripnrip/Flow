@@ -369,6 +369,9 @@ struct DashboardView: View {
                     // v3.4.0: Streak Intelligence card
                     StreakIntelligenceCompactCard()
 
+                    // v3.8.0: Siri Shortcuts discoverability card
+                    AMORSiriShortcutsCard()
+
                     // Hermes Integration card (session-dump automation)
                     HermesSyncCard()
 
@@ -1014,6 +1017,124 @@ struct AMORNudgeStatusCard: View {
         case .high:     return AMORColorPalette.dawnOrange
         case .normal:   return AMORColorPalette.sageGreen
         case .low:      return .gray
+        }
+    }
+}
+
+// MARK: - v3.8.0: Siri Shortcuts Card
+
+/// Shows discoverability for AMOR's Siri Shortcuts and recent voice-logged actions.
+struct AMORSiriShortcutsCard: View {
+
+    @State private var pendingCount: Int = 0
+
+    var body: some View {
+        let pending = AMORPendingActionStore.readAll()
+
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "waveform.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(AMORColorPalette.dawnOrange)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Siri Shortcuts")
+                        .font(AMORTypography.titleFont)
+                        .foregroundStyle(AMORColorPalette.deepIndigo)
+                    Text("Voice-control your daily rhythm")
+                        .font(AMORTypography.captionFont)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+
+            // Show recently queued actions from Siri/Shortcuts
+            if !pending.isEmpty {
+                Divider()
+
+                Text("Pending Actions (\(pending.count))")
+                    .font(AMORTypography.bodyFont)
+                    .foregroundStyle(.secondary)
+
+                ForEach(pending.prefix(3)) { action in
+                    HStack(spacing: 8) {
+                        Image(systemName: pendingActionIcon(action.type))
+                            .font(.caption)
+                            .foregroundStyle(AMORColorPalette.dawnOrange)
+                        Text(pendingActionDescription(action))
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Text(action.timestamp, style: .time)
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+
+                if pending.count > 3 {
+                    Text("+ \(pending.count - 3) more pending")
+                        .font(AMORTypography.captionFont)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+
+            Divider()
+
+            // Shortcut phrases
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Try saying:")
+                    .font(AMORTypography.captionFont)
+                    .foregroundStyle(.secondary)
+
+                shortcutPhrase("quote.opening", "Log a 30 minute session")
+                shortcutPhrase("checkmark.circle", "Complete my Gita practice")
+                shortcutPhrase("doc.text", "What's today's summary?")
+                shortcutPhrase("flame", "Check my streaks")
+                shortcutPhrase("gearshape", "How's my system health?")
+            }
+        }
+        .padding()
+        .background {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThinMaterial)
+        }
+        .onAppear {
+            pendingCount = AMORPendingActionStore.readAll().count
+        }
+    }
+
+    private func pendingActionIcon(_ type: AMORPendingAction.ActionType) -> String {
+        switch type {
+        case .logSession:      return "plus.circle"
+        case .completePractice: return "checkmark.circle"
+        case .setMood:          return "face.smiling"
+        }
+    }
+
+    private func pendingActionDescription(_ action: AMORPendingAction) -> String {
+        switch action.type {
+        case .logSession:
+            let title = action.parameters["title"] ?? "Session"
+            let dur = action.parameters["durationMinutes"] ?? "30"
+            return "Log: \(title) (\(dur)m)"
+        case .completePractice:
+            let name = action.parameters["practiceName"] ?? "Practice"
+            return "Complete: \(name)"
+        case .setMood:
+            let mood = action.parameters["mood"] ?? "neutral"
+            return "Mood: \(mood)"
+        }
+    }
+
+    private func shortcutPhrase(_ icon: String, _ text: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundStyle(AMORColorPalette.dawnOrange.opacity(0.8))
+            Text("\"\(text)\"")
+                .font(AMORTypography.captionFont)
+                .foregroundStyle(.secondary)
         }
     }
 }

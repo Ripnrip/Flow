@@ -157,6 +157,16 @@ struct FlowApp: App {
                 FlowLogger.lifecycle.info("🔄 Scene became active — reconciling shared store")
                 Task { await taskService.reconcileFromSharedStore() }
 
+                // v3.8.0: Reconcile pending AppIntent actions (Siri/Shortcuts).
+                // AppIntents enqueue actions to App Groups UserDefaults because
+                // they execute outside the SwiftData context. We process them
+                // here on every foreground so voice commands and automation
+                // shortcuts are committed to SwiftData immediately.
+                let intentResult = AMORIntentReconciler.reconcile(into: sharedModelContainer.mainContext)
+                if intentResult.sessionsLogged > 0 || intentResult.practicesCompleted > 0 || intentResult.moodsSet > 0 {
+                    FlowLogger.lifecycle.info("🎙️ Reconciled AppIntent actions: \(intentResult.sessionsLogged) sessions, \(intentResult.practicesCompleted) practices, \(intentResult.moodsSet) moods")
+                }
+
                 // v3.3.0: Re-sync Hermes sessions on foreground.
                 // The user's Hermes agent keeps producing sessions while the app
                 // is backgrounded. Re-syncing on every foreground ensures the
