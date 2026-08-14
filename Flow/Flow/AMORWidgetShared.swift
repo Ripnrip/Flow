@@ -124,3 +124,152 @@ enum AMORWidgetStore {
     }
 
 }
+
+// MARK: - Pending Action Queue (App Groups Bridge)
+// v3.9.0 — moved from AMORAppIntents.swift so the WIDGET EXTENSION target
+// (which compiles this file via the exception set) can enqueue actions from
+// interactive widget buttons without a SwiftData ModelContext.
+
+/// Represents an action queued by an AppIntent or an interactive widget
+/// button for later reconciliation. Stored in App Groups UserDefaults so
+/// intents can write without a ModelContext.
+struct AMORPendingAction: Codable, Sendable, Identifiable {
+    enum ActionType: String, Codable, Sendable {
+        case logSession
+        case completePractice
+        case setMood
+    }
+
+    let id: UUID
+    let type: ActionType
+    let timestamp: Date
+    let parameters: [String: String]
+
+    init(type: ActionType, parameters: [String: String] = [:]) {
+        self.id = UUID()
+        self.type = type
+        self.timestamp = Date()
+        self.parameters = parameters
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, type, timestamp, parameters
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decode(UUID.self, forKey: .id)
+        self.type = try c.decode(ActionType.self, forKey: .type)
+        self.timestamp = try c.decode(Date.self, forKey: .timestamp)
+        self.parameters = try c.decodeIfPresent([String: String].self, forKey: .parameters) ?? [:]
+    }
+}
+
+/// Reads and writes the pending action queue via App Groups UserDefaults.
+/// AppIntents AND interactive widget buttons enqueue actions; FlowApp
+/// reconciles them into SwiftData on every foreground transition.
+enum AMORPendingActionStore {
+
+    static let queueKey = "amor.pendingActions"
+
+    /// Enqueue a new pending action.
+    static func enqueue(_ action: AMORPendingAction) {
+        guard let defaults = UserDefaults(suiteName: kFlowAppGroup) else { return }
+        var queue = readAll()
+        queue.append(action)
+        // Keep only the last 50 actions to prevent unbounded growth
+        if queue.count > 50 {
+            queue = Array(queue.suffix(50))
+        }
+        if let data = try? JSONEncoder().encode(queue) {
+            defaults.set(data, forKey: queueKey)
+        }
+    }
+
+    /// Read all pending actions (nonisolated — safe from any context).
+    static func readAll() -> [AMORPendingAction] {
+        guard let defaults = UserDefaults(suiteName: kFlowAppGroup),
+              let data = defaults.data(forKey: queueKey) else { return [] }
+        return (try? JSONDecoder().decode([AMORPendingAction].self, from: data)) ?? []
+    }
+
+    /// Clear the action queue after reconciliation.
+    static func clear() {
+        UserDefaults(suiteName: kFlowAppGroup)?.removeObject(forKey: queueKey)
+    }
+
+    /// Remove specific action IDs after successful reconciliation.
+    static func remove(ids: Set<UUID>) {
+        guard !ids.isEmpty else { return }
+        let remaining = readAll().filter { !ids.contains($0.id) }
+        if let data = try? JSONEncoder().encode(remaining) {
+            UserDefaults(suiteName: kFlowAppGroup)?.set(data, forKey: queueKey)
+        }
+    }
+}
+
+// MARK: - Optimistic Snapshot Updates (v3.9.0)
+// Interactive widget buttons need INSTANT visual feedback — the user can't
+// wait for the app to open and reconcile. These helpers rewrite the App
+// Groups snapshot immediately; AMORIntentReconciler commits the real
+// SwiftData change on next foreground, and syncAMORWidget() overwrites the
+// optimistic state with ground truth. If the user never opens the app, the
+// snapshot may show a stale "completed" state until the next app foreground
+// — a documented, accepted tradeoff of the pending-action queue pattern.
+
+extension AMORWidgetSnapshot {
+
+    /// Returns a new snapshot with the named practice marked complete.
+    func completingPractice(named name: String) -> AMORWidgetSnapshot {
+        var alreadyDone = false
+        let streaks = activeStreaks.map { streak -> StreakSnapshot in
+            guard streak.name == name else { return streak }
+            if streak.isCompletedToday {
+                alreadyDone = true
+                return streak
+            }
+            return StreakSnapshot(
+                name: streak.name,
+                currentStreak: streak.currentStreak + 1,
+                longestStreak: max(streak.longestStreak, streak.currentStreak + 1),
+                isCompletedToday: true,
+                isDueToday: false
+            )
+        }
+        guard !alreadyDone else { return self }
+        return AMORWidgetSnapshot(
+            date: date,
+            dayString: dayString,
+            sessionCount: sessionCount,
+            totalFocusMinutes: totalFocusMinutes,
+            practicesCompleted: practicesCompleted + 1,
+            practicesDue: max(0, practicesDue - 1),
+            activeStreaks: streaks,
+            cronHealthy: cronHealthy,
+            cronFailed: cronFailed,
+            cronTotal: cronTotal,
+            briefingTitle: briefingTitle,
+            briefingSubtitle: briefingSubtitle,
+            phase: phase
+        )
+    }
+
+    /// Returns a new snapshot with a quick session logged.
+    func loggingQuickSession(title: String, minutes: Int) -> AMORWidgetSnapshot {
+        AMORWidgetSnapshot(
+            date: date,
+            dayString: dayString,
+            sessionCount: sessionCount + 1,
+            totalFocusMinutes: totalFocusMinutes + minutes,
+            practicesCompleted: practicesCompleted,
+            practicesDue: practicesDue,
+            activeStreaks: activeStreaks,
+            cronHealthy: cronHealthy,
+            cronFailed: cronFailed,
+            cronTotal: cronTotal,
+            briefingTitle: "\(sessionCount + 1) sessions logged",
+            briefingSubtitle: briefingSubtitle,
+            phase: phase
+        )
+    }
+}

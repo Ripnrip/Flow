@@ -27,85 +27,9 @@
 import Foundation
 import AppIntents
 
-// MARK: - Pending Action Queue (App Groups Bridge)
-
-/// Represents an action queued by an AppIntent for later reconciliation.
-/// Stored in App Groups UserDefaults so intents can write without a ModelContext.
-struct AMORPendingAction: Codable, Sendable, Identifiable {
-    enum ActionType: String, Codable, Sendable {
-        case logSession
-        case completePractice
-        case setMood
-    }
-
-    let id: UUID
-    let type: ActionType
-    let timestamp: Date
-    let parameters: [String: String]
-
-    init(type: ActionType, parameters: [String: String] = [:]) {
-        self.id = UUID()
-        self.type = type
-        self.timestamp = Date()
-        self.parameters = parameters
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case id, type, timestamp, parameters
-    }
-
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try c.decode(UUID.self, forKey: .id)
-        self.type = try c.decode(ActionType.self, forKey: .type)
-        self.timestamp = try c.decode(Date.self, forKey: .timestamp)
-        self.parameters = try c.decodeIfPresent([String: String].self, forKey: .parameters) ?? [:]
-    }
-}
-
-// MARK: - Pending Action Store
-
-/// Reads and writes the pending action queue via App Groups UserDefaults.
-/// AppIntents enqueue actions; FlowApp reconciles them on foreground.
-enum AMORPendingActionStore {
-
-    static let queueKey = "amor.pendingActions"
-
-    /// Enqueue a new pending action.
-    static func enqueue(_ action: AMORPendingAction) {
-        guard let defaults = UserDefaults(suiteName: kFlowAppGroup) else { return }
-        var queue = readAll()
-        queue.append(action)
-        // Keep only the last 50 actions to prevent unbounded growth
-        if queue.count > 50 {
-            queue = Array(queue.suffix(50))
-        }
-        if let data = try? JSONEncoder().encode(queue) {
-            defaults.set(data, forKey: queueKey)
-        }
-    }
-
-    /// Read all pending actions (nonisolated — safe from any context).
-    static func readAll() -> [AMORPendingAction] {
-        guard let defaults = UserDefaults(suiteName: kFlowAppGroup),
-              let data = defaults.data(forKey: queueKey) else { return [] }
-        return (try? JSONDecoder().decode([AMORPendingAction].self, from: data)) ?? []
-    }
-
-    /// Clear the action queue after reconciliation.
-    static func clear() {
-        UserDefaults(suiteName: kFlowAppGroup)?.removeObject(forKey: queueKey)
-    }
-
-    /// Remove specific action IDs after successful reconciliation.
-    static func remove(ids: Set<UUID>) {
-        guard !ids.isEmpty else { return }
-        let remaining = readAll().filter { !ids.contains($0.id) }
-        if let data = try? JSONEncoder().encode(remaining) {
-            UserDefaults(suiteName: kFlowAppGroup)?.set(data, forKey: queueKey)
-        }
-    }
-}
+// v3.9.0: AMORPendingAction + AMORPendingActionStore moved to AMORWidgetShared.swift
+// so the widget extension target can enqueue actions from interactive widget
+// buttons. This file now contains only the intents + reconciler (main-app target).
 
 // MARK: - Intent Result Types
 

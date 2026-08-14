@@ -164,18 +164,42 @@ struct AMORSmallWidget: View {
                     .foregroundStyle(.secondary)
             }
 
-            // Top streak
+            // Top streak — tappable when due (v3.9.0 interactive widget)
             if let topStreak = snap.activeStreaks.first {
-                HStack(spacing: 4) {
-                    Image(systemName: "flame.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                    Text("\(topStreak.currentStreak)")
-                        .font(.system(.callout, design: .rounded, weight: .bold))
-                    Text(topStreak.name)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                if topStreak.isCompletedToday {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                        Text("\(topStreak.currentStreak)")
+                            .font(.system(.callout, design: .rounded, weight: .bold))
+                        Text(topStreak.name)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                } else {
+                    // Interactive: one tap marks the practice complete.
+                    // The intent queues a pending action (SwiftData commit on
+                    // next app foreground) and optimistically rewrites the
+                    // snapshot so the widget updates instantly.
+                    Button(intent: CompletePracticeWidgetIntent(practiceName: topStreak.name)) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "flame.fill")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                            Text("\(topStreak.currentStreak)")
+                                .font(.system(.callout, design: .rounded, weight: .bold))
+                            Text(topStreak.name)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tint)
+                                    .lineLimit(1)
+                            Image(systemName: "circle")
+                                .font(.system(size: 10, weight: .regular))
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 
@@ -248,33 +272,51 @@ struct AMORMediumWidget: View {
 
             Divider()
 
-            // Streaks row
+            // Streaks row — each due practice is tappable (v3.9.0)
             HStack(spacing: 12) {
                 ForEach(Array(snap.activeStreaks.prefix(4))) { streak in
-                    VStack(spacing: 3) {
-                        Image(systemName: streak.displayIcon)
-                            .font(.title3)
-                        Text("\(streak.currentStreak)")
-                            .font(.system(.callout, design: .rounded, weight: .bold))
-                        Text(streak.name)
-                            .font(.system(size: 8))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                    if streak.isCompletedToday {
+                        VStack(spacing: 3) {
+                            Image(systemName: streak.displayIcon)
+                                .font(.title3)
+                            Text("\(streak.currentStreak)")
+                                .font(.system(.callout, design: .rounded, weight: .bold))
+                            Text(streak.name)
+                                .font(.system(size: 8))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        // Interactive: tap the chip to mark complete.
+                        Button(intent: CompletePracticeWidgetIntent(practiceName: streak.name)) {
+                            VStack(spacing: 3) {
+                                Image(systemName: streak.displayIcon)
+                                    .font(.title3)
+                                Text("\(streak.currentStreak)")
+                                    .font(.system(.callout, design: .rounded, weight: .bold))
+                                Text(streak.name)
+                                    .font(.system(size: 8))
+                                    .foregroundStyle(.tint)
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .opacity(streak.isDueToday ? 1.0 : 0.7)
+                            .overlay(
+                                streak.isDueToday ?
+                                    Image(systemName: "circle")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.tint)
+                                        .offset(x: 18, y: -18)
+                                    : nil
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .frame(maxWidth: .infinity)
-                    .opacity(streak.isCompletedToday ? 1.0 : 0.5)
-                    .overlay(
-                        streak.isDueToday ?
-                            Image(systemName: "circle.dotted")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.orange.opacity(0.6))
-                                .offset(x: 18, y: -18)
-                            : nil
-                    )
                 }
             }
 
-            // Bottom: practices progress
+            // Bottom: practices progress + quick-log (v3.9.0 interactive)
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.caption)
@@ -285,6 +327,21 @@ struct AMORMediumWidget: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Spacer()
+                // One-tap 30-minute session log — queues a pending action and
+                // optimistically bumps the session count in the snapshot.
+                Button(intent: QuickLogSessionWidgetIntent()) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 9, weight: .bold))
+                        Text("30m")
+                            .font(.system(size: 10, design: .rounded, weight: .semibold))
+                    }
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(.tint.opacity(0.15)))
+                    .foregroundStyle(.tint)
+                }
+                .buttonStyle(.plain)
                 if snap.sessionCount > 0 {
                     Text("\(snap.sessionCount)x")
                         .font(.system(.caption, design: .rounded, weight: .medium))
