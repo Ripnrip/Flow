@@ -19,10 +19,10 @@
  *
  * AASA paths (host: flow.app)
  * ───────────────────────────
- *  /task/{id} → .focus(taskId:)
+ *  /task/…    → .focus(taskId:)
  *  /gallery   → .styleGallery
- *  /join/{code} → .join(code:)
- *  /clip/{source} → .appClipCapture(source:)
+ *  /join/…    → .join(code:)
+ *  /clip/…    → .appClipCapture(source:)
  *  /          → .inbox
  *
  * Associated Domains entitlement:

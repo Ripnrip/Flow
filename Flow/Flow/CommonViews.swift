@@ -160,17 +160,27 @@ struct BreathingEmojiView: View {
     @State private var breath: CGFloat = 1.0
 
     var body: some View {
-        Text(emoji)
-            .font(compact ? .title2 : .largeTitle)
-            .scaleEffect(reduceMotion ? 1 : 1 + (breath * 0.1))
-            .accessibilityHidden(true)
-            .onAppear {
-                // Honor Reduce Motion: skip the perpetual breathing animation.
-                guard !reduceMotion else { return }
-                withAnimation(.easeInOut(duration: breathingDuration).repeatForever(autoreverses: true)) {
-                    breath = 0.0
-                }
+        Group {
+            if emoji.hasPrefix("sf:") {
+                // ⚡ Render SF Symbols that were stored with the "sf:" prefix
+                // (e.g. imported tasks from external sources).
+                Image(systemName: String(emoji.dropFirst(3)))
+                    .font(compact ? .title2 : .largeTitle)
+                    .scaleEffect(reduceMotion ? 1 : 1 + (breath * 0.1))
+            } else {
+                Text(emoji)
+                    .font(compact ? .title2 : .largeTitle)
+                    .scaleEffect(reduceMotion ? 1 : 1 + (breath * 0.1))
             }
+        }
+        .accessibilityHidden(true)
+        .onAppear {
+            // Honor Reduce Motion: skip the perpetual breathing animation.
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: breathingDuration).repeatForever(autoreverses: true)) {
+                breath = 0.0
+            }
+        }
     }
 
     private var breathingDuration: Double {

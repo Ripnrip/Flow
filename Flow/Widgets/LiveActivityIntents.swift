@@ -23,9 +23,66 @@
 
 import AppIntents
 import ActivityKit
+import OSLog
 import SwiftUI
 import WidgetKit
 import OSLog
+
+// MARK: - 🎛️ Live Activity Configuration
+
+/// An action that can appear on the Live Activity.
+enum LiveActivityAction: String, Sendable, Codable, CaseIterable {
+    case snooze
+    case done
+    case pauseResume
+    case extend
+}
+
+/// How much motion the Live Activity should use.
+enum LiveActivityAnimationIntensity: String, Sendable, Codable, CaseIterable {
+    case calm
+    case normal
+    case lively
+}
+
+/// User-facing configuration for the Live Activity.
+struct LiveActivityConfiguration: Sendable, Codable, Equatable {
+    var leadingAction: LiveActivityAction
+    var trailingAction: LiveActivityAction
+    var showProgressRing: Bool
+    var animationIntensity: LiveActivityAnimationIntensity
+
+    nonisolated static var `default`: LiveActivityConfiguration {
+        LiveActivityConfiguration(
+            leadingAction: .snooze,
+            trailingAction: .done,
+            showProgressRing: true,
+            animationIntensity: .normal
+        )
+    }
+}
+
+extension LiveActivityConfiguration {
+    private enum CodingKeys: String, CodingKey {
+        case leadingAction, trailingAction, showProgressRing, animationIntensity
+    }
+
+    nonisolated init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.leadingAction = try container.decode(LiveActivityAction.self, forKey: .leadingAction)
+        self.trailingAction = try container.decode(LiveActivityAction.self, forKey: .trailingAction)
+        self.showProgressRing = try container.decode(Bool.self, forKey: .showProgressRing)
+        self.animationIntensity = try container.decode(LiveActivityAnimationIntensity.self, forKey: .animationIntensity)
+    }
+
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(leadingAction, forKey: .leadingAction)
+        try container.encode(trailingAction, forKey: .trailingAction)
+        try container.encode(showProgressRing, forKey: .showProgressRing)
+        try container.encode(animationIntensity, forKey: .animationIntensity)
+    }
+}
 
 // MARK: - 🏷️ Activity Attributes (shared between app + widget)
 
@@ -74,13 +131,50 @@ public struct FlowAttributes: ActivityAttributes {
         /// Rich reminder queue — every incomplete Apple Reminder, surfaced
         /// in the expanded Dynamic Island as themed mini-cards.
         var reminderQueue: [ReminderQueueItem] = []
+        var isPaused: Bool = false
+        var focusTargetMinutes: Int = 25
+        var elapsedPauseSeconds: TimeInterval = 0
+
+        /// The moment the current pause interval began. `nil` while running.
+        /// Carried over from `ActiveTaskSnapshot` so `effectiveElapsed` can
+        /// subtract the in-progress pause and keep the timer frozen. 🧊⏱️
+        var pauseStartDate: Date? = nil
+
+        /// Momentary triumph flag. Set by `DoneIntent` just before ending
+        /// activities so the UI can flash a green completion celebration. ✅🎉
+        var didComplete: Bool = false
+
+        var leadingActionRawValue: String = LiveActivityAction.snooze.rawValue
+        var trailingActionRawValue: String = LiveActivityAction.done.rawValue
+        var showProgressRing: Bool = true
+        var animationIntensityRawValue: String = LiveActivityAnimationIntensity.normal.rawValue
     }
     var taskId: String
 }
 
+extension FlowAttributes.ContentState {
+    /// 🎛️ The leading action configured for this Live Activity.
+    var leadingAction: LiveActivityAction {
+        LiveActivityAction(rawValue: leadingActionRawValue) ?? .snooze
+    }
+
+    /// 🎛️ The trailing action configured for this Live Activity.
+    var trailingAction: LiveActivityAction {
+        LiveActivityAction(rawValue: trailingActionRawValue) ?? .done
+    }
+
+    /// ✨ How lively the Live Activity's motion should be.
+    var animationIntensity: LiveActivityAnimationIntensity {
+        LiveActivityAnimationIntensity(rawValue: animationIntensityRawValue) ?? .normal
+    }
+}
+
 // MARK: - 🛠️ Helpers
 
-nonisolated private func makeContentState(from snapshot: ActiveTaskSnapshot) -> FlowAttributes.ContentState {
+nonisolated func makeContentState(
+    from snapshot: ActiveTaskSnapshot,
+    configuration: LiveActivityConfiguration = .default
+) -> FlowAttributes.ContentState {
     FlowAttributes.ContentState(
         title: snapshot.title,
         snoozeCount: snapshot.snoozeCount,
@@ -94,29 +188,45 @@ nonisolated private func makeContentState(from snapshot: ActiveTaskSnapshot) -> 
         dueDate: snapshot.dueDate,
         queueTotal: snapshot.queueTotal,
         notesPreview: snapshot.notesPreview,
-        reminderQueue: snapshot.reminderQueue
+        reminderQueue: snapshot.reminderQueue,
+        isPaused: snapshot.isPaused,
+        focusTargetMinutes: snapshot.focusTargetMinutes,
+        elapsedPauseSeconds: snapshot.elapsedPauseSeconds,
+        pauseStartDate: snapshot.pauseStartDate,
+        leadingActionRawValue: configuration.leadingAction.rawValue,
+        trailingActionRawValue: configuration.trailingAction.rawValue,
+        showProgressRing: configuration.showProgressRing,
+        animationIntensityRawValue: configuration.animationIntensity.rawValue
     )
 }
 
 /// Push an updated state to all running Flow Live Activities.
 /// Safe to call from any target; guarded by `#if os(iOS)`.
-@MainActor
-private func pushLiveActivityUpdate(state: FlowAttributes.ContentState) async {
+func pushLiveActivityUpdate(state: FlowAttributes.ContentState) async {
     #if os(iOS)
-    let staleDate = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
-    for activity in Activity<FlowAttributes>.activities {
-        await activity.update(using: state)
-        FlowLogger.liveActivity.info("🏝️ Updated Live Activity \(activity.id) snooze=\(state.snoozeCount)")
+    await MainActor.run {
+        let staleDate = Calendar.current.date(byAdding: .hour, value: 4, to: .now)
+        let content   = ActivityContent(state: state, staleDate: staleDate)
+        for activity in Activity<FlowAttributes>.activities {
+            Task {
+                await activity.update(content)
+            }
+            FlowLogger.liveActivity.info("🏝️ Updated Live Activity \(activity.id) snooze=\(state.snoozeCount)")
+        }
     }
     #endif
 }
 
 /// End all running Flow Live Activities immediately.
-private func endAllLiveActivities() async {
+func endAllLiveActivities() async {
     #if os(iOS)
-    for activity in Activity<FlowAttributes>.activities {
-        await activity.end(nil, dismissalPolicy: .immediate)
-        FlowLogger.liveActivity.info("🏝️ Ended Live Activity \(activity.id)")
+    await MainActor.run {
+        for activity in Activity<FlowAttributes>.activities {
+            Task {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+            FlowLogger.liveActivity.info("🏝️ Ended Live Activity \(activity.id)")
+        }
     }
     #endif
 }
@@ -156,13 +266,14 @@ struct SnoozeIntent: LiveActivityIntent {
         FlowLogger.intent.info("💤 [SnoozeIntent] Performing for task: \(taskId)")
 
         // 1. Mutate shared store (cross-process safe via App Groups)
-        guard let updated = await SharedTaskStore.shared.snooze() else {
-            FlowLogger.intent.warning("⚠️ [SnoozeIntent] No active task — nothing to snooze")
+        guard let updated = await SharedTaskStore.shared.snooze(taskId: taskId) else {
+            FlowLogger.intent.warning("⚠️ [SnoozeIntent] No active task matching \(taskId) — nothing to snooze")
             return .result(value: false)
         }
 
-        // 2. Push updated state to running Live Activities
-        let newState = makeContentState(from: updated)
+        // 2. Push updated state to running Live Activities (with current config baked in)
+        let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
+        let newState = makeContentState(from: updated, configuration: config)
         await pushLiveActivityUpdate(state: newState)
 
         // 3. Invalidate widget timelines so they reflect the new snooze count
@@ -205,18 +316,115 @@ struct DoneIntent: LiveActivityIntent {
         FlowLogger.intent.info("✅ [DoneIntent] Performing for task: \(taskId)")
 
         // 1. Mark completed in shared store
-        guard let completed = await SharedTaskStore.shared.complete() else {
-            FlowLogger.intent.warning("⚠️ [DoneIntent] No active task — nothing to complete")
+        guard let completed = await SharedTaskStore.shared.complete(taskId: taskId) else {
+            FlowLogger.intent.warning("⚠️ [DoneIntent] No active task matching \(taskId) — nothing to complete")
             return .result(value: false)
         }
 
-        // 2. End all running Live Activities
+        // 2. Flash a brief completion celebration on all running Live Activities.
+        //    We push `didComplete = true`, let the UI render the green flash,
+        //    then end the activities a moment later. 🎉✨
+        let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
+        var finalState = makeContentState(from: completed, configuration: config)
+        finalState.didComplete = true
+        await pushLiveActivityUpdate(state: finalState)
+        try? await Task.sleep(nanoseconds: 600_000_000) // ~0.6s victory lap
+
+        // 3. End all running Live Activities
         await endAllLiveActivities()
 
-        // 3. Invalidate widget timelines (they'll show empty-state)
+        // 4. Invalidate widget timelines (they'll show empty-state)
         WidgetCenter.shared.reloadAllTimelines()
 
         FlowLogger.intent.info("🎉 [DoneIntent] Completed: '\(completed.title)'")
+        return .result(value: true)
+    }
+}
+
+// MARK: - ⏸️ Pause / Resume
+
+/// Pauses or resumes the active focus session **without opening the app**.
+///
+/// Execution flow:
+/// 1. Toggles `isPaused` in `SharedTaskStore` (App Groups).
+/// 2. Pushes the updated state to all running Live Activities.
+/// 3. Requests a WidgetKit timeline refresh.
+/// 4. Returns without opening the app.
+///
+/// The main app will reconcile the paused state back to SwiftData on next foreground.
+struct PauseResumeIntent: LiveActivityIntent {
+
+    static let openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Pause or Resume Focus"
+    static let description = IntentDescription(
+        "Pause or resume your active Flow focus session.",
+        categoryName: "Focus"
+    )
+    static let isDiscoverable: Bool = true
+
+    @Parameter(title: "Task Identifier")
+    var taskId: String
+
+    init(taskId: String) { self.taskId = taskId }
+    init() { self.taskId = "" }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        FlowLogger.intent.info("⏸️ [PauseResumeIntent] Performing for task: \(taskId)")
+
+        guard let updated = await SharedTaskStore.shared.togglePause(taskId: taskId) else {
+            FlowLogger.intent.warning("⚠️ [PauseResumeIntent] No active task matching \(taskId)")
+            return .result(value: false)
+        }
+
+        let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
+        let newState = makeContentState(from: updated, configuration: config)
+        await pushLiveActivityUpdate(state: newState)
+        WidgetCenter.shared.reloadAllTimelines()
+
+        FlowLogger.intent.info("🎉 [PauseResumeIntent] Paused=\(updated.isPaused)")
+        return .result(value: true)
+    }
+}
+
+// MARK: - ⏱️ Extend Focus
+
+/// Adds five minutes to the current focus target **without opening the app**.
+///
+/// Execution flow:
+/// 1. Extends `focusTargetMinutes` in `SharedTaskStore` (App Groups), capped at 60 minutes.
+/// 2. Pushes the updated state to all running Live Activities.
+/// 3. Requests a WidgetKit timeline refresh.
+/// 4. Returns without opening the app.
+struct ExtendFocusIntent: LiveActivityIntent {
+
+    static let openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Extend Focus Session"
+    static let description = IntentDescription(
+        "Add five more minutes to your current focus target.",
+        categoryName: "Focus"
+    )
+    static let isDiscoverable: Bool = true
+
+    @Parameter(title: "Task Identifier")
+    var taskId: String
+
+    init(taskId: String) { self.taskId = taskId }
+    init() { self.taskId = "" }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        FlowLogger.intent.info("⏱️ [ExtendFocusIntent] Performing for task: \(taskId)")
+
+        guard let updated = await SharedTaskStore.shared.extendFocus(taskId: taskId, additionalMinutes: 5) else {
+            FlowLogger.intent.warning("⚠️ [ExtendFocusIntent] No active task matching \(taskId)")
+            return .result(value: false)
+        }
+
+        let config = await SharedTaskStore.shared.loadLiveActivityConfiguration()
+        let newState = makeContentState(from: updated, configuration: config)
+        await pushLiveActivityUpdate(state: newState)
+        WidgetCenter.shared.reloadAllTimelines()
+
+        FlowLogger.intent.info("🎉 [ExtendFocusIntent] Target=\(updated.focusTargetMinutes) min")
         return .result(value: true)
     }
 }
@@ -288,7 +496,7 @@ struct NextReminderIntent: LiveActivityIntent {
 /// where the DeepLink handler in FlowApp reads the pending task name from
 /// App Groups UserDefaults and pre-populates the add-task sheet.
 @available(iOS 26.0, macOS 26.0, *)
-struct StartFocusIntentLiveActivity: LiveActivityStartingIntent {
+struct StartFocusIntentLiveActivity: LiveActivityIntent {
 
     static let openAppWhenRun: Bool = false
     static let title: LocalizedStringResource = "Start Focus Session"

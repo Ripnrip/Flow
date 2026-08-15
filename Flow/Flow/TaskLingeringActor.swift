@@ -16,9 +16,11 @@ actor TaskLingeringActor {
     private var activeSessions: [UUID: Date] = [:]
 
     // 🔮 Recording the moment a task enters the ring of awareness
-    func startTracking(taskId: UUID) {
-        activeSessions[taskId] = .now
+    func startTracking(taskId: UUID) -> Date {
+        let startDate = Date()
+        activeSessions[taskId] = startDate
         FlowLogger.task.debug("⏳ Lingering tracking started for task \(taskId, privacy: .public)")
+        return startDate
     }
 
     // 🧪 Calculating the accumulated lingering time since tracking began

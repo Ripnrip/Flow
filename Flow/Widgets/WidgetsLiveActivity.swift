@@ -10,7 +10,7 @@
  *  Presentation           │ Primary content
  * ──────────────────────────────────────────────────────────────
  *  Lock Screen / Banner   │ StyleBackground + emoji + title +
- *                         │ elapsed timer + Snooze / Done buttons
+ *                         │ elapsed timer + configurable actions
  *  Dynamic Island Compact │ Leading: animated emoji
  *                         │ Trailing: live elapsed timer
  *  Dynamic Island Minimal │ Animated emoji only
@@ -27,8 +27,8 @@
  *     not on idle renders, so it never becomes gratuitous
  *
  * Action buttons
- *   • Snooze / Done use `Button(intent:)` backed by SnoozeIntent /
- *     DoneIntent — both have `openAppWhenRun = false`.
+ *   • Configurable leading/trailing actions via `LiveActivityConfiguration`.
+ *   • Each uses `Button(intent:)` backed by a `LiveActivityIntent`.
  *   • Liquid Glass styling applied on iOS 26+ via `.glassEffect()`.
  *
  * HIG: developer.apple.com/design/human-interface-guidelines/live-activities
@@ -38,6 +38,185 @@ import ActivityKit
 import WidgetKit
 import SwiftUI
 import AppIntents
+
+// MARK: - 🧮 Progress Helpers
+
+extension FlowAttributes.ContentState {
+    /// Elapsed focus time, excluding paused periods.
+    /// While paused we also subtract the in-progress pause interval so
+    /// the timer actually freezes instead of sneaking forward. 🧊⏱️
+    var effectiveElapsed: TimeInterval {
+        let raw = Date().timeIntervalSince(startDate)
+        var pauseDuration = elapsedPauseSeconds
+        if isPaused, let pauseStartDate {
+            pauseDuration += Date().timeIntervalSince(pauseStartDate)
+        }
+        return max(0, raw - pauseDuration)
+    }
+
+    /// Progress toward the focus target (0...1).
+    var progress: Double {
+        let target = TimeInterval(focusTargetMinutes * 60)
+        guard target > 0 else { return 0 }
+        return min(effectiveElapsed / target, 1.0)
+    }
+}
+
+// MARK: - 🎨 Progress Ring View
+
+struct ProgressRingView: View {
+    let progress: Double
+    let color: Color
+    let lineWidth: CGFloat
+    let animate: Bool
+    var intensity: LiveActivityAnimationIntensity = .normal
+
+    /// The static ring — background track + progress arc.
+    private var ringContent: some View {
+        ZStack {
+            Circle()
+                .stroke(color.opacity(0.2), lineWidth: lineWidth)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(animate ? .easeInOut(duration: 0.6) : .none, value: progress)
+        }
+    }
+
+    var body: some View {
+        if intensity == .lively {
+            // 🎠 Keep the ring twirling in the lively intensity so it feels
+            //    more energetic than the calm/normal variants.
+            TimelineView(.animation(minimumInterval: 0.05, paused: false)) { timeline in
+                ringContent
+                    .rotationEffect(.degrees(timeline.date.timeIntervalSinceReferenceDate * 180))
+            }
+        } else {
+            ringContent
+        }
+    }
+}
+
+// MARK: - ✨ Symbol Effect Helper
+
+/// A tiny shim that lets us pass symbol effects around as values.
+/// Real SwiftUI SymbolEffects are protocol types, so we wrap the cases
+/// we actually use in the Live Activity for easy conditional animation. 🎭
+enum SymbolWiggleEffect {
+    case wiggle(value: Int)
+    case bounce(value: Bool)
+    case pulse(isActive: Bool)
+}
+
+extension Image {
+    @ViewBuilder
+    func liveActivitySymbolEffect(_ effect: SymbolWiggleEffect?) -> some View {
+        switch effect {
+        case .wiggle(let value):
+            self.symbolEffect(.wiggle, value: value)
+        case .bounce(let value):
+            self.symbolEffect(.bounce, value: value)
+        case .pulse(let isActive):
+            self.symbolEffect(.pulse, isActive: isActive)
+        case .none:
+            self
+        }
+    }
+}
+
+// MARK: - 🔘 Configurable Action Button
+
+struct LiveActivityActionButton: View {
+    let action: LiveActivityAction
+    let taskId: String
+    let style: TaskStyle
+    let snoozeCount: Int
+    let isPaused: Bool
+    let animationIntensity: LiveActivityAnimationIntensity
+
+    var body: some View {
+        switch action {
+        case .snooze:
+            actionIntentButton(
+                intent: SnoozeIntent(taskId: taskId),
+                icon: "bed.double.fill",
+                label: "Snooze",
+                color: style.themeForegroundColor(),
+                symbolEffect: animationIntensity == .calm
+                    ? nil
+                    : .wiggle(value: animationIntensity == .lively ? snoozeCount + 1 : snoozeCount)
+            )
+        case .done:
+            actionIntentButton(
+                intent: DoneIntent(taskId: taskId),
+                icon: "checkmark.circle.fill",
+                label: liveActivityDoneLabel(for: style),
+                color: .white,
+                background: style.themeAccentColor(),
+                symbolEffect: animationIntensity == .calm
+                    ? nil
+                    : .bounce(value: animationIntensity == .lively ? snoozeCount.isMultiple(of: 2) : true)
+            )
+        case .pauseResume:
+            actionIntentButton(
+                intent: PauseResumeIntent(taskId: taskId),
+                icon: isPaused ? "play.fill" : "pause.fill",
+                label: isPaused ? "Resume" : "Pause",
+                color: style.themeForegroundColor(),
+                symbolEffect: nil
+            )
+        case .extend:
+            actionIntentButton(
+                intent: ExtendFocusIntent(taskId: taskId),
+                icon: "plus.circle.fill",
+                label: "+5 min",
+                color: style.themeForegroundColor(),
+                symbolEffect: nil
+            )
+        }
+    }
+
+    private func actionIntentButton<I: LiveActivityIntent>(
+        intent: I,
+        icon: String,
+        label: String,
+        color: Color,
+        background: Color? = nil,
+        symbolEffect: SymbolWiggleEffect?
+    ) -> some View {
+        Button(intent: intent) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .liveActivitySymbolEffect(effectiveSymbolEffect(for: symbolEffect))
+                    .font(.system(size: 13))
+                Text(label)
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 11)
+            .foregroundStyle(color)
+            .scaleEffect(animationIntensity == .lively ? 1.05 : 1.0)
+            .animation(
+                animationIntensity == .lively
+                    ? .easeInOut(duration: 0.6).repeatForever(autoreverses: true)
+                    : .default,
+                value: animationIntensity == .lively
+            )
+        }
+        .buttonStyle(.plain)
+        .background(background ?? style.themeForegroundColor().opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 13))
+    }
+
+    /// If the caller didn't supply a symbol effect, `.lively` gets a gentle
+    /// pulse so every button participates in the more energetic mode. ✨
+    private func effectiveSymbolEffect(for effect: SymbolWiggleEffect?) -> SymbolWiggleEffect? {
+        if let effect { return effect }
+        if animationIntensity == .lively { return .pulse(isActive: true) }
+        return nil
+    }
+}
 
 // MARK: - 🏝️ Live Activity Widget
 
@@ -78,12 +257,26 @@ struct WidgetsLiveActivity: Widget {
             VStack(spacing: 12) {
                 // ── Top row: emoji / title / metric ──────────────────
                 HStack(spacing: 12) {
-                    BreathingEmojiView(
-                        emoji: context.state.emoji,
-                        style: style,
-                        compact: false,
-                        growthLevel: context.state.growthLevel
-                    )
+                    ZStack {
+                        if context.state.showProgressRing {
+                            ProgressRingView(
+                                progress: context.state.progress,
+                                color: style.themeAccentColor(),
+                                lineWidth: 5,
+                                animate: context.state.animationIntensity != .calm,
+                                intensity: context.state.animationIntensity
+                            )
+                            .frame(width: 62, height: 62)
+                        }
+
+                        BreathingEmojiView(
+                            emoji: context.state.emoji,
+                            style: style,
+                            compact: false,
+                            growthLevel: context.state.growthLevel
+                        )
+                        .frame(width: 48, height: 48)
+                    }
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(eyebrow(for: context.state))
@@ -116,44 +309,29 @@ struct WidgetsLiveActivity: Widget {
                     )
                 }
 
-                // ── Bottom row: action buttons ────────────────────────
+                // ── Bottom row: configurable action buttons ───────────
                 HStack(spacing: 10) {
-                    Button(intent: SnoozeIntent(taskId: context.attributes.taskId)) {
-                        HStack(spacing: 5) {
-                            Image(systemName: "bed.double.fill")
-                                .symbolEffect(.wiggle, value: context.state.snoozeCount)
-                                // SF Symbols 7 (iOS 26): draw-in on first appear
-                                .transition(.symbolEffect(.drawOn))
-                            Text("Snooze")
-                        }
-                        .font(.system(size: 14, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .foregroundStyle(style.themeForegroundColor())
-                    }
-                    .buttonStyle(.plain)
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 13))
-
-                    Button(intent: DoneIntent(taskId: context.attributes.taskId)) {
-                        HStack(spacing: 5) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .symbolEffect(.bounce, value: true)
-                                .transition(.symbolEffect(.drawOn))
-                            Text(doneLabel(for: style))
-                        }
-                        .font(.system(size: 14, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .foregroundStyle(.white)
-                    }
-                    .buttonStyle(.plain)
-                    .background(style.themeAccentColor())
-                    .clipShape(RoundedRectangle(cornerRadius: 13))
-                    .glassEffect(.regular.tint(style.themeAccentColor()), in: RoundedRectangle(cornerRadius: 13))
+                    LiveActivityActionButton(
+                        action: context.state.leadingAction,
+                        taskId: context.attributes.taskId,
+                        style: style,
+                        snoozeCount: context.state.snoozeCount,
+                        isPaused: context.state.isPaused,
+                        animationIntensity: context.state.animationIntensity
+                    )
+                    LiveActivityActionButton(
+                        action: context.state.trailingAction,
+                        taskId: context.attributes.taskId,
+                        style: style,
+                        snoozeCount: context.state.snoozeCount,
+                        isPaused: context.state.isPaused,
+                        animationIntensity: context.state.animationIntensity
+                    )
                 }
             }
             .padding(14)
         }
+        .overlay(completionFlash(didComplete: context.state.didComplete))
         .activityBackgroundTint(style.themeBackgroundColor())
         .activitySystemActionForegroundColor(style.themeForegroundColor())
     }
@@ -280,56 +458,75 @@ struct WidgetsLiveActivity: Widget {
 
                 // ── Action buttons with Liquid Glass ──────────────────
                 HStack(spacing: 8) {
-                    Button(intent: SnoozeIntent(taskId: context.attributes.taskId)) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "bed.double.fill")
-                                .symbolEffect(.wiggle, value: context.state.snoozeCount)
-                                .font(.system(size: 13))
-                            Text("Snooze")
-                                .font(.system(size: 13, weight: .medium))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .foregroundStyle(style.themeForegroundColor())
-                    }
-                    .buttonStyle(.plain)
+                    LiveActivityActionButton(
+                        action: context.state.leadingAction,
+                        taskId: context.attributes.taskId,
+                        style: style,
+                        snoozeCount: context.state.snoozeCount,
+                        isPaused: context.state.isPaused,
+                        animationIntensity: context.state.animationIntensity
+                    )
                     .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
 
-                    // Next button — only for reminder queue mode
-                    if isReminderQueue && queue.count > 1 {
-                        Button(intent: NextReminderIntent(taskId: context.attributes.taskId)) {
+                    if isReminderQueue {
+                        // ── Reminder-queue mode: Next + Done ──────────────
+                        if queue.count > 1 {
+                            Button(intent: NextReminderIntent(taskId: context.attributes.taskId)) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "forward.fill")
+                                        .font(.system(size: 13))
+                                    Text("Next")
+                                        .font(.system(size: 13, weight: .medium))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 11)
+                                .foregroundStyle(style.themeForegroundColor())
+                            }
+                            .buttonStyle(.plain)
+                            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+                        }
+
+                        Button(intent: DoneIntent(taskId: context.attributes.taskId)) {
                             HStack(spacing: 4) {
-                                Image(systemName: "forward.fill")
+                                Image(systemName: "checkmark.circle.fill")
+                                    .symbolEffect(.bounce, value: true)
                                     .font(.system(size: 13))
-                                Text("Next")
-                                    .font(.system(size: 13, weight: .medium))
+                                Text(doneLabel(for: style))
+                                    .font(.system(size: 13, weight: .semibold))
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 11)
-                            .foregroundStyle(style.themeForegroundColor())
+                            .foregroundStyle(.white)
                         }
                         .buttonStyle(.plain)
+                        .glassEffect(.regular.tint(style.themeAccentColor()), in: RoundedRectangle(cornerRadius: 12))
+                    } else {
+                        // ── Focus mode: user-configured action buttons ────
+                        LiveActivityActionButton(
+                            action: context.state.leadingAction,
+                            taskId: context.attributes.taskId,
+                            style: style,
+                            snoozeCount: context.state.snoozeCount,
+                            isPaused: context.state.isPaused,
+                            animationIntensity: context.state.animationIntensity
+                        )
                         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
-                    }
 
-                    Button(intent: DoneIntent(taskId: context.attributes.taskId)) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .symbolEffect(.bounce, value: true)
-                                .font(.system(size: 13))
-                            Text(doneLabel(for: style))
-                                .font(.system(size: 13, weight: .semibold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .foregroundStyle(.white)
+                        LiveActivityActionButton(
+                            action: context.state.trailingAction,
+                            taskId: context.attributes.taskId,
+                            style: style,
+                            snoozeCount: context.state.snoozeCount,
+                            isPaused: context.state.isPaused,
+                            animationIntensity: context.state.animationIntensity
+                        )
+                        .glassEffect(.regular.tint(style.themeAccentColor()), in: RoundedRectangle(cornerRadius: 12))
                     }
-                    .buttonStyle(.plain)
-                    .glassEffect(.regular.tint(style.themeAccentColor()), in: RoundedRectangle(cornerRadius: 12))
                 }
                 .padding(.horizontal, 14)
             }
             .padding(.bottom, 10)
+            .overlay(completionFlash(didComplete: context.state.didComplete))
         }
     }
 
@@ -339,12 +536,26 @@ struct WidgetsLiveActivity: Widget {
 
     @ViewBuilder
     private func compactLeadingView(context: ActivityViewContext<FlowAttributes>) -> some View {
-        BreathingEmojiView(
-            emoji: context.state.emoji,
-            style: context.state.style,
-            compact: true,
-            growthLevel: context.state.growthLevel
-        )
+        ZStack {
+            if context.state.showProgressRing {
+                ProgressRingView(
+                    progress: context.state.progress,
+                    color: context.state.style.themeAccentColor(),
+                    lineWidth: 3,
+                    animate: context.state.animationIntensity != .calm,
+                    intensity: context.state.animationIntensity
+                )
+                .frame(width: 34, height: 34)
+            }
+
+            BreathingEmojiView(
+                emoji: context.state.emoji,
+                style: context.state.style,
+                compact: true,
+                growthLevel: context.state.growthLevel
+            )
+            .frame(width: 26, height: 26)
+        }
         .padding(.leading, 2)
     }
 
@@ -402,15 +613,24 @@ struct WidgetsLiveActivity: Widget {
     // MARK: - 🎨 Style Helpers
     // ─────────────────────────────────────────────────────────
 
-    private func doneLabel(for style: TaskStyle) -> String {
-        switch style {
-        case .questMode:     return "Slay"
-        case .magicalScroll: return "Cast"
-        case .volcanicFlow:  return "Extinguish"
-        case .livingGarden:  return "Harvest"
-        case .spaceMission:  return "Deploy"
-        case .courierPrime:  return "Delivered"
-        default:             return "Done"
+    /// A brief green flash + checkmark burst shown the moment a task is
+    /// completed. `DoneIntent` sets `didComplete = true`, pushes the state,
+    /// waits ~0.6s, then ends the activity. 🎉✅
+    @ViewBuilder
+    private func completionFlash(didComplete: Bool) -> some View {
+        if didComplete {
+            ZStack {
+                Color.green.opacity(0.35)
+                    .ignoresSafeArea()
+
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 56, weight: .bold))
+                    .foregroundStyle(.white)
+                    .symbolEffect(.bounce, value: true)
+            }
+            .allowsHitTesting(false)
+            .transition(.opacity.combined(with: .scale))
+            .animation(.easeInOut(duration: 0.2), value: didComplete)
         }
     }
 
@@ -500,6 +720,19 @@ struct ReminderQueueCard: View {
     }
 }
 
+/// 🏷️ Maps a task style to a thematic "complete" label for the Done action.
+private func liveActivityDoneLabel(for style: TaskStyle) -> String {
+    switch style {
+    case .questMode:     return "Slay"
+    case .magicalScroll: return "Cast"
+    case .volcanicFlow:  return "Extinguish"
+    case .livingGarden:  return "Harvest"
+    case .spaceMission:  return "Deploy"
+    case .courierPrime:  return "Delivered"
+    default:             return "Done"
+    }
+}
+
 // MARK: - 🧪 Preview Support
 
 extension FlowAttributes {
@@ -570,7 +803,14 @@ extension FlowAttributes.ContentState {
             emoji: emoji,
             style: style,
             lastInteractionDate: .now,
-            growthLevel: 1
+            growthLevel: 1,
+            isPaused: false,
+            focusTargetMinutes: 25,
+            elapsedPauseSeconds: 0,
+            leadingActionRawValue: LiveActivityAction.snooze.rawValue,
+            trailingActionRawValue: LiveActivityAction.done.rawValue,
+            showProgressRing: true,
+            animationIntensityRawValue: LiveActivityAnimationIntensity.normal.rawValue
         )
     }
 }

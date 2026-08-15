@@ -4,7 +4,7 @@
 
 ### Dynamic Island iOS App
 
-<img src="docs/images/flow-ghibli.png" width="800" alt="Flow — A Ghibli-style illustration of a magical iPhone in a serene Japanese garden" style="border-radius: 16px;">
+<img src="docs/images/banner-reveal.svg" width="800" alt="Flow — A Ghibli-style illustration of a magical iPhone in a serene Japanese garden" style="border-radius: 16px;">
 
 <br />
 

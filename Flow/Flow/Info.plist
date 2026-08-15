@@ -2,41 +2,55 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleDocumentTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>MKDirectionsRequest</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>com.apple.maps.directionsrequest</string>
-			</array>
-		</dict>
-	</array>
-	<key>MKDirectionsApplicationSupportedModes</key>
-	<array>
-		<string>MKDirectionsModeBike</string>
-		<string>MKDirectionsModeBus</string>
-		<string>MKDirectionsModeCar</string>
-		<string>MKDirectionsModePedestrian</string>
-		<string>MKDirectionsModeRideShare</string>
-		<string>MKDirectionsModeSubway</string>
-		<string>MKDirectionsModeTaxi</string>
-		<string>MKDirectionsModeTrain</string>
-	</array>
-	<key>MusicHapticsSupported</key>
-	<true/>
+	<!--
+	    🔑 Todoist API token placeholder.
+	    Replace "YOUR_TODOIST_API_TOKEN" with a real token before release,
+	    or load it from a secure source at runtime. Leaving it blank disables
+	    Todoist import but keeps the app safe to archive. 🛡️
+	-->
+	<key>TodoistAPIKey</key>
+	<string>YOUR_TODOIST_API_TOKEN</string>
+
+	<!--
+	    🌙 Background processing task used to reconcile SharedTaskStore changes
+	    committed by AppIntents while the app is suspended.
+	-->
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.binarybros.Flow.reconcile</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>remote-notification</string>
-		<string>location</string>
 		<string>processing</string>
-		<string>fetch</string>
-		<string>audio</string>
+	</array>
+
+	<!--
+	    🌐 Base URL for the Flow Hummingbird backend.
+	    Default points to the local dev server. Override for staging/production.
+	-->
+	<key>FlowServerBaseURL</key>
+	<string>http://localhost:17777</string>
+
+	<!--
+	    🏝️ Live Activities support for Dynamic Island + Lock Screen widgets.
+	-->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+
+	<!--
+	    🔗 Custom URL scheme so widgets / Siri / other apps can open
+	    flow://task/UUID, flow://gallery, etc.
+	-->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.binarybros.Flow.urlscheme</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>flow</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
