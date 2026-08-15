@@ -1,5 +1,30 @@
 # Changelog
 
+## August 15, 2026: 🌱 Ground Truth Sync — The App Meets Its Own Evidence (AMOR v4.0.0 + Line Unification)
+
+### Commit Messages of the Day
+`feat: AMOR v4.0.0 — Ground Truth Sync Engine` (`fe9b0d6`)
+`merge: unite TestFlight line with AMOR cron line` (`f8d35e9`)
+
+### Steps Taken
+- `2026-08-15 20:34 UTC` — Confirmed the session date before writing this top-of-file journal entry.
+- Discovered the practice streaks were manual-tap fiction while real evidence (`gita_progress.json` — 73 days, Ch 5 V 28) sat on disk unread.
+- Built the Ground Truth engine + SwiftData syncer + Dashboard card (3 files, ~730 LOC).
+- Caught and fixed a phantom-parser bug by live-firing the compiled engine against real EOD dumps (`**N sessions today:**`, not tables; no `## Tools` section exists).
+- Discovered remote had diverged 22 commits (user's TestFlight line) vs 17 unpushed AMOR commits — every prior cron push had silently failed on a GCM credential hang. Resolved 11 conflicted files by UNION; both feature lines survive.
+- Pushed everything (`188dd96..f8d35e9`) using gh CLI credentials.
+
+### What Changed
+- New `AMORGroundTruth.swift`: Foundation-only engine reading `gita_progress.json`, `gym_selfie_progress.json`, and `session-dump-*.md` files with formats verified against the real artifacts.
+- New `AMORGroundTruthSyncer.swift`: idempotent upserts under the SYNC LAW — positive evidence only, forward-only, max() semantics; ground truth can raise a streak, never lower one.
+- New `AMORGroundTruthView.swift`: Ground Truth Dashboard card with honest empty states.
+- `FlowApp` scenePhase now runs the sync on every foreground; Dashboard gained the card below Streak Intelligence.
+- Merge: FlowApp carries both AMORService and FlowServerService; ContentView sidebar has both AMOR and Command Center; `FlowAttributes.ContentState` carries both the reminder-queue fields and the focus-timer/pause/config fields; TaskService builds Live Activity state via the shared snapshot path.
+- Fix: restored `identifier:` in `ReminderSnapshot` construction (dropped on one line — compile blocker).
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a credential daemon waited for a browser that would never open, and seventeen commits sailed quietly into a hold with no pilot. We read the trace, reset the helper list, and handed the wheel to the gh CLI. The streak now knows what the cron knows: seventy-three mornings, and counting. 🌱⛵
+
 ## May 30, 2026: 🕶️ Hacker Hat — Snooze Delta Heist Foiled
 
 ### Commit Message of the Day
