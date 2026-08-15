@@ -369,6 +369,9 @@ struct DashboardView: View {
                     // v3.4.0: Streak Intelligence card
                     StreakIntelligenceCompactCard()
 
+                    // v4.0.0: Ground Truth — real evidence from this Mac's files
+                    AMORGroundTruthCard()
+
                     // v3.8.0: Siri Shortcuts discoverability card
                     AMORSiriShortcutsCard()
 
