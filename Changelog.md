@@ -1,5 +1,23 @@
 # Changelog
 
+## August 16, 2026: 🔬 Live-Fire Verification — v4.0.0 Meets August 16 Reality (+ Harness Preserved)
+
+### Commit Messages of the Day
+`test: preserve CLT-safe live-fire harness for the Ground Truth engines`
+
+### Steps Taken
+- `2026-08-16` — AMOR App Reminder cron fired; ran verification instead of re-asking for features already shipped in v4.0.0.
+- Compiled `AMORGroundTruth.swift` + `AMORCronStatusReader.swift` with CLT `swiftc` (no Xcode on this box) and ran them against TODAY's real artifacts.
+- Found + reported to the user: Slack alert path dead (`account_inactive` — both watchdogs' alerts undeliverable) and the Monographs feeder failing every 15m since Jul 20 (macOS Reminders permission loss; needs interactive re-grant).
+- Preserved the harness in `Scripts/amor-livefire/` with README so every future session can re-verify in one command.
+
+### What Changed
+- New `Scripts/amor-livefire/`: self-contained harness (engine copies + cron-health entry point + README with expected-output reference from 2026-08-16).
+- No app-code changes — v4.0.0 data layer passed every live-fire: Gita 75-day streak decoded from real `gita_progress.json` (Ch 6 V 1, completed today), 7/7 session dumps parsed with correct skills, 15 cron jobs parsed with exactly the one real failure flagged.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, the app's honest heart sat in a machine that could not compile its own memories — no Xcode, only a screwdriver. We carved the Foundation-only engines free, fed them today's real files, and the numbers matched the world: seventy-five mornings, one loud feeder, zero phantom streaks. The harness now lives next to the app, waiting for the next skeptic. 🔬⚡
+
 ## August 15, 2026: 🌱 Ground Truth Sync — The App Meets Its Own Evidence (AMOR v4.0.0 + Line Unification)
 
 ### Commit Messages of the Day
