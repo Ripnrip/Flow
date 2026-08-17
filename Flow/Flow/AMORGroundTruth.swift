@@ -205,7 +205,8 @@ enum AMORGroundTruthEngine {
     // MARK: EOD dump parsing
 
     /// Parses one session-dump markdown file into a summary.
-    /// Format verified against real dumps (2026-08):
+    /// Format verified against real dumps:
+    ///   2026-08-17+ (dumper v2): adds "## Tools Used" → "| `tool` | N |" rows
     ///   ## Session Activity  → "**3 sessions today:**" or "*No sessions recorded today.*"
     ///   ## Cron Job Status   → "| ✅ `name` | `ok` | ..." table rows
     ///   ## Skills Activity   → "- `.hermes/skills/<category>/<name>/SKILL.md`" bullets
@@ -251,6 +252,19 @@ enum AMORGroundTruthEngine {
             }
         }
 
+        // Tools Used (dumps ≥ 2026-08-17, dumper v2): "| `tool` | N |" rows.
+        // Older dumps carry no such section — returns [] honestly, never invented.
+        var tools: [String] = []
+        if let r = content.range(of: #"(?s)## Tools Used.*?(\n## |\z)"#, options: .regularExpression) {
+            let section = String(content[r])
+            if let regex = try? NSRegularExpression(pattern: #"^\|\s*`([^`]+)`\s*\|.*$"#,
+                                                    options: [.anchorsMatchLines]) {
+                let ns = section as NSString
+                tools = regex.matches(in: section, range: NSRange(location: 0, length: ns.length))
+                    .compactMap { $0.numberOfRanges > 1 ? ns.substring(with: $0.range(at: 1)) : nil }
+            }
+        }
+
         // Cron table rows: | ✅ `name` | `ok` | ...
         var ok = 0, errors = 0, unknown = 0
         for line in content.components(separatedBy: .newlines)
@@ -264,7 +278,7 @@ enum AMORGroundTruthEngine {
             date: date,
             sessionsToday: sessions,
             minutesToday: 0,  // real dumps carry file sizes, not durations — stay honest
-            tools: [],        // real dumps have no ## Tools section — do not invent one
+            tools: tools,     // parsed from "## Tools Used" (v2 dumps); [] on older dumps — honest
             skillsTouched: skills,
             cronOkCount: ok,
             cronErrorCount: errors,
