@@ -1,5 +1,29 @@
 # Changelog
 
+## August 17, 2026: ⚡ Tools-Used Ground Truth — EOD Dumper v2 + Cron Fleet Repairs
+
+### Commit Messages of the Day
+`feat: tools-used ground truth — dumper v2 (state.db) + Swift parser reads '## Tools Used'` (`9e38762`)
+
+### Steps Taken
+- `2026-08-17 20:00 UTC` — AMOR App Reminder cron fired; instead of re-verifying shipped features, hunted the one honest gap: the reminder demands "tools used" but the entire chain was hollow.
+- Root-caused TWO phantom-data chains:
+  1. EOD dumper globbed `~/.hermes/sessions/*.json` — those are **gateway request dumps (cron exhaust)**, not sessions. Real transcripts live in `~/.hermes/state.db` (`sessions` + `messages` tables).
+  2. The Swift parser hardcoded `tools: []` because no `## Tools` section ever existed.
+- Found + fixed live infra decay: **Strategic Heartbeat (`f3c255fdddc8`) failing every 2h** since 07:59 UTC — fallback chain landed on decommissioned `groq/llama-3.3-70b-versatile` (404). Re-pointed to `zai/glm-5.2`; verified via forced run (7 API calls, 98% cache hit, 15 tool calls, zero model errors).
+- Repointed **both watchdogs + heartbeat** from dead Slack (`account_inactive`) to live Telegram (`telegram:7536719708`); watchdog recorded its first recovery alert minutes later.
+- Rewrote `~/.hermes/scripts/eod_session_dump.py` (v2): real sessions from state.db, NEW `## Tools Used` table (per-tool call counts), model usage breakdown.
+- Patched `AMORGroundTruth.swift` dump parser: extracts `| \`tool\` | N |` rows from `## Tools Used`; older dumps stay honestly `[]`.
+
+### What Changed
+- `~/.hermes/scripts/eod_session_dump.py` — v2 rewrite (state.db-backed; was counting a broken cron's exhaust files as "sessions").
+- `Flow/Flow/AMORGroundTruth.swift` + `Scripts/amor-livefire/` copies — parser reads tools; harness `main.swift` now a committed live-fire entry point with tools assertion.
+- Cron fleet: `f3c255fdddc8` model→`zai/glm-5.2`; `f3c255fdddc8`/`4dbbc9dcf459`/`12602640b7ec` deliver→`telegram:7536719708`.
+- Today's dump: **12 real sessions, 198 messages, 104 tool calls, 11 distinct tools, 4 models** — first day the "tools used" feature is real.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, the diary counted a dying pump's exhaust as its days, and the tools column sang of zero forever. We followed the numbers upstream to the river's true source — a ledger in SQLite, a model forty-foured at dawn — and carved the count from the rock itself. Seventy-six mornings, eleven tools, one honest diary. ⚡🪨
+
 ## August 16, 2026: 🔬 Live-Fire Verification — v4.0.0 Meets August 16 Reality (+ Harness Preserved)
 
 ### Commit Messages of the Day
