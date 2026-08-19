@@ -24,20 +24,21 @@ files and compare with reality. That's what this harness does.
 
 ```sh
 cd Scripts/amor-livefire
-cp cron-health-main.swift main.swift            # top-level code must live in main.swift
 swiftc -O AMORGroundTruth.swift AMORCronStatusReader.swift main.swift -o cronfire
-rm main.swift
 ./cronfire
 ```
 
-## Expected output (2026-08-16 reference)
+(`main.swift` is committed and already includes the v2 dump-parser
+live-fire: cron health table + failing jobs + last-3-dumps tools assertion.
+`cron-health-main.swift` is kept as the minimal cron-only variant.)
 
-- Gita: days_completed, chapter/verse position, completedToday, streakDays
-  (verified 2026-08-16: 75 days, Ch 6 V 1, completed today)
-- Gym evidence dates (empty array is HONEST ZERO, not an error)
-- Last 7 session dumps: sessions/cronOk/cronErr/skills per day
-- Cron table: all enabled jobs + failing list (flagged the Monographs feeder
-  Reminders-permission outage on 2026-08-16)
+## Expected output (2026-08-17 reference)
+
+- Cron table: all enabled jobs + failing list (post-fix: only the
+  Monographs feeder Reminders-permission outage remains)
+- Last 3 dumps: sessions/tools/skills per day — 2026-08-17 was the first
+  day TOOLS parsed non-empty (11 tools) after the dumper v2 rewrite
+  (state.db-backed; dumps before 2026-08-17 honestly show tools=[])
 
 ## Reading results
 

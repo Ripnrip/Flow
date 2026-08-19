@@ -18,6 +18,21 @@ let failing = jobs.filter { $0.enabled && $0.lastStatus == "error" }
 print("\nFAILING ENABLED JOBS: \(failing.count)")
 for f in failing { print("  ! \(f.name) — \(f.lastError ?? "?")") }
 
+// Live-fire the Gita streak engine against the REAL ~/.hermes/logs/gita_progress.json
+// (restored 2026-08-18 — the v2 rewrite had dropped this; streak tracking is a headline feature)
+print("=== AMOR GITA STREAK LIVE-FIRE — real gita_progress.json ===")
+if let gp = AMORGroundTruthEngine.readGitaProgress() {
+    let streak = AMORGroundTruthEngine.gitaStreakDays(from: gp)
+    let pos = "Ch \(gp.currentChapter) V \(gp.currentVerse)"
+    let done = AMORGroundTruthEngine.gitaCompletedToday(gp) ? "YES" : "not yet"
+    print("days_completed=\(gp.daysCompleted) position=\(pos) completedToday=\(done) streakDays=\(streak)")
+    print("last_completed=\(gp.lastCompleted?.date ?? "?") Ch\(gp.lastCompleted?.chapter ?? 0)")
+} else {
+    print("FAIL — gita_progress.json unreadable")
+}
+let gym = AMORGroundTruthEngine.gymEvidenceDates(daysBack: 7)
+print("gym evidence (7d): \(gym.isEmpty ? "0 — HONEST ZERO, not an error" : gym.joined(separator: ", "))")
+
 // Live-fire the dump parser (v2): tools must surface from today's real dump
 print("\n=== AMOR DUMP PARSER LIVE-FIRE (v2 tools) — last 3 dumps ===")
 let dumps = AMORGroundTruthEngine.readRecentDumps(daysBack: 3)
