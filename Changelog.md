@@ -1,5 +1,24 @@
 # Changelog
 
+## August 19, 2026: 🔁 Restore Gita Streak Live-Fire + CLT-Safe Harness Runner
+
+### Commit Messages of the Day
+`test: restore Gita streak live-fire + CLT-safe runner (run.sh)` (`bf3b51c`)
+
+### Steps Taken
+- `2026-08-19` — AMOR App Reminder cron fired; tree held three days of uncommitted verification work from the live-fire session.
+- Verified the restored Gita streak live-fire: **79-day streak, Ch 6 V 8, completedToday=YES** against the real `gita_progress.json` — the headline streak feature the v2 tools rewrite had dropped from the harness.
+- Ran the full harness via the new CLT-safe `run.sh` (compiles to a mktemp dir, deletes after): all three engines green — 15-job cron table, dump parser TOOLS-ASSERT PASS, Gita streak.
+- Committed + pushed to `main` (`c74a2e4..bf3b51c`).
+
+### What Changed
+- `Scripts/amor-livefire/main.swift` — re-adds the gita_progress.json live-fire section (streak, position, completedToday, gym evidence honest-zero).
+- `Scripts/amor-livefire/run.sh` (new) — one-command runner that never leaves a Mach-O artifact in the repo tree (the gateway lifecycle guard crashes on null bytes when a command references a compiled binary — same class of bug that ate the Aug-17 heartbeat diagnosis).
+- README updated: expected-output reference reflects the v2 dumper reality (tools non-empty only from 2026-08-17 onward; earlier dumps honestly show `[]`).
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, the streak counter sat unbuilt in a drawer while the practitioner crossed seventy-nine mornings unaware of its gaze. We pulled it from the drawer, wired it to the true ledger, and the number burned whole: Ch 6 V 8, done today, fire unbroken. The harness now builds in a fire that consumes its own ashes — temp-born, temp-died, nothing left to poison the guard. 🔁🪔
+
 ## August 17, 2026: ⚡ Tools-Used Ground Truth — EOD Dumper v2 + Cron Fleet Repairs
 
 ### Commit Messages of the Day
