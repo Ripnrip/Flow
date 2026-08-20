@@ -1,5 +1,28 @@
 # Changelog
 
+## August 20, 2026: 📸 Gym Evidence Loop Closed — Ledger Writer + Agent-Driven 5PM Cron
+
+### Commit Messages of the Day
+`fix: close the gym evidence loop — ledger writer + agent-driven selfie cron (was 2-month dead pipe)`
+
+### Steps Taken
+- `2026-08-20` — AMOR App Reminder cron fired; ran full live-fire harness (all green: 80-day Gita streak Ch 6 V 10, 15-job cron table, TOOLS-ASSERT PASS) — then hunted the one number that lied by omission: **gym evidence (7d): 0**.
+- Root-caused a 2-month dead evidence chain: `gym_selfie_progress.json` created Jun 16, **never written since** — `{"streak":0,"total":0,"dates":[]}` while the 5PM cron reported "ok" 62 times. The reminder shouted "reply with the photo to log!" into the void; nothing on the reply side ever wrote the ledger.
+- Verified no backfill evidence exists (state.db Telegram history: zero gym-photo replies ever received — the Jul-5 images were dev screenshots). Ledger stays honestly 0. No phantom streaks.
+- Built the missing write-side: `~/.hermes/scripts/gym_ledger.py` (`log` / `today` / `backfill` — streak+total recomputed from `dates` every write so they can never drift; photo mtime counts as evidence; idempotent).
+- Converted the 5PM cron `d4a6e6e4270b` from `no_agent` dumb-script to **agent-driven** (the proven Gita pattern): `gym_selfie_status.sh` stdout now injects live ledger state into the prompt; the agent runs the ledger writer when the user confirms a workout.
+- Live-fired the converted cron (forced run): agent delivered an honest message — *"streak: 0, total: 0, never started. No evidence yet… AMOR only counts what's real."* LEDGER LAW enforced on first fire.
+- Verified the app contract: Swift `AMORGymProgressFile` decoder ignores the new `evidence` key (compiled + decoded the real file with CLT swiftc — DECODE OK); live-fire harness still green.
+
+### What Changed
+- `~/.hermes/scripts/gym_ledger.py` (new) — single source of truth writer for the gym ledger.
+- `~/.hermes/scripts/gym_selfie_status.sh` (new) — ledger status block injected into the cron prompt each run.
+- Cron `d4a6e6e4270b`: `no_agent=true → false`, `script=gym_selfie_status.sh`, new prompt with LEDGER LAW (positive evidence only; misses are not logged; stale streaks are called out, never quietly zeroed).
+- No app-code changes needed — v4.0.0 Ground Truth engine already reads the ledger verbatim.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a reminder shouted nightly into a void that had no ears, and sixty-two "ok"s piled up beside an empty ledger. We built the ear, wired the hand, and taught the messenger the law: count only what is real. The gym card still reads zero — but tonight, for the first time, zero is a promise instead of a leak. 📸⚖️
+
 ## August 19, 2026: 🔁 Restore Gita Streak Live-Fire + CLT-Safe Harness Runner
 
 ### Commit Messages of the Day
