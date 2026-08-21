@@ -33,6 +33,14 @@ if let gp = AMORGroundTruthEngine.readGitaProgress() {
 let gym = AMORGroundTruthEngine.gymEvidenceDates(daysBack: 7)
 print("gym evidence (7d): \(gym.isEmpty ? "0 — HONEST ZERO, not an error" : gym.joined(separator: ", "))")
 
+// Live-fire the meditation ledger (v4.1.0) — reads the real meditation_progress.json
+let med = AMORGroundTruthEngine.meditationEvidenceDates(daysBack: 7)
+if let mp = AMORGroundTruthEngine.meditationProgress() {
+    print("meditation ledger: streak=\(mp.streak) total=\(mp.total) evidence(7d)=\(med.isEmpty ? "0 — HONEST ZERO" : med.joined(separator: ", "))")
+} else {
+    print("meditation ledger: UNREADABLE — check ~/.hermes/logs/meditation_progress.json")
+}
+
 // Live-fire the dump parser (v2): tools must surface from today's real dump
 print("\n=== AMOR DUMP PARSER LIVE-FIRE (v2 tools) — last 3 dumps ===")
 let dumps = AMORGroundTruthEngine.readRecentDumps(daysBack: 3)

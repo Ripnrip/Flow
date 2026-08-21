@@ -3,16 +3,18 @@
 //  Flow — AMOR v4.0.0
 //
 //  ┌─────────────────────────────────────────────────────────────┐
-//  │            GROUND TRUTH SYNC ENGINE — v4.0.0                │
+//  │            GROUND TRUTH SYNC ENGINE — v4.1.0                │
 //  └─────────────────────────────────────────────────────────────┘
 //
 //  MISSION: The app previously tracked the user's daily practices
 //  (Gita, gym, meditation) via manual taps while the REAL evidence
 //  lived in files on this very Mac, untouched:
 //
-//    • ~/.hermes/logs/gita_progress.json      (morning Gita cron)
-//    • ~/wiki/raw/daily-summaries/*.md        (EOD session dumps)
-//    • ~/.hermes/cron/jobs.json               (cron health)
+//    • ~/.hermes/logs/gita_progress.json        (morning Gita cron)
+//    • ~/.hermes/logs/gym_selfie_progress.json  (5PM gym ledger, agent-written)
+//    • ~/.hermes/logs/meditation_progress.json  (evening practice ledger, agent-written)
+//    • ~/wiki/raw/daily-summaries/*.md          (EOD session dumps)
+//    • ~/.hermes/cron/jobs.json                 (cron health)
 //
 //  This engine reads those sources directly (filesystem-direct
 //  pattern — same machine, no HTTP, no phantom endpoints) and
@@ -66,6 +68,16 @@ struct AMORGymProgressFile: Codable {
     let dates: [String]
 }
 
+/// Mirror of ~/.hermes/logs/meditation_progress.json
+/// (v4.1.0 — written by ~/.hermes/scripts/meditation_ledger.py via the
+/// evening practice check-in; identical shape to the gym ledger.)
+struct AMORMeditationProgressFile: Codable {
+    let started: String?
+    let streak: Int
+    let total: Int
+    let dates: [String]
+}
+
 /// One day's parsed EOD session dump (~/wiki/raw/daily-summaries/)
 struct AMORDumpSummary {
     let date: Date
@@ -86,6 +98,7 @@ struct AMORGroundTruthSyncResult: Codable {
     var gitaLastCompletedDate: String?
     var gitaCurrentPosition = ""
     var gymEvidenceDates: [String] = []
+    var meditationEvidenceDates: [String] = []
     var dumpDaysIngested = 0
     var dumpSessionsFound = 0
     var dumpToolsDiscovered: [String] = []
@@ -323,6 +336,30 @@ enum AMORGroundTruthEngine {
         let cutoff = formatter.string(from: cutoffDate)
         return progress.dates
             .filter { $0 >= cutoff }   // ISO date strings sort lexically
+            .sorted(by: >)
+    }
+
+    // MARK: Meditation evidence
+
+    /// Reads meditation_progress.json (written by the evening practice
+    /// check-in via meditation_ledger.py — same writer pattern as gym).
+    /// Empty dates[] is REAL data, not an error: honest zero.
+    static func meditationProgress() -> AMORMeditationProgressFile? {
+        let url = hermesHome().appendingPathComponent("logs/meditation_progress.json")
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(AMORMeditationProgressFile.self, from: data)
+    }
+
+    /// Dates (yyyy-MM-dd, newest first) with meditation evidence.
+    static func meditationEvidenceDates(daysBack: Int = 7) -> [String] {
+        guard let progress = meditationProgress() else { return [] }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        let cutoffDate = Calendar.current.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date()
+        let cutoff = formatter.string(from: cutoffDate)
+        return progress.dates
+            .filter { $0 >= cutoff }
             .sorted(by: >)
     }
 }

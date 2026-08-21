@@ -73,6 +73,26 @@ enum AMORGroundTruthSyncer {
             }
         }
 
+        // ── 2.5 Meditation (v4.1.0 — positive evidence only) ──────
+        if let meditation = AMORGroundTruthEngine.meditationProgress() {
+            let recent = AMORGroundTruthEngine.meditationEvidenceDates(daysBack: 14)
+            result.meditationEvidenceDates = recent
+            if !meditation.dates.isEmpty, meditation.streak > 0,
+               let lastDateStr = meditation.dates.sorted(by: >).first,
+               let lastDay = parseLocalDay(lastDateStr) {
+                if let practice = upsertPractice(named: "Meditation", into: modelContext) {
+                    practice.currentStreak = max(practice.currentStreak, meditation.streak)
+                    practice.totalCompletions = max(practice.totalCompletions, meditation.total)
+                    practice.longestStreak = max(practice.longestStreak, meditation.streak)
+                    if let existing = practice.lastCompletedDate {
+                        if lastDay > existing { practice.lastCompletedDate = lastDay }
+                    } else {
+                        practice.lastCompletedDate = lastDay
+                    }
+                }
+            }
+        }
+
         // ── 3. EOD dumps (read-only digest for the card) ───────────
         let dumps = AMORGroundTruthEngine.readRecentDumps(daysBack: 7, vaultPath: vaultPath)
         result.dumpDaysIngested = dumps.filter { $0.date != .distantPast }.count

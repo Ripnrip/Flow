@@ -77,6 +77,15 @@ struct AMORGroundTruthCard: View {
                         detail: gymDetailLabel
                     )
 
+                    // ── Meditation evidence (v4.1.0) ─────────────────
+                    evidenceRow(
+                        icon: "figure.mind.and.body",
+                        tint: AMORColorPalette.sageGreen,
+                        title: "Meditation",
+                        value: meditationValueLabel,
+                        detail: meditationDetailLabel
+                    )
+
                     // ── EOD dumps ────────────────────────────────────
                     evidenceRow(
                         icon: "doc.text.magnifyingglass",
@@ -169,6 +178,23 @@ struct AMORGroundTruthCard: View {
             return "Reminder fires 5 PM — snap when you go"
         }
         return "Last: \(result.gymEvidenceDates.first ?? "—")"
+    }
+
+    private var meditationValueLabel: String {
+        guard let result else { return "—" }
+        let recent = result.meditationEvidenceDates
+        if recent.contains(AMORGroundTruthEngine.localDateString(Date())) {
+            return "Today ✓"
+        }
+        return recent.isEmpty ? "none logged" : "\(recent.count) days"
+    }
+
+    private var meditationDetailLabel: String {
+        guard let result else { return "No meditation ledger" }
+        if result.meditationEvidenceDates.isEmpty {
+            return "Evening check-in — even 5 min counts"
+        }
+        return "Last: \(result.meditationEvidenceDates.first ?? "—")"
     }
 
     private var dumpDetailLabel: String {
