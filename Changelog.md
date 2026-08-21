@@ -1,5 +1,40 @@
 # Changelog
 
+## August 21, 2026: 🧘 AMOR v4.1.0 — Meditation Evidence Loop (Third Practice Leg)
+
+### Commit Messages of the Day
+`feat: AMOR v4.1.0 — Meditation evidence loop (third practice leg)` (`c48dcac`, pushed to origin/main)
+
+### Steps Taken
+- Cron reminder fired; ran the live-fire harness first — it caught a **live outage**: the gym selfie cron `d4a6e6e4270b` was failing with `HTTP 404: model llama-3.3-70b-versatile does not exist` (unpinned model had drifted). Today's 5PM reminder never delivered — on the FIRST day after the Aug-20 loop closure.
+- Fixed by pinning the cron to `zai/glm-5` (the established cure from the July drift incident) + forced a re-run: `Ran now: succeeded` — today's reminder delivered, harness now shows it green.
+- Root-caused the next dead pipe BEFORE it aged: the 6:30AM Gita cron's checklist says **"🧘 Meditate (even 5 min counts)"** — but meditation had **zero write-side** anywhere. Same disease gym had for 2 months: the system asks, nothing records.
+- Built the meditation evidence loop (mirroring the proven gym pattern exactly):
+  - `~/.hermes/scripts/meditation_ledger.py` — writer (`log`/`today`/`status`/`backfill`, idempotent, streak+total recomputed from `dates` so they can never drift).
+  - `~/.hermes/logs/meditation_progress.json` — **HONEST ZERO** start (`streak=0 total=0 dates=[]`). Caught and reverted my own test backfill (2026-08-19/20) — no phantom evidence, LEDGER LAW enforced on self.
+  - `~/.hermes/scripts/evening_practice_status.sh` — combined status block (both ledgers) for prompt injection.
+- Evolved cron `d4a6e6e4270b` → **🌆 Evening Practice Check-in (Gym + Meditation)**: ONE 5PM ping covering both practices, agent runs the matching ledger writer on user confirmation. No new notifications (friction law).
+- App v4.1.0: `AMORMeditationProgressFile` mirror + `meditationProgress()`/`meditationEvidenceDates()` in the engine; meditation leg in the syncer (positive-evidence-only, forward-only max()); Meditation card in the Ground Truth view; version bump.
+- Verified: **31/31 AMOR Swift files parse**, GroundTruth engine **typechecks against macOS SDK** (incl. meditation leg), full live-fire harness green — meditation ledger reads `HONEST ZERO` through the app's own compiled engine.
+
+### What Changed
+- `Flow/Flow/AMORGroundTruth.swift` — meditation mirror + engine leg (v4.1.0 header).
+- `Flow/Flow/AMORGroundTruthSyncer.swift` — meditation upsert leg ("Meditation" PracticeStreak).
+- `Flow/Flow/AMORGroundTruthView.swift` — Meditation evidence card.
+- `Flow/Flow/AMORSettings.swift` — v4.0.0 → v4.1.0.
+- `Scripts/amor-livefire/` — engine re-copy + meditation ledger assertion in `main.swift`.
+- Hermes infra: `meditation_ledger.py`, `evening_practice_status.sh`, cron `d4a6e6e4270b` rename/re-prompt/re-pin.
+
+### Practice tripod status (all three legs now have ground truth)
+| Practice | Evidence file | Streak | Status |
+|---|---|---|---|
+| 📖 Gita | `gita_progress.json` | **82 days** (Ch 6 V 12) | live since Jun 16 |
+| 💪 Gym | `gym_selfie_progress.json` | 0 (honest) | loop closed Aug 20 |
+| 🧘 Meditation | `meditation_progress.json` | 0 (honest) | **loop closed today** |
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a morning message whispered "even five minutes counts" to a practice that had no ledger, no witness, and no memory. Sixty-two mornings of asking, zero nights of recording. Tonight the third leg of the tripod learned to remember — not with a borrowed streak, but with an honest zero and a hand that finally writes what actually happened. The tripod stands. 🧘⚖️
+
 ## August 20, 2026: 📸 Gym Evidence Loop Closed — Ledger Writer + Agent-Driven 5PM Cron
 
 ### Commit Messages of the Day
