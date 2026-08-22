@@ -26,7 +26,8 @@ struct DumpAutomationConfig {
     static let dumpsDirName = "amor-dumps"
 
     /// Obsidian journal path (relative to home)
-    static let obsidianJournalPath = "wiki/Journal"
+    /// v4.2.0 — the real Hermes EOD dump destination (canonical ~/wiki vault).
+    static let obsidianJournalPath = "wiki/raw/daily-summaries"
 
     /// UserDefaults keys
     static let lastDumpDateKey = "amor.lastAutoDumpDate"

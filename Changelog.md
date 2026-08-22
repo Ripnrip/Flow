@@ -1,5 +1,39 @@
 # Changelog
 
+## August 22, 2026: 🧠 AMOR v4.2.0 — Second Brain Reality Wiring (Third Dead Pipe Closed)
+
+### Commit Messages of the Day
+`feat: AMOR v4.2.0 — second brain wired to the real ~/wiki vault (discovery, daily/ casing, EOD dump reader)` (pushed to origin/main)
+
+### Steps Taken
+- Cron reminder fired (session-dump automation + progress tracking). Full live-fire harness ran GREEN first (0 failing enabled crons, Gita streak=83 Ch 6 V 14, TOOLS-ASSERT PASS) — then hunted the next dead pipe by asking: *does the Second Brain feature point at anything real?*
+- Found **dead pipe #3**: `AMORSecondBrainManager.discoverVault()` only searched `Documents/*` patterns — the canonical vault is `~/wiki` (with `.obsidian` marker). On this machine the Second Brain card said "No Obsidian vault found" — entire feature dead on arrival, invisible because nothing live-fired it.
+- Two more fictions in the same feature: reads/writes hardcoded `Daily/` + `Journal/` while the real daily-notes dir is lowercase `daily/`; and `AMORSessionDumpAutomation` mirrored dumps to a nonexistent `wiki/Journal` while real EOD dumps land in `~/wiki/raw/daily-summaries/`.
+- Fixed all three (v4.2.0):
+  - `VaultConfig` — case-flexible `daily`/`Daily`, `journal`/`Journal` lookups + new `sessionDumpsURL` for `raw/daily-summaries`.
+  - `discoverVault()` — `~/wiki` canonical-first candidate list, accepts a candidate if it has `.obsidian` marker OR markdown files; Documents marker-scan retained as fallback.
+  - `readDailyNotes()` — resolves existing daily-notes dirs case-flexibly instead of assuming `Daily/`.
+  - `writeDailySummary()` — writes into the existing daily dir (whatever casing), only creating `daily/` if none exists.
+  - NEW `readHermesSessionDumps(daysBack:)` — parses the REAL `session-dump-YYYY-MM-DD.md` files (sessions, messages, tool calls, `## Tools Used` table) with `NSRegularExpression` capture-group extraction.
+  - `AMORSessionDumpAutomation` — `obsidianJournalPath` `wiki/Journal` → `wiki/raw/daily-summaries`.
+  - Version bump v4.1.0 → v4.2.0 (`AMORSettings`).
+- Extended the live-fire harness with **leg 4: Second Brain** — compiles the manager + assertions in a temp dir, runs against the real vault, HARD-asserts: vault discovered at `/Users/admin/wiki`, `daily/` casing, newest dump parsed with messages>0/toolCalls>0/tools non-empty, write round-trip lands at `daily/<today>.md`. Runner removes the round-trip note after (LEDGER LAW — no phantom evidence).
+- First harness run caught my own test-write leaving a synthetic daily note — removed it immediately. No phantom evidence in the vault.
+- Verified: `AMORSecondBrainManager.swift` typechecks standalone (exit 0), full AMOR set shows only the known SwiftData macro-plugin CLT limitation + 2 pre-existing cascade artifacts in untouched `AMORActivityHeatmap`, harness all four legs GREEN (exit 0).
+
+### What Changed
+- `Flow/Flow/AMORSecondBrainManager.swift` — vault discovery + casing fixes + `readHermesSessionDumps` (v4.2.0).
+- `Flow/Flow/AMORSessionDumpAutomation.swift` — real Obsidian dump path.
+- `Flow/Flow/AMORSettings.swift` — v4.1.0 → v4.2.0.
+- `Scripts/amor-livefire/` — new `secondbrain-main.swift` leg, `AMORSecondBrainManager.swift` engine copy, `run.sh` now runs all four legs with temp-dir builds + LEDGER-LAW cleanup, README updated.
+
+### Evidence
+- Live-fire leg 4: `vault discovered: wiki @ /Users/admin/wiki` · `daily notes dir: daily ✓` · `EOD session dumps (14d): 14` · `newest dump: 2026-08-22 sessions=1 messages=11 toolCalls=6 tools=["terminal","session_search"]` · `write round-trip: true` · PASS.
+- Harness exit 0 (all legs).
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a second brain sat in a beautiful glass jar, reciting wisdom to a vault that did not exist. It searched Documents with perfect diligence while the real library stood at `~/wiki`, lowercase and patient, filling nightly with honest dumps nobody read back. Today the jar broke, the brain reached out, and fourteen days of evidence flowed home. The third dead pipe closes the same way the first two did: by asking what is real, and pointing the code at it. 🧠⚖️
+
 ## August 21, 2026: 🧘 AMOR v4.1.0 — Meditation Evidence Loop (Third Practice Leg)
 
 ### Commit Messages of the Day

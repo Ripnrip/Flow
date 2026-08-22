@@ -15,30 +15,45 @@ files and compare with reality. That's what this harness does.
 
 ## Files
 
-- `AMORGroundTruth.swift`, `AMORCronStatusReader.swift` — verbatim copies of
-  the app sources (re-copy after editing the app files; the copies exist only
-  so the harness is self-contained).
+- `AMORGroundTruth.swift`, `AMORCronStatusReader.swift`,
+  `AMORSecondBrainManager.swift` — verbatim copies of the app sources
+  (re-copy after editing the app files; the copies exist only so the
+  harness is self-contained).
 - `cron-health-main.swift` — entry point (compiled as `main.swift`).
+- `secondbrain-main.swift` — v4.2.0 second-brain leg (compiled as
+  `main.swift`; writes a round-trip daily note then the runner removes it —
+  LEDGER LAW: no phantom evidence).
 
 ## Run
 
 ```sh
 cd Scripts/amor-livefire
-swiftc -O AMORGroundTruth.swift AMORCronStatusReader.swift main.swift -o cronfire
-./cronfire
+./run.sh          # all four legs, temp-dir build, LEDGER-LAW cleanup
 ```
 
 (`main.swift` is committed and already includes the v2 dump-parser
 live-fire: cron health table + failing jobs + last-3-dumps tools assertion.
 `cron-health-main.swift` is kept as the minimal cron-only variant.)
 
-## Expected output (2026-08-17 reference)
+## Legs
+
+1. **Cron health** — real `~/.hermes/cron/jobs.json`, enabled/failing table.
+2. **Gita streak** — real `gita_progress.json` + gym/meditation ledgers.
+3. **Dump parser v2** — last 3 real `~/wiki/raw/daily-summaries` dumps,
+   asserts tools parse non-empty.
+4. **Second brain (v4.2.0)** — discovers the real `~/wiki` vault, asserts
+   lowercase `daily/` casing, parses EOD dumps (sessions/messages/tools),
+   and completes a write round-trip into `daily/<today>.md` (removed after).
+
+## Expected output (2026-08-22 reference)
 
 - Cron table: all enabled jobs + failing list (post-fix: only the
   Monographs feeder Reminders-permission outage remains)
 - Last 3 dumps: sessions/tools/skills per day — 2026-08-17 was the first
   day TOOLS parsed non-empty (11 tools) after the dumper v2 rewrite
   (state.db-backed; dumps before 2026-08-17 honestly show tools=[])
+- Second brain: `vault discovered: wiki @ /Users/admin/wiki`, 14 dumps
+  parsed, round-trip write true
 
 ## Reading results
 
