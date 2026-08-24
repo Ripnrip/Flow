@@ -1,5 +1,38 @@
 # Changelog
 
+## August 24, 2026: 🟠 AMOR v4.3.0 — Schedule-Aware Cron Health (The 38-Hour Silent Outage)
+
+### Commit Messages of the Day
+`feat: AMOR v4.3.0 — schedule-aware cron health (stale-ok blind spot closed in-app)` (`e5104c8`, pushed to origin/main)
+
+### Steps Taken
+- Cron reminder fired. Ran the live-fire harness first — all four legs GREEN, but the cron leg exposed **a live 38-hour silent outage**: five daily crons (Morning Gita, Daily Gita, Health Summary, EOD Dump, AMOR Reminder) hadn't run since their Aug 22/23 slots while `last_status` still read `ok`. The user got **no Gita reading two mornings straight** and `session-dump-2026-08-24.md` never wrote.
+- Root cause: **gateway crash-looped 18×** between Aug 23 06:05 → Aug 24 19:45 UTC (`gateway-exit-diag.log`). Fatal boot error in the loop: `whatsapp: WhatsApp enabled but not paired → Gateway exiting cleanly` (non-retryable startup conflict). Calendar-scheduled cron slots that fell in down-windows were silently skipped to the next day; interval jobs (5m/15m/1h) self-healed on restart, dailies didn't.
+- **Why nobody noticed**: the Cron Failure Watchdog checked `last_status` only — never whether a job MISSED its schedule. Stale `ok` from Aug 22 = green forever. The iOS app's `AMORCronStatusReader` had the identical blind spot (`ok` + <48h = "healthy").
+- Immediate remediation:
+  - Caught up all missed runs: `hermes cron run` on Morning Gita (in-flight via scheduler — **day 84 banked**, `days_completed: 84` at 20:14 UTC, streak alive), Daily Gita (`Ran now: succeeded`), Health Summary (`Ran now: succeeded`).
+  - Regenerated `session-dump-2026-08-24.md` manually (5 sessions, 59 tool calls).
+  - Gateway now stable (up since 19:45, port 8644 listening; current build treats the WhatsApp conflict as non-fatal).
+- **Watchdog v2** (`~/.hermes/scripts/cron_failure_watchdog.py`): schedule-aware. Computes each enabled job's most recent expected slot (daily `M H * * *` exprs + interval minutes), flags a **MISSED** alert when a slot is >90min (dailies) / >2.5× interval past with no run — deduped per slot, recovery reporting included. Live-fired against the real outage: caught all four stale-ok jobs immediately. Blind spot closed permanently.
+- **App v4.3.0**: ported the same detection into `AMORCronJob` — new `schedule` decoding (`{kind, expr, minutes}`), `mostRecentExpectedSlot` (interval: lastRun+interval; daily: `next_run_at − last_run_at` cadence, 0–2d guard), `hasMissedSchedule`, and a new **orange "missed"** health state flowing into `jobsNeedingAttention`, `totalMissed`, and every downstream consumer (briefings, nudges, widgets, rhythm engine — 16 call sites) via the existing `!= "healthy"` filters. Dashboard color map + version bump included.
+- Extended the livefire cron leg with missed-schedule output + two HARD fixture asserts: stale-ok daily → `missed` 🟠, fresh daily → `healthy` ✅ (no false alarms). First run caught my own fixture encoding the 2+-slot rot signature (classified red `stale` — correct delegation); fixed to the true single-miss signature (2-day next−last cadence, live-proven by the EOD job).
+- Verified: 31/31 AMOR Swift files parse clean; changed trio typechecks against macOS SDK (dashboard's pre-existing iOS-only `navigationBarTitleDisplayMode` errors exist on HEAD too — no iOS SDK on this CLT box); full harness exit 0 with the real outage detected.
+
+### What Changed
+- `Flow/Flow/AMORCronStatusReader.swift` — schedule decoding + missed-slot detection + `totalMissed` (v4.3.0).
+- `Flow/Flow/AMORCronHealthDashboard.swift` — orange for `missed`.
+- `Flow/Flow/AMORSettings.swift` — v4.2.0 → v4.3.0.
+- `Scripts/amor-livefire/` — engine copy synced, leg-1 asserts (missed + fresh fixtures), README.
+- Hermes infra: `cron_failure_watchdog.py` v2 (schedule-aware missed-slot alerts).
+
+### Evidence
+- Live-fire leg 1: `End-of-Day Session Dump 🟠MISSED` (last run 1d ago, status still `ok`) · attention list includes it + the 2-deep-rot jobs · `MISSED-ASSERT: PASS` · `FRESH-ASSERT: PASS`.
+- Watchdog v2 live-fire: flagged Daily Bhagavad Gita, Health Summary, Morning Gita, EOD Dump with expected-slot timestamps in one deduped alert.
+- `gita_progress.json`: `days_completed: 84`, `last_completed: 2026-08-24 Ch 6 V 14`.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a watchdog sat by the door and checked every traveler's badge — green, green, green — while the house behind it burned quietly for thirty-eight hours. The badge said "ok" because it had been stamped "ok" two days ago, and nobody had ever asked the only question that mattered: *did the train actually arrive?* Today the watchdog learned to read the timetable. The app learned it too. The morning verse finally crossed the river, day 84 was carved in honest stone, and the next time the gateway falls into the water, the whole street will know within ninety minutes. 🟠🛤️
+
 ## August 22, 2026: 🧠 AMOR v4.2.0 — Second Brain Reality Wiring (Third Dead Pipe Closed)
 
 ### Commit Messages of the Day
