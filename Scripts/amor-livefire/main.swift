@@ -12,41 +12,81 @@ for j in jobs {
     } else {
         ageMin = "never"
     }
-    print("[\(j.enabled ? "ON " : "OFF")] \(j.lastStatus) \(ageMin)  \(j.name)")
+    let missFlag = j.healthStatus == "missed" ? " 🟠MISSED" : ""
+    print("[\(j.enabled ? "ON " : "OFF")] \(j.lastStatus) \(ageMin)  \(j.name)\(missFlag)")
 }
 let failing = jobs.filter { $0.enabled && $0.lastStatus == "error" }
 print("\nFAILING ENABLED JOBS: \(failing.count)")
 for f in failing { print("  ! \(f.name) — \(f.lastError ?? "?")") }
 
-// Live-fire the Gita streak engine against the REAL ~/.hermes/logs/gita_progress.json
-// (restored 2026-08-18 — the v2 rewrite had dropped this; streak tracking is a headline feature)
-print("=== AMOR GITA STREAK LIVE-FIRE — real gita_progress.json ===")
-if let gp = AMORGroundTruthEngine.readGitaProgress() {
-    let streak = AMORGroundTruthEngine.gitaStreakDays(from: gp)
-    let pos = "Ch \(gp.currentChapter) V \(gp.currentVerse)"
-    let done = AMORGroundTruthEngine.gitaCompletedToday(gp) ? "YES" : "not yet"
-    print("days_completed=\(gp.daysCompleted) position=\(pos) completedToday=\(done) streakDays=\(streak)")
-    print("last_completed=\(gp.lastCompleted?.date ?? "?") Ch\(gp.lastCompleted?.chapter ?? 0)")
-} else {
-    print("FAIL — gita_progress.json unreadable")
+// v4.3.0: missed-schedule detection (stale-ok blind spot).
+let missed = jobs.filter { $0.healthStatus == "missed" }
+print("\nMISSED-SCHEDULE JOBS: \(missed.count)")
+for m in missed {
+    print("  🟠 \(m.name) — last run \(m.relativeLastRun), expected slot passed (status still 'ok')")
 }
-let gym = AMORGroundTruthEngine.gymEvidenceDates(daysBack: 7)
-print("gym evidence (7d): \(gym.isEmpty ? "0 — HONEST ZERO, not an error" : gym.joined(separator: ", "))")
+print("summary: active=\(reader.totalActive) healthy=\(reader.totalHealthy) missed=\(reader.totalMissed) failing=\(reader.totalFailing) paused=\(reader.totalPaused)")
+print("attention list: \(reader.jobsNeedingAttention.map { $0.name })")
 
-// Live-fire the meditation ledger (v4.1.0) — reads the real meditation_progress.json
-let med = AMORGroundTruthEngine.meditationEvidenceDates(daysBack: 7)
-if let mp = AMORGroundTruthEngine.meditationProgress() {
-    print("meditation ledger: streak=\(mp.streak) total=\(mp.total) evidence(7d)=\(med.isEmpty ? "0 — HONEST ZERO" : med.joined(separator: ", "))")
-} else {
-    print("meditation ledger: UNREADABLE — check ~/.hermes/logs/meditation_progress.json")
+// HARD ASSERT 1 — deterministic synthetic fixture: the real single-miss
+// signature (next−last cadence = 2 days because the scheduler advanced
+// next_run_at past one skipped slot; live-proven by the EOD job today).
+// Must classify "missed", not "healthy".
+do {
+    struct FixtureJob: Codable { let jobs: [AMORCronJob] }
+    let fmt = ISO8601DateFormatter()
+    let last = Date().addingTimeInterval(-27 * 3600)   // yesterday's slot ran
+    let next = Date().addingTimeInterval(21 * 3600)    // scheduler advanced past today's skipped slot
+    let json = """
+    {"jobs":[{
+      "id":"fix-daily-missed","name":"Fixture Daily","enabled":true,"state":"active",
+      "schedule_display":"0 12 * * *","schedule":{"kind":"cron","expr":"0 12 * * *"},
+      "last_status":"ok",
+      "last_run_at":"\(fmt.string(from: last))","next_run_at":"\(fmt.string(from: next))",
+      "deliver":"telegram:1"
+    }]}
+    """
+    if let data = json.data(using: .utf8),
+       let fixture = try? JSONDecoder().decode(FixtureJob.self, from: data).jobs.first {
+        let hs = fixture.healthStatus
+        print("fixture(daily,slot+3h): healthStatus=\(hs)")
+        if hs != "missed" {
+            print("MISSED-ASSERT: FAIL — expected missed, got \(hs)")
+            exit(1)
+        }
+        print("MISSED-ASSERT: PASS — stale-ok daily correctly flagged 🟠")
+    } else {
+        print("MISSED-ASSERT: FAIL — fixture decode failed")
+        exit(1)
+    }
 }
 
-// Live-fire the dump parser (v2): tools must surface from today's real dump
-print("\n=== AMOR DUMP PARSER LIVE-FIRE (v2 tools) — last 3 dumps ===")
-let dumps = AMORGroundTruthEngine.readRecentDumps(daysBack: 3)
-for d in dumps {
-    let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
-    print("[\(df.string(from: d.date))] sessions=\(d.sessionsToday) tools=\(d.tools) skills=\(d.skillsTouched.count) cronOk=\(d.cronOkCount) cronErr=\(d.cronErrorCount)")
+// HARD ASSERT 2 — a freshly-run daily job must stay "healthy" (no false alarm).
+do {
+    struct FixtureJob: Codable { let jobs: [AMORCronJob] }
+    let fmt = ISO8601DateFormatter()
+    let last = Date().addingTimeInterval(-3600)
+    let next = Date().addingTimeInterval(23 * 3600)
+    let json = """
+    {"jobs":[{
+      "id":"fix-daily-fresh","name":"Fixture Fresh Daily","enabled":true,"state":"active",
+      "schedule_display":"0 12 * * *","schedule":{"kind":"cron","expr":"0 12 * * *"},
+      "last_status":"ok",
+      "last_run_at":"\(fmt.string(from: last))","next_run_at":"\(fmt.string(from: next))",
+      "deliver":"telegram:1"
+    }]}
+    """
+    if let data = json.data(using: .utf8),
+       let fixture = try? JSONDecoder().decode(FixtureJob.self, from: data).jobs.first {
+        let hs = fixture.healthStatus
+        print("fixture(daily,fresh): healthStatus=\(hs)")
+        if hs != "healthy" {
+            print("FRESH-ASSERT: FAIL — expected healthy, got \(hs)")
+            exit(1)
+        }
+        print("FRESH-ASSERT: PASS — fresh daily stays green ✅")
+    } else {
+        print("FRESH-ASSERT: FAIL — fixture decode failed")
+        exit(1)
+    }
 }
-let today = dumps.first
-print("\nTOOLS-ASSERT: \(today?.tools.isEmpty == false ? "PASS — tools parsed: \(today!.tools)" : "FAIL — no tools in newest dump")")

@@ -45,6 +45,20 @@ struct AMORCronJob: Codable, Identifiable {
         let completed: Int?
     }
 
+    /// Nested schedule object from jobs.json (`{kind, expr, minutes}`).
+    struct ScheduleConfig: Codable {
+        let kind: String?
+        let expr: String?
+        let minutes: Int?
+    }
+
+    /// Raw schedule from jobs.json — drives missed-slot detection (v4.3.0).
+    let schedule: ScheduleConfig?
+
+    /// Grace windows for missed-slot detection (mirror of watchdog v2).
+    static let dailyGraceMinutes: Double = 90
+    static let intervalGraceMultiplier: Double = 2.5
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let superContainer = try decoder.container(keyedBy: SuperCodingKeys.self)
@@ -56,6 +70,7 @@ struct AMORCronJob: Codable, Identifiable {
         self.state = try container.decode(String.self, forKey: .state)
         self.lastStatus = try container.decodeIfPresent(String.self, forKey: .lastStatus) ?? "pending"
         self.deliver = try container.decodeIfPresent(String.self, forKey: .deliver) ?? "local"
+        self.schedule = try? superContainer.decodeIfPresent(ScheduleConfig.self, forKey: .scheduleName)
 
         // Parse dates (ISO 8601 strings)
         if let runStr = try container.decodeIfPresent(String.self, forKey: .lastRunAt) {
@@ -95,6 +110,7 @@ struct AMORCronJob: Codable, Identifiable {
     }
 
     enum SuperCodingKeys: String, CodingKey {
+        case scheduleName = "schedule"
         case repeatConfig = "repeat"
     }
 
@@ -102,6 +118,7 @@ struct AMORCronJob: Codable, Identifiable {
 
     var statusEmoji: String {
         if !enabled { return "⏸️" }
+        if healthStatus == "missed" { return "🟠" }
         switch lastStatus {
         case "ok": return "✅"
         case "failed": return "❌"
@@ -110,10 +127,43 @@ struct AMORCronJob: Codable, Identifiable {
         }
     }
 
+    /// Most recent expected run time for this job's schedule, from Hermes's
+    /// own scheduling data — no timezone guessing (v4.3.0).
+    var mostRecentExpectedSlot: Date? {
+        guard enabled else { return nil }
+        // Interval jobs: expected every `minutes`; a stale lastRunAt means the
+        // scheduler (gateway) stopped ticking for this job.
+        if let minutes = schedule?.minutes, minutes > 0 {
+            guard let lastRun = lastRunAt else { return nil }
+            return lastRun.addingTimeInterval(TimeInterval(minutes) * 60)
+        }
+        // Daily `M H * * *` cron exprs: derive cadence from next/last run pair.
+        guard let next = nextRunAt, let last = lastRunAt else { return nil }
+        let cadence = next.timeIntervalSince(last)
+        // One-day cadence (daily job). Reject absurd values from manual runs.
+        guard cadence > 0, cadence <= 2 * 86400 else { return nil }
+        return last
+    }
+
+    /// True when the job's most recent expected slot has passed without a run
+    /// — the "stale-ok" blind spot that hid a 38h gateway outage (v4.3.0).
+    var hasMissedSchedule: Bool {
+        guard enabled, lastStatus == "ok" else { return false }
+        guard let expected = mostRecentExpectedSlot else { return false }
+        let grace: TimeInterval
+        if let minutes = schedule?.minutes, minutes > 0 {
+            grace = Self.intervalGraceMultiplier * Double(minutes) * 60
+        } else {
+            grace = Self.dailyGraceMinutes * 60
+        }
+        return Date().timeIntervalSince(expected) > grace
+    }
+
     var healthStatus: String {
         if !enabled { return "paused" }
         switch lastStatus {
         case "ok":
+            if hasMissedSchedule { return "missed" }
             if let lastRun = lastRunAt {
                 let hoursAgo = Date().timeIntervalSince(lastRun) / 3600
                 if hoursAgo > 48 { return "stale" }
@@ -130,6 +180,7 @@ struct AMORCronJob: Codable, Identifiable {
         switch healthStatus {
         case "healthy": return "green"
         case "failing", "stale": return "red"
+        case "missed": return "orange"
         case "pending", "never_run", "unknown": return "yellow"
         case "paused": return "gray"
         default: return "blue"
@@ -172,6 +223,8 @@ final class AMORCronStatusReader {
     var totalActive: Int = 0
     var totalHealthy: Int = 0
     var totalFailing: Int = 0
+    /// Enabled jobs whose latest expected slot passed without a run (v4.3.0).
+    var totalMissed: Int = 0
     var totalPaused: Int = 0
 
     // MARK: - Configuration
@@ -229,6 +282,7 @@ final class AMORCronStatusReader {
         totalActive = jobs.filter { $0.enabled }.count
         totalHealthy = jobs.filter { $0.healthStatus == "healthy" }.count
         totalFailing = jobs.filter { $0.healthStatus == "failing" || $0.healthStatus == "stale" }.count
+        totalMissed = jobs.filter { $0.healthStatus == "missed" }.count
         totalPaused = jobs.filter { !$0.enabled }.count
 
         lastRefresh = Date()
@@ -239,9 +293,9 @@ final class AMORCronStatusReader {
         jobs.filter { $0.enabled }
     }
 
-    /// Returns jobs that need attention (failing, stale, or error).
+    /// Returns jobs that need attention (failing, stale, missed, or error).
     var jobsNeedingAttention: [AMORCronJob] {
-        jobs.filter { $0.healthStatus == "failing" || $0.healthStatus == "stale" }
+        jobs.filter { $0.healthStatus == "failing" || $0.healthStatus == "stale" || $0.healthStatus == "missed" }
     }
 
     /// Overall system health percentage (0-100).
