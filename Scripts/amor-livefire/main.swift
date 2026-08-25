@@ -19,7 +19,7 @@ let failing = jobs.filter { $0.enabled && $0.lastStatus == "error" }
 print("\nFAILING ENABLED JOBS: \(failing.count)")
 for f in failing { print("  ! \(f.name) — \(f.lastError ?? "?")") }
 
-// v4.3.0: missed-schedule detection (stale-ok blind spot).
+// v4.4.0: missed-schedule detection asks "did a run happen after the slot?"
 let missed = jobs.filter { $0.healthStatus == "missed" }
 print("\nMISSED-SCHEDULE JOBS: \(missed.count)")
 for m in missed {
@@ -78,15 +78,77 @@ do {
     """
     if let data = json.data(using: .utf8),
        let fixture = try? JSONDecoder().decode(FixtureJob.self, from: data).jobs.first {
-        let hs = fixture.healthStatus
-        print("fixture(daily,fresh): healthStatus=\(hs)")
-        if hs != "healthy" {
-            print("FRESH-ASSERT: FAIL — expected healthy, got \(hs)")
-            exit(1)
-        }
-        print("FRESH-ASSERT: PASS — fresh daily stays green ✅")
-    } else {
-        print("FRESH-ASSERT: FAIL — fixture decode failed")
-        exit(1)
-    }
-}
+       let hs = fixture.healthStatus
+       print("fixture(daily,fresh): healthStatus=\(hs)")
+       if hs != "healthy" {
+           print("FRESH-ASSERT: FAIL — expected healthy, got \(hs)")
+           exit(1)
+       }
+       print("FRESH-ASSERT: PASS — fresh daily stays green ✅")
+       } else {
+       print("FRESH-ASSERT: FAIL — fixture decode failed")
+       exit(1)
+       }
+       }
+
+       // HARD ASSERT 3 — a daily job that ran its slot today, hours ago, must NOT be missed
+       // (v4.3.0 false-positive: it saw "last run 9h ago > 90m grace" and flagged orange).
+       do {
+       struct FixtureJob: Codable { let jobs: [AMORCronJob] }
+       let fmt = ISO8601DateFormatter()
+       let last = Date().addingTimeInterval(-8 * 3600)  // ran 8 hours ago, after 12:00 slot
+       let next = Date().addingTimeInterval(16 * 3600)  // next slot tomorrow
+       let json = """
+       {"jobs":[{
+       "id":"fix-daily-midcycle","name":"Fixture Mid-Cycle Daily","enabled":true,"state":"active",
+       "schedule_display":"0 12 * * *","schedule":{"kind":"cron","expr":"0 12 * * *"},
+       "last_status":"ok",
+       "last_run_at":"\(fmt.string(from: last))","next_run_at":"\(fmt.string(from: next))",
+       "deliver":"telegram:1"
+       }]}
+       """
+       if let data = json.data(using: .utf8),
+       let fixture = try? JSONDecoder().decode(FixtureJob.self, from: data).jobs.first {
+       let hs = fixture.healthStatus
+       print("fixture(daily,mid-cycle): healthStatus=\(hs)")
+       if hs != "healthy" {
+           print("MID-CYCLE-ASSERT: FAIL — expected healthy, got \(hs)")
+           exit(1)
+       }
+       print("MID-CYCLE-ASSERT: PASS — ran-today daily stays green ✅")
+       } else {
+       print("MID-CYCLE-ASSERT: FAIL — fixture decode failed")
+       exit(1)
+       }
+       }
+
+       // HARD ASSERT 4 — an hour-step calendar job (e.g. Strategic Heartbeat) that ran its
+       // most recent slot must not be flagged missed just because 90m grace passed.
+       do {
+       struct FixtureJob: Codable { let jobs: [AMORCronJob] }
+       let fmt = ISO8601DateFormatter()
+       let last = Date().addingTimeInterval(-59 * 60)  // 59m ago, after the 18:00 slot
+       let next = Date().addingTimeInterval(61 * 60)   // next slot at 20:00
+       let json = """
+       {"jobs":[{
+       "id":"fix-hourstep","name":"Fixture Hour-Step","enabled":true,"state":"active",
+       "schedule_display":"0 */2 * * *","schedule":{"kind":"cron","expr":"0 */2 * * *"},
+       "last_status":"ok",
+       "last_run_at":"\(fmt.string(from: last))","next_run_at":"\(fmt.string(from: next))",
+       "deliver":"telegram:1"
+       }]}
+       """
+       if let data = json.data(using: .utf8),
+       let fixture = try? JSONDecoder().decode(FixtureJob.self, from: data).jobs.first {
+       let hs = fixture.healthStatus
+       print("fixture(hour-step,ran-slot): healthStatus=\(hs)")
+       if hs != "healthy" {
+           print("HOURSTEP-ASSERT: FAIL — expected healthy, got \(hs)")
+           exit(1)
+       }
+       print("HOURSTEP-ASSERT: PASS — hour-step job that ran its slot stays green ✅")
+       } else {
+       print("HOURSTEP-ASSERT: FAIL — fixture decode failed")
+       exit(1)
+       }
+       }

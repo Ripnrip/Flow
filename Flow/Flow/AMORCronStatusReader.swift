@@ -128,35 +128,40 @@ struct AMORCronJob: Codable, Identifiable {
     }
 
     /// Most recent expected run time for this job's schedule, from Hermes's
-    /// own scheduling data — no timezone guessing (v4.3.0).
+    /// own cron expr — not from next/last run deltas (v4.4.0).
     var mostRecentExpectedSlot: Date? {
         guard enabled else { return nil }
-        // Interval jobs: expected every `minutes`; a stale lastRunAt means the
-        // scheduler (gateway) stopped ticking for this job.
+        // Interval jobs: expected every `minutes` *after* the last actual run.
         if let minutes = schedule?.minutes, minutes > 0 {
             guard let lastRun = lastRunAt else { return nil }
             return lastRun.addingTimeInterval(TimeInterval(minutes) * 60)
         }
-        // Daily `M H * * *` cron exprs: derive cadence from next/last run pair.
-        guard let next = nextRunAt, let last = lastRunAt else { return nil }
-        let cadence = next.timeIntervalSince(last)
-        // One-day cadence (daily job). Reject absurd values from manual runs.
-        guard cadence > 0, cadence <= 2 * 86400 else { return nil }
-        return last
+        // Calendar cron exprs: parse the expr into the most recent scheduled slot.
+        // jobs.json exprs are UTC-normalized (live-proven by watchdog v2).
+        guard let expr = schedule?.expr else { return nil }
+        return AMORCronStatusReader.mostRecentSlot(forExpr: expr, onOrBefore: Date())
     }
 
-    /// True when the job's most recent expected slot has passed without a run
-    /// — the "stale-ok" blind spot that hid a 38h gateway outage (v4.3.0).
+    /// True when the most recent expected slot has passed without a run
+    /// since that slot — the real stale-ok test (v4.4.0).
     var hasMissedSchedule: Bool {
         guard enabled, lastStatus == "ok" else { return false }
         guard let expected = mostRecentExpectedSlot else { return false }
         let grace: TimeInterval
         if let minutes = schedule?.minutes, minutes > 0 {
+            // Interval: missed when the last run is older than 3.5× the period.
             grace = Self.intervalGraceMultiplier * Double(minutes) * 60
         } else {
-            grace = Self.dailyGraceMinutes * 60
+            // Calendar: scale grace with period so sub-daily schedules don't cry wolf.
+            // Daily: 90m. 2h job: 60m. Capped at 90m so dailies still catch next-day misses.
+            let period = (nextRunAt?.timeIntervalSince(expected) ?? Self.dailyGraceMinutes * 60)
+            grace = min(Self.dailyGraceMinutes * 60, max(period, 1) / 2)
         }
-        return Date().timeIntervalSince(expected) > grace
+        // Still inside the grace window after the slot — not a miss yet.
+        guard Date().timeIntervalSince(expected) > grace else { return false }
+        // The job ran after its most recent expected slot → it satisfied that slot.
+        if let lastRun = lastRunAt, lastRun >= expected { return false }
+        return true
     }
 
     var healthStatus: String {
@@ -317,5 +322,53 @@ final class AMORCronStatusReader {
         withoutFractional.formatOptions = [.withInternetDateTime]
 
         return withFractional.date(from: str) ?? withoutFractional.date(from: str)
+    }
+
+    /// Computes the most recent scheduled slot from a 5-field cron expr.
+    /// Supports fixed daily (`M H * * *`) and hour-step (`M */n * * *`).
+    /// jobs.json exprs are UTC-normalized, so this uses UTC (v4.4.0).
+    static func mostRecentSlot(forExpr expr: String, onOrBefore now: Date) -> Date? {
+        let fields = expr.split(separator: " ").map(String.init)
+        guard fields.count == 5, fields[2] == "*", fields[3] == "*", fields[4] == "*" else {
+            return nil
+        }
+        guard let minute = Int(fields[0]), (0...59).contains(minute) else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC") ?? TimeZone.current
+
+        let hourField = fields[1]
+        // Fixed hour: `M H * * *`
+        if let hour = Int(hourField), (0...23).contains(hour) {
+            var comps = calendar.dateComponents([.year, .month, .day], from: now)
+            comps.hour = hour; comps.minute = minute; comps.second = 0
+            guard var slot = calendar.date(from: comps) else { return nil }
+            if slot > now {
+                slot = calendar.date(byAdding: .day, value: -1, to: slot) ?? slot
+            }
+            return slot
+        }
+        // Hour step: `M */n * * *`
+        if hourField.hasPrefix("*/"), let step = Int(hourField.dropFirst(2)), step > 0, step <= 23 {
+            var cand = now
+            // Step back whole hours until we find an hour that is a multiple of `step`
+            // and the resulting minute-of-hour is on or before `now`.
+            for _ in 0..<((24 / step) + 2) {
+                let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: cand)
+                let currentHour = comps.hour ?? 0
+                var slotComps = DateComponents()
+                slotComps.year = comps.year; slotComps.month = comps.month; slotComps.day = comps.day
+                slotComps.hour = currentHour; slotComps.minute = minute; slotComps.second = 0
+                guard let slot = calendar.date(from: slotComps) else { return nil }
+                if currentHour % step == 0, slot <= now {
+                    return slot
+                }
+                // Move cand back one whole hour so we eventually land on a valid multiple.
+                guard let prevHourStart = calendar.date(bySettingHour: currentHour, minute: 0, second: 0, of: cand),
+                      let prev = calendar.date(byAdding: .hour, value: -1, to: prevHourStart) else { return nil }
+                cand = prev
+            }
+            return nil
+        }
+        return nil
     }
 }
