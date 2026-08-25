@@ -1,5 +1,35 @@
 # Changelog
 
+## August 25, 2026: 🎯 AMOR v4.4.0 — The Crying-Wolf Cure (Expr-Based Missed-Slot Detection)
+
+### Commit Messages of the Day
+`feat: AMOR v4.4.0 — expr-based missed-slot detection, no false-positive daily wolf (fixes v4.3.0 crying-wolf bug)` (`ffb61e2`, pushed to origin/main)
+
+### Steps Taken
+- Cron reminder fired. Live-fire harness first — leg 1 exposed **7 orange "missed" jobs** on a fully healthy system. The Slack watchdog (v2, expr-based) had just run and stayed silent. Something was rotten.
+- Root cause: v4.3.0's `AMORCronStatusReader.hasMissedSchedule` derived a cadence from `next_run_at − last_run_at`, returned `lastRunAt` itself as the "expected slot", then flagged missed whenever `now − lastRun > 90min`. That indicts **every healthy daily job for 22.5 hours of every day**. The fixtures validated the 38h-outage signature but never validated a healthy job in the middle of its cycle. The app was designed to cry wolf.
+- The real question the watchdog already asks: **"Did a run happen after the most recent expected slot?"** The fix wired the app to parse the actual cron expr from `jobs.json` (`M H * * *` and `M */n * * *`), compute the real slot in UTC, and only flag missed when the slot+grace passes AND `lastRunAt < slot`.
+- Grace is now scaled by period so sub-daily schedules don't bleed into their own next period: dailies keep 90m, a 2h job gets 60m. This matters because `Strategic Heartbeat` is `0 */2 * * *`.
+- Hardened `~/.hermes/scripts/cron_failure_watchdog.py` v2 as well: added hour-step expr support (`M */n * * *`) and corrected the interval-job slot from `now − I` to `lastRun + I` so interval jobs (e.g. Bridge Watchdog) don't silently rot.
+- Extended the live-fire harness with two regression asserts:
+  - `MID-CYCLE-ASSERT`: a daily job that ran its slot 8 hours ago must stay green (the exact shape v4.3.0 false-flagged today).
+  - `HOURSTEP-ASSERT`: a `0 */2 * * *` job that ran its most recent slot must stay green.
+- Verified: live MISSED-SCHEDULE JOBS dropped from 7 → 0; all four asserts PASS; engine copy typechecks standalone; all 31 AMOR Swift files parse clean; watchdog run silent; commit pushed to origin/main.
+
+### What Changed
+- `Flow/Flow/AMORCronStatusReader.swift` — expr-based slot parser + `lastRun < slot` missed test + period-scaled grace (v4.4.0).
+- `Flow/Flow/AMORSettings.swift` — v4.3.0 → v4.4.0.
+- `Scripts/amor-livefire/` — engine copy synced, `main.swift` asserts extended (MISSED, FRESH, MID-CYCLE, HOURSTEP).
+- Hermes infra: `cron_failure_watchdog.py` v2.1 (hour-step support + interval `lastRun + period` slot).
+
+### Evidence
+- Live-fire leg 1: `summary: active=12 healthy=11 missed=0 failing=0 paused=3` · `attention list: []`
+- Asserts: `MISSED-ASSERT: PASS` · `FRESH-ASSERT: PASS` · `MID-CYCLE-ASSERT: PASS` · `HOURSTEP-ASSERT: PASS`
+- Watchdog manual run: exit 0, silent (no false alerts).
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a sentinel watched the village and shouted "missed! missed! missed!" at every traveler who had not passed by within the last hour — even the ones who had already kept their appointment that morning. After one day the villagers stopped listening. After two days the real fires burned unnoticed. Today the sentinel learned to read the appointment book instead of the hallway clock. It checks: did you keep the appointment, not merely whether you walked past recently. The wolves are still out there, but now, when the sentinel howls, the village will know it is not crying wolf. 🐺🎯
+
 ## August 24, 2026: 🟠 AMOR v4.3.0 — Schedule-Aware Cron Health (The 38-Hour Silent Outage)
 
 ### Commit Messages of the Day
