@@ -29,6 +29,8 @@ struct AMORCronJob: Codable, Identifiable {
     let lastError: String?
     let completedRuns: Int
     let deliver: String
+    /// When the job was created — anchors zombie detection for never-run jobs (v4.5.0).
+    let createdAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id, name, enabled, state, deliver
@@ -37,6 +39,7 @@ struct AMORCronJob: Codable, Identifiable {
         case lastRunAt = "last_run_at"
         case nextRunAt = "next_run_at"
         case lastError = "last_error"
+        case createdAt = "created_at"
     }
 
     // Handle the repeat object which has a completed count
@@ -87,6 +90,13 @@ struct AMORCronJob: Codable, Identifiable {
 
         self.lastError = try container.decodeIfPresent(String.self, forKey: .lastError)
 
+        // v4.5.0: creation date anchors zombie detection for never-run jobs.
+        if let createdStr = try container.decodeIfPresent(String.self, forKey: .createdAt) {
+            self.createdAt = AMORCronStatusReader.parseISODate(createdStr)
+        } else {
+            self.createdAt = nil
+        }
+
         // Parse repeat.completed from the nested object
         if let repeatConfig = try? superContainer.decodeIfPresent(RepeatConfig.self, forKey: .repeatConfig) {
             self.completedRuns = repeatConfig.completed ?? 0
@@ -107,6 +117,7 @@ struct AMORCronJob: Codable, Identifiable {
         try container.encodeIfPresent(lastRunAt, forKey: .lastRunAt)
         try container.encodeIfPresent(nextRunAt, forKey: .nextRunAt)
         try container.encodeIfPresent(lastError, forKey: .lastError)
+        try container.encodeIfPresent(createdAt, forKey: .createdAt)
     }
 
     enum SuperCodingKeys: String, CodingKey {
@@ -118,6 +129,7 @@ struct AMORCronJob: Codable, Identifiable {
 
     var statusEmoji: String {
         if !enabled { return "⏸️" }
+        if healthStatus == "zombie" { return "🧟" }
         if healthStatus == "missed" { return "🟠" }
         switch lastStatus {
         case "ok": return "✅"
@@ -164,8 +176,35 @@ struct AMORCronJob: Codable, Identifiable {
         return true
     }
 
+    /// True for an enabled never-run job whose schedule has drifted well past
+    /// its creation — the scheduler kept advancing next_run_at without ever
+    /// firing (v4.5.0). Live shape: created Jul 18, 48h interval, next_run
+    /// Nov 15 — 60 silently skipped intervals, invisible to every other
+    /// detector because they all anchor on lastRunAt.
+    var isZombie: Bool {
+        guard enabled, lastRunAt == nil, completedRuns == 0, let created = createdAt else { return false }
+        let period: TimeInterval
+        if let minutes = schedule?.minutes, minutes > 0 {
+            period = Double(minutes) * 60
+        } else if let next = nextRunAt {
+            // Calendar job: infer the period from next − created when sane (≤ 31d).
+            let p = next.timeIntervalSince(created)
+            guard p > 0, p <= 31 * 86400 else { return false }
+            period = p
+        } else {
+            return false
+        }
+        // Two full periods of silence (min 6h) before crying zombie —
+        // a freshly created job gets its first real slot first.
+        return Date().timeIntervalSince(created) > max(period * 2, 6 * 3600)
+    }
+
     var healthStatus: String {
         if !enabled { return "paused" }
+        // v4.5.0: zombie outranks everything — never ran while the schedule
+        // drifted on without it. Stale-ok and missed-slot tests both anchor
+        // on lastRunAt and are structurally blind to this shape.
+        if isZombie { return "zombie" }
         switch lastStatus {
         case "ok":
             if hasMissedSchedule { return "missed" }
@@ -184,6 +223,7 @@ struct AMORCronJob: Codable, Identifiable {
     var healthColor: String {
         switch healthStatus {
         case "healthy": return "green"
+        case "zombie": return "purple"
         case "failing", "stale": return "red"
         case "missed": return "orange"
         case "pending", "never_run", "unknown": return "yellow"
@@ -197,6 +237,13 @@ struct AMORCronJob: Codable, Identifiable {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: lastRun, relativeTo: Date())
+    }
+
+    var relativeCreatedAt: String {
+        guard let created = createdAt else { return "—" }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: created, relativeTo: Date())
     }
 
     var relativeNextRun: String {
@@ -230,6 +277,8 @@ final class AMORCronStatusReader {
     var totalFailing: Int = 0
     /// Enabled jobs whose latest expected slot passed without a run (v4.3.0).
     var totalMissed: Int = 0
+    /// Enabled never-run jobs silently skipped since creation (v4.5.0).
+    var totalZombies: Int = 0
     var totalPaused: Int = 0
 
     // MARK: - Configuration
@@ -288,6 +337,7 @@ final class AMORCronStatusReader {
         totalHealthy = jobs.filter { $0.healthStatus == "healthy" }.count
         totalFailing = jobs.filter { $0.healthStatus == "failing" || $0.healthStatus == "stale" }.count
         totalMissed = jobs.filter { $0.healthStatus == "missed" }.count
+        totalZombies = jobs.filter { $0.healthStatus == "zombie" }.count
         totalPaused = jobs.filter { !$0.enabled }.count
 
         lastRefresh = Date()
@@ -298,9 +348,9 @@ final class AMORCronStatusReader {
         jobs.filter { $0.enabled }
     }
 
-    /// Returns jobs that need attention (failing, stale, missed, or error).
+    /// Returns jobs that need attention (failing, stale, missed, or zombie).
     var jobsNeedingAttention: [AMORCronJob] {
-        jobs.filter { $0.healthStatus == "failing" || $0.healthStatus == "stale" || $0.healthStatus == "missed" }
+        jobs.filter { ["failing", "stale", "missed", "zombie"].contains($0.healthStatus) }
     }
 
     /// Overall system health percentage (0-100).

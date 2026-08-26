@@ -25,7 +25,14 @@ print("\nMISSED-SCHEDULE JOBS: \(missed.count)")
 for m in missed {
     print("  🟠 \(m.name) — last run \(m.relativeLastRun), expected slot passed (status still 'ok')")
 }
-print("summary: active=\(reader.totalActive) healthy=\(reader.totalHealthy) missed=\(reader.totalMissed) failing=\(reader.totalFailing) paused=\(reader.totalPaused)")
+
+// v4.5.0: zombies — enabled, never ran, schedule drifted past creation.
+let zombies = jobs.filter { $0.healthStatus == "zombie" }
+print("\nZOMBIE JOBS (enabled, never ran, drifted): \(zombies.count)")
+for z in zombies {
+    print("  🧟 \(z.name) — created \(z.relativeCreatedAt), never ran, next_run drifted to \(z.relativeNextRun)")
+}
+print("summary: active=\(reader.totalActive) healthy=\(reader.totalHealthy) missed=\(reader.totalMissed) zombies=\(reader.totalZombies) failing=\(reader.totalFailing) paused=\(reader.totalPaused)")
 print("attention list: \(reader.jobsNeedingAttention.map { $0.name })")
 
 // HARD ASSERT 1 — deterministic synthetic fixture: the real single-miss
@@ -149,6 +156,73 @@ do {
        print("HOURSTEP-ASSERT: PASS — hour-step job that ran its slot stays green ✅")
        } else {
        print("HOURSTEP-ASSERT: FAIL — fixture decode failed")
+       exit(1)
+       }
+       }
+
+       // HARD ASSERT 5 — the zombie signature (v4.5.0): enabled, never ran,
+       // created two+ periods ago on a REAL 48h interval (2880m — note:
+       // 172800m is 120 DAYS, the units-bug shape, not a zombie). Every other
+       // detector is blind (they anchor on lastRunAt). Must classify "zombie".
+       do {
+       struct FixtureJob: Codable { let jobs: [AMORCronJob] }
+       let fmt = ISO8601DateFormatter()
+       let created = Date().addingTimeInterval(-40 * 86400)  // created 40 days ago
+       let next = Date().addingTimeInterval(47 * 3600)       // scheduler still says +47h
+       let json = """
+       {"jobs":[{
+       "id":"fix-zombie","name":"Fixture Zombie","enabled":true,"state":"active",
+       "schedule_display":"every 2880m","schedule":{"kind":"interval","minutes":2880},
+       "schedule_display":"every 2880m","schedule":{"kind":"interval","minutes":2880},
+       "last_status":"pending",
+       "last_run_at":null,"next_run_at":"\(fmt.string(from: next))",
+       "created_at":"\(fmt.string(from: created))",
+       "deliver":"telegram:1"
+       }]}
+       """
+       if let data = json.data(using: .utf8),
+       let fixture = try? JSONDecoder().decode(FixtureJob.self, from: data).jobs.first {
+       let hs = fixture.healthStatus
+       print("fixture(interval-zombie,never-ran): healthStatus=\(hs)")
+       if hs != "zombie" {
+       print("ZOMBIE-ASSERT: FAIL — expected zombie, got \(hs)")
+       exit(1)
+       }
+       print("ZOMBIE-ASSERT: PASS — never-run drifted job flagged 🧟")
+       } else {
+       print("ZOMBIE-ASSERT: FAIL — fixture decode failed")
+       exit(1)
+       }
+       }
+
+       // HARD ASSERT 6 — a freshly created job must NOT be a zombie: it hasn't
+       // missed anything yet; its first slot may still be in the future.
+       do {
+       struct FixtureJob: Codable { let jobs: [AMORCronJob] }
+       let fmt = ISO8601DateFormatter()
+       let created = Date().addingTimeInterval(-3600)        // created 1h ago
+       let next = Date().addingTimeInterval(47 * 3600)       // first run due in 47h
+       let json = """
+       {"jobs":[{
+       "id":"fix-fresh-job","name":"Fixture Fresh Job","enabled":true,"state":"active",
+       "schedule_display":"every 2880m","schedule":{"kind":"interval","minutes":2880},
+       "last_status":"pending",
+       "last_run_at":null,"next_run_at":"\(fmt.string(from: next))",
+       "created_at":"\(fmt.string(from: created))",
+       "deliver":"telegram:1"
+       }]}
+       """
+       if let data = json.data(using: .utf8),
+       let fixture = try? JSONDecoder().decode(FixtureJob.self, from: data).jobs.first {
+       let hs = fixture.healthStatus
+       print("fixture(fresh-job,first-slot-ahead): healthStatus=\(hs)")
+       if hs == "zombie" {
+       print("FRESHJOB-ASSERT: FAIL — expected non-zombie, got \(hs)")
+       exit(1)
+       }
+       print("FRESHJOB-ASSERT: PASS — freshly created job stays non-zombie ✅")
+       } else {
+       print("FRESHJOB-ASSERT: FAIL — fixture decode failed")
        exit(1)
        }
        }

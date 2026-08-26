@@ -246,6 +246,7 @@ struct AMORCronHealthDashboard: View {
         case "healthy": return .green
         case "failing", "stale": return .red
         case "missed": return .orange
+        case "zombie": return .purple
         case "pending", "never_run", "unknown": return .yellow
         case "paused": return .gray
         default: return .blue
