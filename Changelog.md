@@ -1,5 +1,38 @@
 # Changelog
 
+## August 26, 2026: 🧟 AMOR v4.5.0 — Zombie Detection (The Units Bug That Masqueraded as a Dead Pipe)
+
+### Commit Messages of the Day
+`feat: AMOR v4.5.0 — zombie detection for never-run cron jobs + unbroker units-bug fix` (`6b54c8a`, pushed to origin/main)
+
+### Steps Taken
+- Cron reminder fired. Live-fire harness first — all legs green, but the fleet listing showed `unbroker-rescan-7183091808` as **enabled, `pending`, never ran in 39 days** with `next_run_at: 2026-11-15`. My first read: a scheduler zombie that skipped 60 windows silently (and structurally invisible to v4.3.0/v4.4.0 detectors, which all anchor on `lastRunAt`).
+- **Half right.** Zero log lines, zero execution records — the never-ran part was real. But the arithmetic told the deeper truth: `172800 minutes` is **120 days, not 48 hours**. Jul 18 + 120d = Nov 15 exactly. The scheduler was INNOCENT — the job's creator passed 48h-in-SECONDS into a minutes field. The "zombie" was a sleeping giant on a broken cadence: a data-broker removal rescan meant to run every 2 days would have run every 4 months. **Units bug, not dead pipe.**
+- The blind spot was real regardless: an enabled never-run job drifting past creation is invisible to every current detector. Forged **v4.5.0 zombie detection** anyway:
+  - `AMORCronJob.isZombie`: enabled + `lastRunAt == nil` + `completedRuns == 0` + schedule drifted `max(2 periods, 6h)` past `created_at` → purple `zombie` state.
+  - `created_at` now decoded (was ignored). Zombie outranks all other states in `healthStatus`.
+  - Flows into `jobsNeedingAttention`, `totalZombies`, `statusEmoji` 🧟, both color maps, live-fire summary line.
+  - **Watchdog v2.2**: `zombie_drift()` Python mirror + deduped 🧟 alerts (with the fix command inline) + revival recovery reporting + `active_zombies`/`new_zombies` structured log fields.
+- The first ZOMBIE-ASSERT run FAILED — gloriously. Fixture used the same broken 172800m assumption; math corrected (2880m = true 48h). Two hard asserts now guard both directions: never-run drifted → `zombie` 🧟, fresh job with first slot ahead → stays non-zombie ✅.
+- **Live remediation**: repaired the job's schedule (`hermes cron edit --schedule "every 2880m"`), next run 2026-08-28 20:22 UTC. Watchdog v2.2 live-fire then correctly raised exactly ONE deduped 🧟 alert for the still-never-run job — the system policing itself in real time. Force-run attempted to bank a real execution; the unbroker scan is heavyweight (leg 1 alone = 7min; first attempt reaped at 15min CLI timeout mid-API-call).
+- Self-corrupted `main.swift` mid-patch (diff-prefixes leaked into code) — caught by `swiftc -parse`, repaired, zero stray lines remain.
+
+### What Changed
+- `Flow/Flow/AMORCronStatusReader.swift` — `isZombie`, `createdAt` decoding, `totalZombies`, purple `zombie` color, `relativeCreatedAt` (v4.5.0).
+- `Flow/Flow/AMORCronHealthDashboard.swift` — purple for `zombie`.
+- `Flow/Flow/AMORSettings.swift` — v4.4.0 → v4.5.0.
+- `Scripts/amor-livefire/` — engine copy synced, ZOMBIE-ASSERT + FRESHJOB-ASSERT added (6 asserts total).
+- Hermes infra: `cron_failure_watchdog.py` v2.2 (zombie detection + revival recovery + log fields).
+
+### Evidence
+- Live-fire: all four legs GREEN, **6/6 asserts PASS** (MISSED, FRESH, MID-CYCLE, HOURSTEP, ZOMBIE, FRESHJOB).
+- Fleet: `active=12 healthy=11 missed=0 zombies=0 failing=0 paused=3` (the unbroker job legitimately not a zombie under its OLD 120d schedule; will flag on the repaired 48h cadence until first run).
+- Watchdog v2.2 live-fire: one deduped 🧟 alert for `dd4edba42935` with full fingerprint; log `{"active_zombies": 1, "new_zombies": ["dd4edba42935"]}`.
+- Engine standalone typecheck clean; 31/31 AMOR Swift files parse 0 errors; commit `6b54c8a` pushed to origin/main.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a villager stood at the station every day for thirty-nine days, waiting for a train. The townspeople called him a zombie — but the timetable said the train came four times a year. Someone had written "48 hours" in the minutes column where "2880" belonged, and the railway, honest to its schedule, simply had nothing to send. Today the timetable was corrected, and the station learned to tell the difference between *the train is late* and *the train was never scheduled*. The sentinel now asks one more question before it howls: not just "did you keep the appointment?" but "was there ever an appointment at all?" 🧟🚂
+
 ## August 25, 2026: 🎯 AMOR v4.4.0 — The Crying-Wolf Cure (Expr-Based Missed-Slot Detection)
 
 ### Commit Messages of the Day
