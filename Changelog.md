@@ -1,5 +1,37 @@
 # Changelog
 
+## August 27, 2026: 📖 AMOR v4.6.0 — The Reflective Shelf (Dead Readers Wired, Daily Note Authored)
+
+### Commit Messages of the Day
+`feat: AMOR v4.6.0 — the reflective shelf wired (dead readers plugged, daily note authored)` (`4f54a7c`, pushed to origin/main)
+
+### Steps Taken
+- Cron reminder fired. Live-fire harness first — all four legs green, 6/6 asserts PASS, but the leg-4 output screamed the next dead pipe: **`daily notes found (7d): 0`** — the vault's `daily/` shelf held ONE note in 27 days (a human note, Aug 19) while 14 real EOD dumps piled up in `raw/daily-summaries/` two directories away.
+- Traced the pipe end to end. Verdict: **TWO breaks, not one.**
+  1. **No author**: nothing ever wrote `daily/YYYY-MM-DD.md`. The EOD dumper v2 computes every number then files only the raw telemetry; the reflective shelf — the heart of AMOR's "thoughtful, reflective UI" — had no writer.
+  2. **No reader in the UI**: `AMORSecondBrainManager.readDailyNotes()` + `readHermesSessionDumps()` were forged in v4.2.0 with **ZERO call sites**. The Second Brain "Recent Notes" tab read `recentSummaries` — a SwiftData shelf nothing ever writes. The user opening that tab saw "No summaries filed yet" forever, with real data invisible nearby.
+- Audited the practice ledgers on the way (same evidence class): **Gita day 88 banked TODAY 12:04 UTC** (Ch 6 V 21, reflective mode) — streak blazing. Gym/meditation ledgers: true zeros, never written since their Aug 20/21 birth — verified NOT a dead pipe: the evening cron's own agent confirmed **4+ straight fires, 0 user replies** in state.db. Honest zeros, honestly reported. (Also corrected my stale memory: ledgers are `gym_selfie_progress.json` / `meditation_progress.json`, not `gym_ledger.json`.)
+- **Dumper v3** (`~/.hermes/scripts/eod_session_dump.py`): dual-write. Alongside the raw dump, distills a reflective daily note to `~/wiki/daily/YYYY-MM-DD.md` — day-in-numbers, honest practice snapshots (Gita/gym/meditation), a data-grounded reflection line, and provenance pointing back at the raw dump. Clobber rules: **human/app notes are sacred** (never overwritten); the dumper's own auto note (tagged `auto-generated`) refreshes until the day closes so the final run captures the full day. Live-fired all three paths: refresh ✓, human-note preserved ✓, fresh write ✓.
+- **App v4.6.0** (`AMORSecondBrainView.swift`): `loadVaultData()` now reads both shelves; "Recent Notes" tab renders three sections — **Daily Notes** (sparkles, preview line via new `firstReflectionLine()` frontmatter-skipper), **Hermes Session Dumps** (sessions · tool calls), and **Filed From This App** (kept). Graceful empty state explains the shelf and its 9PM author.
+- **Harness hardened**: new `DAILY-SHELF-ASSERT` — the reader must see every note that exists on disk within 7d (author-agnostic). And a TRAP DISARMED: leg 4's write round-trip now snapshot/restores today's note — the old LEDGER-LAW cleanup would have **deleted the dumper's real note** (and the round-trip's append would have polluted it). Evidence preservation beats cleanup symmetry.
+- Version bump v4.5.0 → v4.6.0. Verified: 31/31 AMOR Swift files parse 0 errors; harness all-green with **7/7 asserts PASS**; today's auto-note on disk and restored intact after the round-trip.
+
+### What Changed
+- `Flow/Flow/AMORSecondBrainView.swift` — both shelves wired into the tab; three-section render; `firstReflectionLine()`; refresh action reloads them (v4.6.0).
+- `Flow/Flow/AMORSettings.swift` — v4.5.0 → v4.6.0.
+- `Scripts/amor-livefire/secondbrain-main.swift` — DAILY-SHELF-ASSERT.
+- `Scripts/amor-livefire/run.sh` — snapshot/restore around the leg-4 round-trip.
+- Hermes infra: `eod_session_dump.py` v3 (dual-write + practice snapshots + clobber rules).
+
+### Evidence
+- Leg 4: `daily notes found (7d): 1` · `daily notes on disk (7d): 1` · `DAILY-SHELF-ASSERT: PASS` · `real daily note restored after round-trip (evidence preserved)`.
+- Dumper v3 live runs: `Daily note: written → ~/wiki/daily/2026-08-27.md` / `written (refreshed auto note)` / `skipped (human-authored, preserved)` — all three paths exercised.
+- New dump for 2026-08-27: 15 sessions · 506 messages · 277 tool calls · 9 tools (this session included).
+- Commit `4f54a7c` pushed to origin/main; parse sweep 31/31 clean.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a library built two beautiful reading rooms — one for the village's evening reflections, one for the day's ledgers — but forgot to cut the doorways. For twenty-seven days the townspeople walked past walls that held fourteen volumes of real history, while the reading room displayed a single empty shelf labeled "No summaries filed yet." Tonight the doorways were cut, and a night librarian was hired: every evening at nine, she copies the day's true numbers into the reflective room, but never once touches a page a human has written — she refreshes only her own handwriting until the day is done. The first note sat on the shelf at 20:14, and the shelf, at last, had both an author and a reader. 📖🚪
+
 ## August 26, 2026: 🧟 AMOR v4.5.0 — Zombie Detection (The Units Bug That Masqueraded as a Dead Pipe)
 
 ### Commit Messages of the Day
