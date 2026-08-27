@@ -42,6 +42,31 @@ for n in notes.prefix(3) {
     print("  note: \(n.path.split(separator: "/").last ?? "?") (\(n.content.count) chars)")
 }
 
+// v4.6.0 HARD ASSERT: the reader must see EVERY daily note that exists on
+// disk (within 7d). v4.2.0-v4.5.0 built readDailyNotes but nothing called
+// it — this guards the reader↔shelf contract. Author-agnostic: counts
+// Hermes auto-notes (EOD dump v3) and human/app notes alike.
+var diskCount = 0
+if let dailyDir = try? FileManager.default.contentsOfDirectory(
+    at: URL(fileURLWithPath: vault.path).appendingPathComponent("daily"),
+    includingPropertiesForKeys: nil
+) {
+    let dayFmt = DateFormatter()
+    dayFmt.dateFormat = "yyyy-MM-dd"
+    dayFmt.locale = Locale(identifier: "en_US_POSIX")
+    let sevenDaysAgo = Date().addingTimeInterval(-7 * 86400)
+    for file in dailyDir where file.pathExtension == "md" {
+        if let d = dayFmt.date(from: file.deletingPathExtension().lastPathComponent),
+           d >= sevenDaysAgo {
+            diskCount += 1
+        }
+    }
+}
+print("daily notes on disk (7d): \(diskCount)")
+assert(notes.count >= diskCount,
+       "DAILY-SHELF: reader found \(notes.count) but disk holds \(diskCount) — readDailyNotes missing files")
+print("DAILY-SHELF-ASSERT: PASS — reader sees all \(diskCount) note(s) on disk ✅")
+
 // ── 5. Write round-trip into the REAL vault (safe: writes today's daily note)
 let summary = VaultDailySummary(
     date: Date(),

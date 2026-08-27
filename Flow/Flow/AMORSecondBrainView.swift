@@ -23,6 +23,9 @@ struct AMORSecondBrainView: View {
     @State private var vaultNotes: [(path: String, title: String, modified: Date)] = []
     @State private var selectedNotePath: String?
     @State private var noteContent: String?
+    // v4.6.0 — the two REAL vault shelves (were built in v4.2.0, never wired):
+    @State private var hermesDumps: [AMORSecondBrainManager.HermesSessionDump] = []
+    @State private var dailyNotes: [(date: Date, content: String, path: String)] = []
 
     var body: some View {
         NavigationStack {
@@ -245,16 +248,83 @@ struct AMORSecondBrainView: View {
 
     private var recentNotesCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Recent Daily Summaries Filed")
+            Text("Recent Days in the Vault")
                 .font(AMORTypography.titleFont)
                 .foregroundStyle(AMORColorPalette.deepIndigo)
 
-            if brainManager.recentSummaries.isEmpty {
-                Text("No summaries filed yet. Write your first one above!")
+            // v4.6.0 — the real shelves. Before this, this tab read a SwiftData
+            // table nothing ever wrote while 14 real Hermes dumps and the
+            // vault's daily notes sat two directories away, unread.
+            if dailyNotes.isEmpty && hermesDumps.isEmpty && brainManager.recentSummaries.isEmpty {
+                Text("Nothing on the daily shelf yet. Hermes files a reflective note at day's end (~/wiki/daily/), and you can write one above.")
                     .font(AMORTypography.captionFont)
                     .foregroundStyle(.secondary)
                     .padding(.vertical)
-            } else {
+            }
+
+            // Daily notes — the reflective shelf (~/wiki/daily/YYYY-MM-DD.md)
+            if !dailyNotes.isEmpty {
+                Text("Daily Notes")
+                    .font(AMORTypography.bodyFont.bold())
+                    .foregroundStyle(.secondary)
+
+                ForEach(dailyNotes, id: \.date) { note in
+                    Button {
+                        selectedNotePath = note.path
+                        noteContent = note.content
+                    } label: {
+                        HStack {
+                            Image(systemName: "sparkles")
+                                .foregroundStyle(AMORColorPalette.sageGreen)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(note.date.formatted(date: .abbreviated, time: .omitted))
+                                    .font(AMORTypography.bodyFont.bold())
+                                Text(firstReflectionLine(note.content))
+                                    .font(AMORTypography.captionFont)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(AMORTypography.captionFont)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.vertical, 2)
+                }
+            }
+
+            // Hermes EOD session dumps — the telemetry shelf
+            // (~/wiki/raw/daily-summaries/session-dump-YYYY-MM-DD.md)
+            if !hermesDumps.isEmpty {
+                Divider()
+                Text("Hermes Session Dumps")
+                    .font(AMORTypography.bodyFont.bold())
+                    .foregroundStyle(.secondary)
+
+                ForEach(hermesDumps) { dump in
+                    HStack {
+                        Image(systemName: "chart.bar.doc.horizontal")
+                            .foregroundStyle(AMORColorPalette.deepIndigo)
+                        Text(dump.date.formatted(date: .abbreviated, time: .omitted))
+                            .font(AMORTypography.bodyFont)
+                        Spacer()
+                        Text("\(dump.sessions) sessions · \(dump.toolCalls) calls")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+
+            // Manual summaries filed from this app (kept; now the third shelf)
+            if !brainManager.recentSummaries.isEmpty {
+                Divider()
+                Text("Filed From This App")
+                    .font(AMORTypography.bodyFont.bold())
+                    .foregroundStyle(.secondary)
+
                 ForEach(brainManager.recentSummaries) { summary in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(summary.date.formatted(date: .complete, time: .omitted))
@@ -276,6 +346,30 @@ struct AMORSecondBrainView: View {
         .padding(16)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// First meaningful line of a daily note for the list preview —
+    /// skips YAML frontmatter and headers, returns the first prose.
+    private func firstReflectionLine(_ content: String) -> String {
+        var inFrontmatter = false
+        var seenFrontmatterDelimiter = false
+        for raw in content.split(separator: "\n") {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if line == "---" {
+                if !seenFrontmatterDelimiter {
+                    seenFrontmatterDelimiter = true
+                    inFrontmatter = true
+                } else {
+                    inFrontmatter = false
+                }
+                continue
+            }
+            if inFrontmatter { continue }
+            if line.hasPrefix("#") { continue }
+            if line.isEmpty { continue }
+            return line
+        }
+        return "Empty note"
     }
 
     // MARK: - Actions
@@ -314,6 +408,9 @@ struct AMORSecondBrainView: View {
     private func loadVaultData() {
         if brainManager.isVaultAvailable {
             vaultNotes = brainManager.listVaultNotes(limit: 50)
+            // v4.6.0 — the shelves that were always there, finally read.
+            hermesDumps = brainManager.readHermesSessionDumps(daysBack: 14)
+            dailyNotes = brainManager.readDailyNotes(daysBack: 7)
         }
     }
 }

@@ -25,14 +25,26 @@ echo ""
 # Writes a round-trip note into the real vault daily/, then removes it —
 # LEDGER LAW: no phantom evidence left behind.
 # (Top-level Swift code requires a file literally named main.swift.)
+# v4.6.0: the EOD dumper v3 now authors a REAL note at daily/<today>.md.
+# Snapshot it first and restore after — the round-trip must never destroy
+# real evidence; the LEDGER LAW only claims the harness's own phantom.
+TODAY=$(date +%Y-%m-%d)
+SNAP="$TMP/daily-note-snapshot.md"
+HAD_NOTE=0
+if [ -f "$HOME/wiki/daily/$TODAY.md" ]; then
+  cp "$HOME/wiki/daily/$TODAY.md" "$SNAP"
+  HAD_NOTE=1
+fi
 BIN4="$TMP/secondbrain"
 cp secondbrain-main.swift "$TMP/main.swift"
 swiftc -O -sdk "$SDK" AMORSecondBrainManager.swift "$TMP/main.swift" -o "$BIN4"
 "$BIN4"
 status=$?
 
-TODAY=$(date +%Y-%m-%d)
-if [ -f "$HOME/wiki/daily/$TODAY.md" ]; then
+if [ $HAD_NOTE -eq 1 ]; then
+  cp "$SNAP" "$HOME/wiki/daily/$TODAY.md"
+  echo "[harness] real daily note restored after round-trip (evidence preserved)"
+elif [ -f "$HOME/wiki/daily/$TODAY.md" ]; then
   rm "$HOME/wiki/daily/$TODAY.md"
   echo "[harness] round-trip note daily/$TODAY.md removed (LEDGER LAW: no phantom evidence)"
 fi
