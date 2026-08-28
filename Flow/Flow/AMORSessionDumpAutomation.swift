@@ -257,12 +257,7 @@ final class AMORSessionDumpAutomation {
         loadProgressSnapshots().first
     }
 
-    /// Returns snapshots for the last N days (including days with zero activity).
-    func loadSnapshotsForDays(_ days: Int) -> [ProgressSnapshot] {
-        let all = loadProgressSnapshots()
-        guard all.count > days else { return all }
-        return Array(all.prefix(days))
-    }
+    // v4.7.0: loadSnapshotsForDays removed — dead since forging (zero call sites).
 
     // MARK: - Markdown Generation
 

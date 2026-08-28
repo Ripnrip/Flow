@@ -56,6 +56,12 @@ struct AMORInsightsView: View {
                 // Streak stats
                 StreakSummaryView(stats: tracker.computeStreakStats(practices: practices))
 
+                // Recovery desk — v4.7.0: the compiled-but-never-dispensed medicine, wired.
+                RecoveryDeskView(actions: AMORStreakIntelligence.recoveryActions(for: practices))
+
+                // Monthly mirror — v4.7.0: computeMonthlyReport was dead since forging.
+                MonthlyMirrorView(report: tracker.computeMonthlyReport(sessions: sessions, practices: practices))
+
                 Spacer(minLength: 40)
             }
             .padding()
@@ -465,3 +471,100 @@ struct StreakSummaryView: View {
     }
 }
 #endif
+
+// MARK: - Recovery Desk (v4.7.0)
+
+/// Dispenses the streak-recovery medicine that AMORStreakIntelligence.recoveryActions()
+/// has computed since v3.x but nothing ever rendered. Shows only when a practice
+/// needs attention (due today / at risk / broken) — silent when all is well.
+struct RecoveryDeskView: View {
+    let actions: [String]
+
+    var body: some View {
+        if !actions.isEmpty {
+            AMORComponents.ContemplativeCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Recovery Desk", systemImage: "lifepreserver")
+                        .font(AMORTypography.titleFont)
+                        .foregroundStyle(AMORColorPalette.deepIndigo)
+
+                    Text("Your rhythm needs attention here — small moves now, streaks saved.")
+                        .font(AMORTypography.captionFont)
+                        .foregroundStyle(.secondary)
+
+                    ForEach(Array(actions.enumerated()), id: \.offset) { _, action in
+                        HStack(alignment: .top, spacing: 10) {
+                            Circle()
+                                .fill(AMORColorPalette.dawnOrange)
+                                .frame(width: 6, height: 6)
+                                .padding(.top, 6)
+                            Text(action)
+                                .font(AMORTypography.captionFont)
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+}
+
+// MARK: - Monthly Mirror (v4.7.0)
+
+/// Renders the monthly aggregation that AMORProgressTracker.computeMonthlyReport()
+/// has computed since forging but nothing ever displayed. The month-scale mirror
+/// for a rhythm tracked daily.
+struct MonthlyMirrorView: View {
+    let report: MonthlyReport
+
+    var body: some View {
+        AMORComponents.ContemplativeCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("This Month", systemImage: "calendar")
+                        .font(AMORTypography.titleFont)
+                        .foregroundStyle(AMORColorPalette.deepIndigo)
+                    Spacer()
+                    Text("\(report.monthName) \(report.year)")
+                        .font(AMORTypography.captionFont)
+                        .foregroundStyle(.secondary)
+                }
+
+                LazyVGrid(columns: [
+                    GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())
+                ], spacing: 12) {
+                    MonthlyStat(value: "\(report.totalSessions)", label: "Sessions")
+                    MonthlyStat(value: formatDuration(report.totalFocusMinutes), label: "Focus")
+                    MonthlyStat(value: "\(report.totalTasksCompleted)", label: "Tasks")
+                    MonthlyStat(value: "\(report.uniqueTools)", label: "Tools")
+                    MonthlyStat(value: "\(report.uniqueSkills)", label: "Skills")
+                    MonthlyStat(value: "\(report.activeDays)", label: "Active Days")
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func formatDuration(_ minutes: Int) -> String {
+        if minutes < 60 { return "\(minutes)m" }
+        return String(format: "%.1fh", Double(minutes) / 60.0)
+    }
+}
+
+private struct MonthlyStat: View {
+    let value: String
+    let label: String
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.title3.bold())
+                .foregroundStyle(.primary)
+            Text(label)
+                .font(AMORTypography.captionFont)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
