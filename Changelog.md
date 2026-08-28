@@ -1,5 +1,36 @@
 # Changelog
 
+## August 28, 2026: 🛟 AMOR v4.7.0 — The Recovery Desk (Medicine Wired, Corpses Burned)
+
+### Commit Messages of the Day
+`feat: AMOR v4.7.0 — recovery desk wired, lying legacy write-paths axed` (`3a37bd7`, pushed to origin/main)
+
+### Steps Taken
+- Cron reminder fired. Live-fire first — all four legs GREEN, 7/7 asserts PASS. With v4.6.0's reader-class disease cured, ran the SAME audit class upstream: a module-wide scan for public funcs with zero call sites (declaration-excluded, system-hooks whitelisted — no crying wolf).
+- **9 true corpses confirmed.** Two were medicine never dispensed; seven were the old architecture lying in state:
+  - `AMORStreakIntelligence.recoveryActions()` — a COMPLETE streak-recovery engine (due-today / at-risk / broken triage with prioritized actions) compiled since v3.x and rendered by NOTHING, while gym/meditation sit at honest broken zeros. The exact wound in the user's rhythm, with the cure already in the cabinet.
+  - `AMORProgressTracker.computeMonthlyReport()` — monthly sessions/focus/tasks/tools/skills/active-days aggregation (the reminder's own feature list), dead since forging.
+  - `AMORService`'s five write-paths (`registerCronJob`, `recordCronSuccess`, `recordCronFailure`, `updateDailySummary`, `linkSecondBrainNote`) + `getOrCreatePractice` + `getTodaysSessions`: the pre-v4.2.0 SwiftData write architecture, superseded by the ground-truth reader. If ever called they'd record health into a store nothing reads — lying code. Axed. (Verified `recentSummaries` is fed by the manager's own writer at AMORSecondBrainManager.swift:443, so the "Filed From This App" shelf keeps its author.)
+  - `AMORSessionDumpAutomation.loadSnapshotsForDays()` — dead since forging.
+- **Wired the medicine**: new `RecoveryDeskView` renders `recoveryActions()` in Insights — appears only when a practice needs attention, silent when all is well (anti-alarm discipline from v4.4.0). New `MonthlyMirrorView` renders `computeMonthlyReport()` as a six-stat month card.
+- AMORService: 240 -> 84 lines. Parse sweep 31/31 clean. Live-fire re-run all-green. Version bumped, wiki note refreshed (was stale at v4.5.0 — two versions behind; second-brain drift caught and cured in the same stroke).
+
+### What Changed
+- `Flow/Flow/AMORInsightsView.swift` — RecoveryDeskView + MonthlyMirrorView wired after StreakSummaryView (v4.7.0).
+- `Flow/Flow/AMORService.swift` — 7 dead/superseded funcs removed, tombstoned with reasons.
+- `Flow/Flow/AMORSessionDumpAutomation.swift` — loadSnapshotsForDays removed.
+- `Flow/Flow/AMORSettings.swift` — v4.6.0 -> v4.7.0.
+- `~/wiki/AMOR iOS app.md` — version + milestones refreshed to v4.7.0.
+
+### Evidence
+- Commit `3a37bd7`: 4 files changed, 107 insertions(+), 165 deletions(-) — net negative while adding two features.
+- Parse sweep: 31/31 AMOR Swift files, 0 failures.
+- Live-fire: four legs GREEN, 7/7 asserts PASS (MISSED, FRESH, MID-CYCLE, HOURSTEP, ZOMBIE, FRESHJOB, DAILY-SHELF).
+- Zombie arc: `unbroker-rescan-7183091808` repaired first run scheduled 2026-08-28T20:22:15Z — witnessed this session (verdict below in delivery).
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, an apothecary spent a season compounding two perfect remedies — one for broken streaks, one for the month's long memory — then shelved them behind the counter and told no one. In the same town, an old clerk kept seven ledgers he had retired the day the town began reading from the true archive; every night he dusted them as if they still counted. A traveler finally asked why the limp man was never offered the crutch that hung labeled above him. The apothecary blinked, took it down, and it fit. The clerk's ledgers went to the fire, and the shop got lighter by fifty-eight lines and heavier by two working cures. 🛟🔥
+
 ## August 27, 2026: 📖 AMOR v4.6.0 — The Reflective Shelf (Dead Readers Wired, Daily Note Authored)
 
 ### Commit Messages of the Day
