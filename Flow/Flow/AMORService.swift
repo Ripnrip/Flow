@@ -49,37 +49,8 @@ final class AMORService {
     }
     
     // v4.7.0: getOrCreatePractice removed — dead since forging (zero call sites).
-    
-    // MARK: - Session Management
-    
-    /// Log a new work session
-    func logSession(
-        title: String,
-        durationMinutes: Int,
-        notes: String = "",
-        toolsUsed: String = "",
-        skillsLearned: String = "",
-        mood: String = "neutral",
-        completedTasks: Int = 0
-    ) -> DailySession? {
-        do {
-            let session = DailySession(
-                date: .now,
-                title: title,
-                notes: notes,
-                durationMinutes: durationMinutes,
-                toolsUsed: toolsUsed,
-                skillsLearned: skillsLearned,
-                mood: mood,
-                completedTasks: completedTasks
-            )
-            modelContext.insert(session)
-            try modelContext.save()
-            return session
-        } catch {
-            return nil
-        }
-    }
-    
-    // v4.7.0: getTodaysSessions removed — only caller was the dead updateDailySummary.
+    // v4.8.0: logSession removed — zero call sites. Session writes flow through
+    // the UI sheet (AMORView.saveSession, direct modelContext since v3.3.0) and
+    // the intent reconciler (AMORIntentReconciler.logSession). A third path
+    // that nothing calls was a lying API surface, same class as the v4.7.0 corpses.
 }

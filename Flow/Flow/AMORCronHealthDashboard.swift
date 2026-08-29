@@ -98,8 +98,21 @@ struct AMORCronHealthDashboard: View {
                     cronStat(icon: "pause.circle.fill", count: reader.totalPaused, label: "Paused", color: .gray)
                 }
 
+                // v4.8.0 — stuck executions from the run ledger (red, rare,
+                // real: claimed-but-unfinished with no newer attempt).
+                if reader.totalStuck > 0 {
+                    HStack(spacing: 6) {
+                        Image(systemName: "hourglass.bottomhalf.filled")
+                            .foregroundStyle(.red)
+                        Text("\(reader.totalStuck) stuck execution\(reader.totalStuck == 1 ? "" : "s") — claimed with no finish and no newer attempt")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.red)
+                    }
+                }
+
                 if let lastRefresh = reader.lastRefresh {
-                    Text("Last refresh: \(lastRefresh.formatted(.relative(presentation: .named)))")
+                    Text("Last refresh: \(lastRefresh.formatted(.relative(presentation: .named)))"
+                         + (reader.isExecutionTruthAvailable ? " · run ledger live" : ""))
                         .font(AMORTypography.captionFont)
                         .foregroundStyle(.secondary)
                 }
@@ -217,10 +230,47 @@ struct AMORCronHealthDashboard: View {
                 }
             }
 
+            // v4.8.0 — run truth from the executions ledger. Durations are
+            // neutral facts (an idempotent guard finishing in ~1s is by
+            // design, not a failure — anti-wolf law); only failures and
+            // stuck runs carry warning color.
+            if let exec = reader.executionStats(for: job) {
+                HStack(spacing: 12) {
+                    if let avg = exec.avgDurationText {
+                        Label("\(avg) · \(exec.runs7d) runs/7d", systemImage: "bolt.fill")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.secondary)
+                    } else if exec.runs7d > 0 {
+                        Label("\(exec.runs7d) runs/7d", systemImage: "bolt")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if exec.failures7d > 0 {
+                        Label("\(exec.failures7d) failed/7d", systemImage: "xmark.octagon.fill")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.orange)
+                    }
+
+                    if let stuck = exec.stuckText {
+                        Label(stuck, systemImage: "hourglass.bottomhalf.filled")
+                            .font(AMORTypography.captionFont.bold())
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+
             if let error = job.lastError, !error.isEmpty {
                 Text("⚠️ \(error)")
                     .font(AMORTypography.captionFont)
                     .foregroundStyle(.red)
+                    .lineLimit(2)
+            } else if let execError = reader.executionStats(for: job)?.lastError, !execError.isEmpty,
+                      job.lastStatus != "failed" {
+                // Ledger error from the trailing week that jobs.json never banked.
+                Text("⚠️ \(execError)")
+                    .font(AMORTypography.captionFont)
+                    .foregroundStyle(.orange)
                     .lineLimit(2)
             }
         }

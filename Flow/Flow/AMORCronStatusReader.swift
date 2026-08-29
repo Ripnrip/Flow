@@ -280,6 +280,12 @@ final class AMORCronStatusReader {
     /// Enabled never-run jobs silently skipped since creation (v4.5.0).
     var totalZombies: Int = 0
     var totalPaused: Int = 0
+    /// Enabled jobs with a genuinely stuck execution (v4.8.0 run truth).
+    var totalStuck: Int = 0
+    /// Run-level truth from the executions ledger, keyed by job id (v4.8.0).
+    var execStats: [String: AMORJobExecutionStats] = [:]
+    /// True when the executions ledger itself was found and read (v4.8.0).
+    var isExecutionTruthAvailable: Bool = false
 
     // MARK: - Configuration
 
@@ -340,6 +346,14 @@ final class AMORCronStatusReader {
         totalZombies = jobs.filter { $0.healthStatus == "zombie" }.count
         totalPaused = jobs.filter { !$0.enabled }.count
 
+        // v4.8.0: run truth from the executions ledger — durations,
+        // failure history, stuck runs. jobs.json tells the scheduler's
+        // story; the ledger tells the runs' story.
+        let execResult = AMORExecutionTruth.read(hermesHome: hermesHome)
+        execStats = execResult.stats
+        isExecutionTruthAvailable = execResult.isAvailable
+        totalStuck = jobs.filter { $0.enabled && (execStats[$0.id]?.stuck ?? false) }.count
+
         lastRefresh = Date()
     }
 
@@ -351,6 +365,16 @@ final class AMORCronStatusReader {
     /// Returns jobs that need attention (failing, stale, missed, or zombie).
     var jobsNeedingAttention: [AMORCronJob] {
         jobs.filter { ["failing", "stale", "missed", "zombie"].contains($0.healthStatus) }
+    }
+
+    /// Run-truth stats for a given job, if the ledger has any (v4.8.0).
+    func executionStats(for job: AMORCronJob) -> AMORJobExecutionStats? {
+        execStats[job.id]
+    }
+
+    /// Enabled jobs with a genuinely stuck execution (v4.8.0).
+    var stuckJobs: [AMORCronJob] {
+        jobs.filter { $0.enabled && (execStats[$0.id]?.stuck ?? false) }
     }
 
     /// Overall system health percentage (0-100).

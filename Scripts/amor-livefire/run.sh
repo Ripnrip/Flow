@@ -5,7 +5,7 @@
 # so we never leave a Mach-O artifact in the repo directory.
 #
 # Legs:
-#   1. Cron health      (real ~/.hermes/cron/jobs.json)
+#   1. Cron health      (real ~/.hermes/cron/jobs.json + executions.db run truth, v4.8.0)
 #   2. Gita streak      (real ~/.hermes/logs/gita_progress.json + gym/meditation ledgers)
 #   3. Dump parser v2   (real ~/wiki/raw/daily-summaries/*.md)
 #   4. Second brain     (real ~/wiki vault: discovery, daily/ casing, EOD dumps, write round-trip)
@@ -16,7 +16,7 @@ TMP="$(mktemp -d)"
 
 # Legs 1-3
 BIN="$TMP/cronfire"
-swiftc -O -sdk "$SDK" AMORGroundTruth.swift AMORCronStatusReader.swift main.swift -o "$BIN"
+swiftc -O -sdk "$SDK" AMORGroundTruth.swift AMORCronStatusReader.swift AMORExecutionTruth.swift main.swift -lsqlite3 -o "$BIN"
 "$BIN"
 
 echo ""
