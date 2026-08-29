@@ -1,5 +1,37 @@
 # Changelog
 
+## August 29, 2026: ⚡ AMOR v4.8.0 — Run Truth (The Ledger Beneath the Scheduler)
+
+### Commit Messages of the Day
+`feat: AMOR v4.8.0 — run truth engine (executions.db durations, stuck detection, hollow-run visibility)` (`b8dcc33`, pushed to origin/main)
+
+### Steps Taken
+- Cron reminder fired. Live-fire harness first — all four legs green, 7/7 asserts PASS, 31 files parsing. Then the upstream hunt found the deepest blind spot yet: **the app has never read `~/.hermes/cron/executions.db`** — the ledger where every actual RUN lives (claimed → running → completed/failed, with durations and error text). jobs.json is only the scheduler's story: `lastRunAt` banks on completion, `last_status` says "ok" for a run that did nothing.
+- The proof was already in the wild: the 📚 Monographs feeder shows **205 "completed" runs / 7d at ~0.5s each** — an idempotent no-op guard waking 96×/day to say "already created." jobs.json calls it ✅ok forever. (Memory corrected: the feeder is NOT dead-needs-auth; its recurring reminder was created Aug 22 and the guard is by design. The stale memory entry was fixed.)
+- Forged **`AMORExecutionTruth.swift`** — Foundation+SQLite3 engine that distills the ledger per job: runs/failures in 7d, average + last duration, recent error text, and **stuck detection** (claimed/running past 6h with no newer attempt — invisible to every lastRunAt-anchored detector, the v4.5.0 lesson one level deeper; a newer attempt means the old row is a reaped orphan, not a hang).
+- **WAL trap disarmed, live-proven**: `SQLITE_OPEN_READONLY` returns rc=14 "unable to open database file" (0 rows visible) while the `-wal` sidecar holds recent commits. `READWRITE` open + immediate `PRAGMA query_only=ON` sees all 1,001 rows and cannot write a byte.
+- **Anti-wolf law held**: sub-second runs are surfaced as neutral facts (`~1s avg · 205 runs/7d`), never alarms — an idempotent guard is by design. Only `failed` rows and genuinely stuck runs carry orange/red.
+- Dashboard wired: per-job run-truth chips (bolt = duration + volume, octagon = failures/7d, hourglass red = stuck), ledger-banked error text shown when jobs.json never recorded it, stuck count in the health overview, "run ledger live" provenance on last-refresh.
+- **One more corpse burned**: `AMORService.logSession` — zero call sites (session writes flow through the UI sheet since v3.3.0 and the intent reconciler). Same class as the v4.7.0 purge; the sweep missed it. AMORService: 84 → 52 lines.
+- Two compile landmines caught by the harness typecheck (enum-with-stored-properties; `SQLITE_TRANSIENT` not exposed to Swift — rebuilt via `unsafeBitCast(-1)`), one wrong timestamp-format assumption corrected by live-fire (ledger writes ISO 8601 with fractional seconds, not naive format — durations were silently nil until the parser was fixed), one assert fixed to match the app's own format law (62s renders `~1m`).
+- Harness leg extended: live ledger read + 5-shape faux ledger (STUCK, FLAKY, HOLLOW, FRESH, ORPHAN-REAPED) — now **12/12 asserts PASS** across all legs. Parse sweep **34/34 clean**. Version v4.7.0 → v4.8.0.
+
+### What Changed
+- `Flow/Flow/AMORExecutionTruth.swift` — NEW: run-truth engine (WAL-safe open, ISO+naive parsers, stuck-or-orphan logic, anti-wolf durations).
+- `Flow/Flow/AMORCronStatusReader.swift` — loads exec stats in `refresh()`, `totalStuck`, `executionStats(for:)`, `stuckJobs`.
+- `Flow/Flow/AMORCronHealthDashboard.swift` — run-truth chips per row, stuck banner, ledger error surfacing, provenance line.
+- `Flow/Flow/AMORService.swift` — `logSession` corpse removed (tombstoned).
+- `Flow/Flow/AMORSettings.swift` — v4.7.0 → v4.8.0.
+- `Scripts/amor-livefire/` — engine copy synced, run.sh links `-lsqlite3`, main.swift EXEC-TRUTH leg + 5 fixture asserts.
+
+### Evidence
+- Live-fire: four legs GREEN, **12/12 asserts PASS** (MISSED, FRESH, MID-CYCLE, HOURSTEP, ZOMBIE, FRESHJOB, STUCK, FLAKY, HOLLOW, FRESH-DUR, ORPHAN + DAILY-SHELF).
+- Real ledger read: 1,001 executions in 7d window; Bridge Watchdog 106 runs ~49s avg; Gita morning 3 runs ~12m avg; unbroker 1 run ~21m; feeder 205 runs ~18s avg (the hollow truth, now visible as data, not alarm).
+- Parse sweep 34/34; engine standalone typecheck clean; commit `b8dcc33` pushed to origin/main (+808/−37 across 9 files).
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a town kept two books. The first — handsome, leather-bound, updated nightly — recorded when the stagecoach was *supposed* to have gone out. The second — a greasy tally in the stable — recorded every actual departure: how long each horse ran, which ones threw a shoe, and one poor nag that stood hitched for ten hours while the stable-boy swore the round trip was done. The mayor only ever read the first book, so the town celebrated a hundred glorious deliveries a week that had each taken half a second. One day a traveler asked to see the tally. "That book lies," said the stable-boy, pointing at the ledger's twin: a mare still hitched since morning with no driver coming. The mayor read both books at last — and learned to ask not only *was the appointment kept?* but *how long did the horse actually run?* ⚡🐎
+
 ## August 28, 2026: 🛟 AMOR v4.7.0 — The Recovery Desk (Medicine Wired, Corpses Burned)
 
 ### Commit Messages of the Day
