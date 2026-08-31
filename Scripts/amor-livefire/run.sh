@@ -16,7 +16,7 @@ TMP="$(mktemp -d)"
 
 # Legs 1-3
 BIN="$TMP/cronfire"
-swiftc -O -sdk "$SDK" AMORGroundTruth.swift AMORCronStatusReader.swift AMORExecutionTruth.swift main.swift -lsqlite3 -o "$BIN"
+swiftc -O -sdk "$SDK" AMORGroundTruth.swift AMORCronStatusReader.swift AMORExecutionTruth.swift AMORStormSentinel.swift main.swift -lsqlite3 -o "$BIN"
 "$BIN"
 
 echo ""

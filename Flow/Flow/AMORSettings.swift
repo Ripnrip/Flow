@@ -806,7 +806,7 @@ struct AMORSettingsView: View {
                     .font(AMORTypography.captionFont)
                     .foregroundStyle(.secondary)
 
-                Text("v4.8.0")
+                Text("v4.9.0")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .padding(.top, 4)

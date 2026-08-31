@@ -286,6 +286,16 @@ final class AMORCronStatusReader {
     var execStats: [String: AMORJobExecutionStats] = [:]
     /// True when the executions ledger itself was found and read (v4.8.0).
     var isExecutionTruthAvailable: Bool = false
+    /// Cross-job failure incidents fused from the ledger (v4.9.0).
+    /// Newest first; storms (multi-job) carry the shared-cause story.
+    var incidents: [AMORIncident] = []
+    /// Incidents that may still be in progress (v4.9.0). Storms only —
+    /// a lone failing job is not weather; its own row chip carries it.
+    /// Empty when the sky is clear — silence is the anti-wolf default.
+    var activeIncidents: [AMORIncident] { incidents.filter { $0.isStorm && $0.isActive } }
+    /// Historical storms from the trailing week (v4.9.0) — resolved
+    /// truth, rendered neutral. Single-job incidents stay on their row.
+    var resolvedStorms: [AMORIncident] { incidents.filter { $0.isStorm && !$0.isActive } }
 
     // MARK: - Configuration
 
@@ -353,6 +363,16 @@ final class AMORCronStatusReader {
         execStats = execResult.stats
         isExecutionTruthAvailable = execResult.isAvailable
         totalStuck = jobs.filter { $0.enabled && (execStats[$0.id]?.stuck ?? false) }.count
+
+        // v4.9.0: fuse cross-job failures into incidents — one provider
+        // outage is ONE storm with a verdict, not N orphan chips. Jobs
+        // still present in jobs.json are the witnesses that can prove
+        // recovery; a deleted job can never hold the sky hostage.
+        incidents = AMORStormSentinel.cluster(
+            events: execResult.failureEvents,
+            lastNonFailureByJob: execResult.lastNonFailureByJob,
+            knownJobIDs: Set(jobs.map { $0.id })
+        )
 
         lastRefresh = Date()
     }

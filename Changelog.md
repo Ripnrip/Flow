@@ -1,5 +1,37 @@
 # Changelog
 
+## August 31, 2026: 🌩️ AMOR v4.9.0 — The Storm Sentinel (One Outage, One Card)
+
+### Commit Messages of the Day
+`feat: AMOR v4.9.0 — storm sentinel (cross-job failure incidents, one outage = one card)` (pushed to origin/main)
+
+### Steps Taken
+- Cron reminder fired. Live-fire harness first — v4.8.0 legs all green (12/12), but leg 1's ledger read held the next blind spot in plain sight: **7 failure rows chained across 3 jobs, Aug 30 8PM → Aug 31 6AM, all healed by morning.** v4.8.0's per-job chips render that as three separate orange warnings implying three broken things — when the truth was ONE provider outage (model unreachable / dead llama fallback), long gone.
+- Traced the failure window in the live ledger: Strategic Heartbeat (f3c255fdddc8) 5 failures, AMOR reminder (c7b757828f4c) 1, dd4edba42935 1 — all inside one night, all "can't reach the model provider" / "HTTP 404 llama-3.3-70b-versatile". The glm-5.2/zai pin already cured it (7 straight completions since 08:00); the app's UI just had no memory of shared cause.
+- Forged **`AMORStormSentinel.swift`** — pure-Foundation incident clustering: failure events chained by gaps ≤ 2.5h fuse into ONE incident whichever job they landed on; an incident touching ≥ 2 jobs is a storm (shared cause). Two verdict laws:
+  - **ONE-WITNESS LAW**: a storm is shared-cause by definition — if ANY known member ran clean after the last bolt, the sky cleared for all. Requiring every member to recover is per-job thinking, the very disease v4.9.0 cures. (A member still failing afterward starts its own chain; lone chains stay on their job's row chip.)
+  - **QUIET-SKY LAW**: no recovery evidence + nothing failed for 24h → resolved regardless. History, not alarm.
+- `AMORExecutionTruth` distillation extended: failure events + per-job newest non-failure attempt (recovery evidence — a failed attempt is NOT recovery) now flow out alongside per-job stats.
+- Dashboard wired: **Storm in Progress** banner (orange, only when a multi-job incident is active), **Weather This Week** card (resolved storms, neutral, green checkmark). Single-job incidents never become weather — anti-wolf law intact. Reader computes incidents on refresh from the same single ledger read.
+- Harness extended: STORM/SKY-DARK/LONE/SPLIT fixture asserts + a report-only real-ledger verdict (hard asserts on live data would time-bomb as the 7d window slides — fixtures carry the law). Now **16/16 asserts PASS** across all legs. Parse sweep **33/33 clean**. Version v4.8.0 → v4.9.0.
+
+### What Changed
+- `Flow/Flow/AMORStormSentinel.swift` — NEW: incident clustering engine (chain-gap law, one-witness + quiet-sky verdicts).
+- `Flow/Flow/AMORExecutionTruth.swift` — distills failure events + lastNonFailureByJob; compound Distilled output.
+- `Flow/Flow/AMORCronStatusReader.swift` — incidents / activeIncidents / resolvedStorms computed in refresh().
+- `Flow/Flow/AMORCronHealthDashboard.swift` — storm banner + weather history card.
+- `Flow/Flow/AMORSettings.swift` — v4.8.0 → v4.9.0.
+- `Scripts/amor-livefire/` — engine copies synced, run.sh links sentinel, 4 new asserts + real-ledger verdict.
+
+### Evidence
+- Live-fire: all four legs GREEN, **16/16 asserts PASS** (MISSED, FRESH, MID-CYCLE, HOURSTEP, ZOMBIE, FRESHJOB, STUCK, FLAKY, HOLLOW, FRESH-DUR, ORPHAN, DAILY-SHELF + new LONE, STORM, SKY-DARK, SPLIT).
+- Real-ledger storm verdict, live-printed by the harness: `1 incident fused from 7 failure rows · 0 active · storm · ✅ resolved · 7 failures across 3 jobs · Aug 30, 2026 at 8:00 PM → Aug 31, 2026 at 6:00 AM` — the exact overnight outage, correctly fused.
+- Strategic Heartbeat fix verified holding: 7 consecutive completions Aug 31 08:00→20:00; failure_streak 0.
+- Parse sweep 33/33 AMOR Swift files, 0 failures.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a town hired three night watchmen, each guarding his own street. One stormy night the river flooded and soaked all three streets at once. In the morning the mayor read the watchmen's reports — "water on Maple," "water on Oak," "water on Elm" — and dispatched three crews to hunt three separate leaks. A traveler looked at the dates on the reports, all within one dark night, and asked why the mayor hadn't simply read the sky. "Each watchman guards his own street," the mayor said. "None of them guards the weather." So the town hired a fourth watcher who kept no street at all — only a ledger of storms — and learned to ask not only *which street flooded?* but *was it the river, and has it gone back down?* 🌩️🌤️
+
 ## August 29, 2026: ⚡ AMOR v4.8.0 — Run Truth (The Ledger Beneath the Scheduler)
 
 ### Commit Messages of the Day

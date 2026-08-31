@@ -20,6 +20,11 @@ struct AMORCronHealthDashboard: View {
                     // Overall health
                     healthOverviewCard
 
+                    // v4.9.0 — the storm console: cross-job failure weather
+                    if !reader.activeIncidents.isEmpty {
+                        activeStormCard
+                    }
+
                     // Jobs needing attention
                     if !reader.jobsNeedingAttention.isEmpty {
                         attentionCard
@@ -31,6 +36,11 @@ struct AMORCronHealthDashboard: View {
                     // Paused jobs
                     if reader.totalPaused > 0 {
                         pausedJobsCard
+                    }
+
+                    // v4.9.0 — weather history: resolved storms, neutral truth
+                    if !reader.resolvedStorms.isEmpty {
+                        weatherHistoryCard
                     }
                 }
                 .padding()
@@ -127,6 +137,84 @@ struct AMORCronHealthDashboard: View {
         case 50..<70: return .orange
         default: return .red
         }
+    }
+
+    // MARK: - Storm Console (v4.9.0)
+
+    /// One provider outage is ONE storm — not N orphan orange chips.
+    /// Failures chained across jobs inside 2.5h gaps share a cause and
+    /// a verdict. Active storms speak; passed weather is history.
+    private var activeStormCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "cloud.bolt.rain.fill")
+                    .foregroundStyle(.orange)
+                Text("Storm in Progress")
+                    .font(AMORTypography.titleFont)
+                    .foregroundStyle(.orange)
+            }
+
+            ForEach(reader.activeIncidents) { storm in
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(storm.summaryText)
+                        .font(AMORTypography.bodyFont.bold())
+                    Text(storm.spanText)
+                        .font(AMORTypography.captionFont)
+                        .foregroundStyle(.secondary)
+                    if let headline = storm.headlineError, !headline.isEmpty {
+                        Text("⚠️ \(headline)")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.orange)
+                            .lineLimit(2)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+
+            Text("These failures share a window — one shared cause (provider, network, or host), not separate breakage. The per-job chips below carry each job's own history.")
+                .font(AMORTypography.captionFont)
+                .foregroundStyle(.secondary)
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 16).fill(Color.orange.opacity(0.08)))
+    }
+
+    /// Resolved storms from the trailing week — neutral history, no
+    /// alarm. The sky cleared; the record remains.
+    private var weatherHistoryCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "cloud.sun")
+                    .foregroundStyle(.secondary)
+                Text("Weather This Week")
+                    .font(AMORTypography.titleFont)
+                    .foregroundStyle(AMORColorPalette.deepIndigo)
+            }
+
+            ForEach(reader.resolvedStorms) { storm in
+                HStack(alignment: .top) {
+                    Image(systemName: "checkmark.circle")
+                        .foregroundStyle(.green)
+                        .padding(.top, 2)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(storm.summaryText)
+                            .font(AMORTypography.bodyFont)
+                        Text("passed · \(storm.spanText)")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                .padding(.vertical, 2)
+            }
+
+            Text("Cleared skies from the last 7 days — every affected job ran again after its storm passed.")
+                .font(AMORTypography.captionFont)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(16)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Attention Card

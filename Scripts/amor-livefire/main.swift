@@ -257,6 +257,26 @@ if execTruth.isAvailable {
     if let mono = mono {
         print("  hollow-run truth: monographs feeder \(mono.runs7d) runs avg \(mono.avgDurationText ?? "—") — jobs.json calls it ✅ok; the ledger shows ~0.5s idempotent no-ops")
     }
+
+    // v4.9.0 — storm verdict on the REAL ledger: fuse this week's failure
+    // rows into incidents. Report-only (a hard assert here would time-bomb
+    // as the 7d window slides past real events — fixtures carry the law).
+    let jobsURL = hermesHome.appendingPathComponent("cron").appendingPathComponent("jobs.json")
+    var knownIDs: Set<String> = []
+    if let data = try? Data(contentsOf: jobsURL),
+       let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+       let arr = obj["jobs"] as? [[String: Any]] {
+        knownIDs = Set(arr.compactMap { $0["id"] as? String })
+    }
+    let realIncidents = AMORStormSentinel.cluster(
+        events: execTruth.failureEvents,
+        lastNonFailureByJob: execTruth.lastNonFailureByJob,
+        knownJobIDs: knownIDs)
+    print("storm sentinel: \(realIncidents.count) incident(s) fused from \(execTruth.failureEvents.count) failure row(s) · \(realIncidents.filter { $0.isActive }.count) active")
+    for inc in realIncidents.prefix(5) {
+        let verdict = inc.isActive ? "🌩️ ACTIVE" : (inc.recovered ? "✅ resolved" : "🌙 quiet")
+        print("  \(inc.isStorm ? "storm" : "lone ") · \(verdict) · \(inc.summaryText)")
+    }
 } else {
     print("  (ledger missing or unreadable — engine degrades to unavailable, no alarm)")
 }
@@ -358,6 +378,63 @@ do {
     let orphan = result.stats["fix-orphan"]
     check("ORPHAN-ASSERT", orphan?.stuck != true,
           "running row with newer completed attempt NOT stuck — reaped orphan, not a hang")
+
+    // v4.9.0 — STORM SENTINEL asserts. The same faux ledger already holds
+    // a lone-job chain (fix-flaky) — the sentinel must NOT promote it to
+    // weather. Shape 6 forges the overnight-outage signature: failures
+    // chained across 3 jobs at ≤2.5h gaps, then clean runs after.
+    let knownJobs: Set<String> = ["fix-stuck", "fix-flaky", "fix-hollow", "fix-fresh", "fix-orphan", "fix-storm-a", "fix-storm-b", "fix-storm-c"]
+
+    // fix-flaky: failed 3h ago, failed 2h ago, completed 1h ago → one lone
+    // chain, single job, recovered → no storm, no active incident.
+    let flakyEvents: [AMORFailureEvent] = [
+        AMORFailureEvent(jobID: "fix-flaky", date: Date().addingTimeInterval(-3 * 3600), error: "HTTP 429"),
+        AMORFailureEvent(jobID: "fix-flaky", date: Date().addingTimeInterval(-2 * 3600), error: nil),
+    ]
+    let flakyRecovery: [String: Date] = ["fix-flaky": Date().addingTimeInterval(-1 * 3600)]
+
+    let loneVerdict = AMORStormSentinel.cluster(events: flakyEvents, lastNonFailureByJob: flakyRecovery, knownJobIDs: knownJobs, now: Date())
+    check("LONE-ASSERT", loneVerdict.count == 1 && !loneVerdict[0].isStorm && !loneVerdict[0].isActive,
+          "single-job failure chain stays a row chip, never weather (isStorm=\(loneVerdict.first?.isStorm ?? false), active=\(loneVerdict.first?.isActive ?? true))")
+
+    // Shape 6 — STORM: the live-proven overnight outage. 3 jobs, 5 bolts,
+    // 2h apart, all inside the 2.5h chain gap; every member flew after.
+    let h: Double = 3600
+    let stormEvents: [AMORFailureEvent] = [
+        AMORFailureEvent(jobID: "fix-storm-a", date: Date().addingTimeInterval(-12 * h), error: "Hermes can't reach the model provider"),
+        AMORFailureEvent(jobID: "fix-storm-b", date: Date().addingTimeInterval(-10 * h), error: "Hermes can't reach the model provider"),
+        AMORFailureEvent(jobID: "fix-storm-a", date: Date().addingTimeInterval(-8 * h), error: "HTTP 404 model gone"),
+        AMORFailureEvent(jobID: "fix-storm-c", date: Date().addingTimeInterval(-6 * h), error: nil),
+        AMORFailureEvent(jobID: "fix-storm-a", date: Date().addingTimeInterval(-4 * h), error: "HTTP 404 model gone"),
+    ]
+    let stormRecovery: [String: Date] = [
+        "fix-storm-a": Date().addingTimeInterval(-2 * h),   // witness flew after last bolt
+        "fix-storm-b": Date().addingTimeInterval(-1 * h),
+        // fix-storm-c never reported after — ONE-WITNESS LAW still clears it
+    ]
+    let stormVerdict = AMORStormSentinel.cluster(events: stormEvents, lastNonFailureByJob: stormRecovery, knownJobIDs: knownJobs, now: Date())
+    let storm = stormVerdict.first
+    check("STORM-ASSERT", (storm?.isStorm ?? false) && (storm?.failureCount ?? 0) == 5 && (storm?.jobIDs.count ?? 0) == 3 && !(storm?.isActive ?? true),
+          "5 bolts / 3 jobs fused into ONE storm, one witness clears it (jobs=\(storm?.jobIDs.count ?? 0), failures=\(storm?.failureCount ?? 0), active=\(storm?.isActive ?? true))")
+
+    // Shape 7 — ACTIVE storm: same shape, but the last bolt was 1h ago and
+    // nobody has run since — the sky is still dark.
+    let activeEvents = stormEvents.map { e in
+        AMORFailureEvent(jobID: e.jobID, date: e.date.addingTimeInterval(3 * h), error: e.error)
+    }
+    let activeVerdict = AMORStormSentinel.cluster(events: activeEvents, lastNonFailureByJob: [:], knownJobIDs: knownJobs, now: Date())
+    check("SKY-DARK-ASSERT", (activeVerdict.first?.isStorm ?? false) && (activeVerdict.first?.isActive ?? false),
+          "storm with no recovery and last bolt 1h ago → ACTIVE banner (active=\(activeVerdict.first?.isActive ?? false))")
+
+    // Shape 8 — SPLIT: two failures 24h apart are NOT one storm — the
+    // gap law cuts the chain.
+    let splitEvents: [AMORFailureEvent] = [
+        AMORFailureEvent(jobID: "fix-storm-a", date: Date().addingTimeInterval(-30 * h), error: "old bolt"),
+        AMORFailureEvent(jobID: "fix-storm-b", date: Date().addingTimeInterval(-6 * h), error: "new bolt"),
+    ]
+    let splitVerdict = AMORStormSentinel.cluster(events: splitEvents, lastNonFailureByJob: [:], knownJobIDs: knownJobs, now: Date())
+    check("SPLIT-ASSERT", splitVerdict.count == 2,
+          "failures 24h apart fuse into 2 incidents, not 1 (chain gap law holds, count=\(splitVerdict.count))")
 
     print("EXEC-ASSERTS: \(pass)/\(pass + fail) PASS")
     if fail > 0 { exit(1) }

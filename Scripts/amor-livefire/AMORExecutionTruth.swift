@@ -104,6 +104,12 @@ struct AMORExecutionTruthResult {
     var totalExecutions: Int = 0
     /// True when the ledger was found and read successfully.
     var isAvailable: Bool = false
+    // v4.9.0 storm inputs — the same rows, reshaped for clustering:
+    /// Every failed row in-window, distilled to (job, date, error).
+    var failureEvents: [AMORFailureEvent] = []
+    /// Per job, the newest non-failed attempt (completed/running/claimed)
+    /// — recovery evidence. A failed attempt is NOT recovery.
+    var lastNonFailureByJob: [String: Date] = [:]
 }
 
 // MARK: - Execution Truth Reader
@@ -155,7 +161,10 @@ enum AMORExecutionTruth {
         let rows = fetchRows(d)
         result.isAvailable = true
         result.totalExecutions = rows.count
-        result.stats = distill(rows: rows, now: Date())
+        let distilled = distill(rows: rows, now: Date())
+        result.stats = distilled.stats
+        result.failureEvents = distilled.failureEvents
+        result.lastNonFailureByJob = distilled.lastNonFailure
         return result
     }
 
@@ -199,15 +208,44 @@ enum AMORExecutionTruth {
 
     // MARK: Distillation
 
-    private static func distill(rows: [Row], now: Date) -> [String: AMORJobExecutionStats] {
+    /// Compound distillation output — per-job stats plus the raw
+    /// failure/recovery shapes the storm sentinel clusters on (v4.9.0).
+    private struct Distilled {
+        let stats: [String: AMORJobExecutionStats]
+        let failureEvents: [AMORFailureEvent]
+        let lastNonFailure: [String: Date]
+    }
+
+    private static func distill(rows: [Row], now: Date) -> Distilled {
         // Group by job.
         var byJob: [String: [Row]] = [:]
         for row in rows { byJob[row.jobID, default: []].append(row) }
 
         var stats: [String: AMORJobExecutionStats] = [:]
+        // v4.9.0 storm inputs, accumulated across all jobs.
+        var failureEvents: [AMORFailureEvent] = []
+        var lastNonFailure: [String: Date] = [:]
+
         for (jobID, jobRows) in byJob {
             let completed = jobRows.filter { $0.status == "completed" }
             let failed = jobRows.filter { $0.status == "failed" }
+
+            // Storm inputs first (cheap, order-preserving by claim time —
+            // rows arrive ASC from the ledger query).
+            for row in failed {
+                if let c = row.claimedAt {
+                    failureEvents.append(AMORFailureEvent(jobID: jobID, date: c, error: row.error))
+                }
+            }
+            // Recovery evidence: newest non-failed attempt, any status
+            // that shows the scheduler still moving (completed beats all;
+            // running/claimed also prove life after the storm).
+            let nonFailureDates = jobRows
+                .filter { $0.status != "failed" }
+                .compactMap { $0.claimedAt }
+            if let newest = nonFailureDates.max() {
+                lastNonFailure[jobID] = newest
+            }
 
             let durations = completed.compactMap { $0.durationSeconds }
             let avg = durations.isEmpty ? nil : durations.reduce(0, +) / Double(durations.count)
@@ -246,7 +284,7 @@ enum AMORExecutionTruth {
                 stuckMinutes: stuckMinutes
             )
         }
-        return stats
+        return Distilled(stats: stats, failureEvents: failureEvents, lastNonFailure: lastNonFailure)
     }
 }
 
