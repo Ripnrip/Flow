@@ -1,5 +1,42 @@
 # Changelog
 
+## September 1, 2026: 🔥 AMOR v5.0.0 — Mortal Streaks (A Number That Can Fall Is a Number That Means Something)
+
+### Commit Messages of the Day
+`feat: AMOR v5.0.0 — mortal streaks (dates are truth, evidence can lower, dormancy never wounds)` (`619cfc2`, pushed to origin/main)
+
+### Steps Taken
+- Cron reminder fired. Live-fire harness first — v4.9.0 legs all green (16/16), but the streak leg hunt found the deepest lie yet, hiding in the app's most-beloved number: **the Gita streak could never break.** Ever. `gitaStreakDays` returned `max(derived chain, days_completed)` — and `days_completed` is a lifetime EVENT counter (95, already exceeding the 78 days since `started` because audio+text deliveries both increment it), not a consecutive-day chain. As a floor, it made the streak immortal.
+- Proof from the live ledger: derived trailing chain from date evidence = **9 days** (history pruned to 24 entries; **Aug 23 missing** from the chain), yet the app displayed **95**. Under the old law, if the user missed a day tomorrow, the app would still show 95 — a number that cannot fall is a number that means nothing.
+- Second wound, same hunt: `AMORStreakIntelligence.generateSummary` graded health over ALL practices — the 95-morning Gita devotee with two never-started practices (gym + meditation, honest zeros since Aug 20/21) rendered **🌱 49.5/100 seedling**. Never-started is an invitation, not a wound.
+- Third wound (the meta-one): `AMORStreakIntelligence.swift` was welded to the SwiftData `@Model PracticeStreak` — so the live-fire harness could NEVER compile it. Five versions shipped an untested health-score law. The blind-spot factory.
+- Forged **`AMORPracticeSnapshot.swift`** — Foundation-only mirror (name, streaks, totalCompletions, lastCompletedDate). The @Model gains a one-line `.snapshot` conversion. The intelligence engine now reasons over snapshots — harness-compilable forever.
+- **Three laws carved**:
+  - **DATES ARE TRUTH**: new pure function `trailingStreakDays(fromDateStrings:)` — consecutive-day chain anchored to today/yesterday; a gap returns honest 0, never `dates.count`, never a lifetime counter. `gitaStreakDays` now derives purely from `history` + `last_completed`.
+  - **EVIDENCE CAN LOWER**: the syncer SETs `currentStreak = streakDays` — a readable ledger is truth; only an absent file never touches. The old `max()` armor is dead. (`longestStreak` remains max-raised — a record earned under pruned history can't be un-earned; documented.)
+  - **DORMANCY NEVER WOUNDS**: health denominator = STARTED practices only; `longest`/`activeStreaks` computed over started; milestones never mint for dormant practices; headline law distinguishes all-dormant ("The first completion is waiting") from on-track.
+- Harness leg 5 forged — 9 new asserts (CHAIN, BROKEN, ANCHOR, EMPTY, MORTAL-LIVE, SEEDLING, MORTALITY, ALL-DORMANT, MILESTONE). Now **24/24 asserts PASS** across all legs. Parse sweep **34/34 clean**. Foundation-only typecheck (snapshot + intelligence + ground truth, together): **zero errors**. Version v4.9.0 → v5.0.0.
+
+### What Changed
+- `Flow/Flow/AMORPracticeSnapshot.swift` — NEW: Foundation-only snapshot mirror.
+- `Flow/Flow/AMORStreakIntelligence.swift` — snapshot-fed; started-only denominator; isStarted() law; all-dormant headline.
+- `Flow/Flow/AMORGroundTruth.swift` — `trailingStreakDays(fromDateStrings:)` pure chain counter; `gitaStreakDays` freed from the days_completed floor; orphaned `utcDate(fromString:)` burned.
+- `Flow/Flow/AMORGroundTruthSyncer.swift` — Gita `currentStreak` SET from ledger (evidence can lower); guard now keyed on lastCompleted presence.
+- `Flow/Flow/AMORModels.swift` — `PracticeStreak.snapshot` computed bridge.
+- `Flow/Flow/AMORNudgeEngine.swift`, `AMORInsightsView.swift`, `AMORWeeklyReviewView.swift` — call sites map `.snapshot` before invoking the engine.
+- `Flow/Flow/AMORSettings.swift` — v4.9.0 → v5.0.0.
+- `Scripts/amor-livefire/` — engine copies synced (incl. 2 new files), leg-5 asserts, compile line +7 files.
+
+### Evidence
+- Live-fire: all five legs GREEN, **24/24 asserts PASS** (15 prior + 9 new streak-law asserts).
+- Live verdict, printed by the harness itself: `real ledger: derived chain = 9 days · lifetime counter days_completed = 95 (old law displayed max(derived, 95) = 95)` — the immortal lie, caught and killed.
+- SEEDLING-ASSERT live: devotee + 2 dormant = **89.5/100** (was 49.5 🌱) — dormancy never wounds.
+- MORTALITY-ASSERT live: a 5-day-old completion now reads `.broken` and reaches the recovery desk — breaks finally become visible teachers.
+- One compile landmine caught by the harness itself (`lc.date` on an already-unwrapped String) — fixed in the same minute it surfaced.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a village kept a sacred flame that every passer-by was told had burned for ninety-five nights. One night a traveler asked to see the ledger of nights. The keeper showed a single number carved in stone: 95. "But which nights?" asked the traveler. "The number is the nights," said the keeper. So the traveler walked the fields himself and found fresh ashes on nine mornings, and one morning, in late August, where no fire had burned at all. The villagers were not liars — they had simply stopped counting and started remembering. So they carved a new law into the stone: *write the dates, not the number; let the flame be counted by its mornings; and when a night passes dark, say so — for a flame that cannot go out keeps no one warm.* 🔥9️⃣🌅
+
 ## August 31, 2026: 🌩️ AMOR v4.9.0 — The Storm Sentinel (One Outage, One Card)
 
 ### Commit Messages of the Day
