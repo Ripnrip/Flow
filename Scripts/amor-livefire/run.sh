@@ -9,6 +9,7 @@
 #   2. Gita streak      (real ~/.hermes/logs/gita_progress.json + gym/meditation ledgers)
 #   3. Dump parser v2   (real ~/wiki/raw/daily-summaries/*.md)
 #   4. Second brain     (real ~/wiki vault: discovery, daily/ casing, EOD dumps, write round-trip)
+#   5. Streak intelligence (v5.0.0 — mortal streaks, snapshot-fed; was never harness-compilable before)
 set -e
 cd "$(dirname "$0")"
 SDK="$(xcrun --show-sdk-path)"
@@ -16,7 +17,7 @@ TMP="$(mktemp -d)"
 
 # Legs 1-3
 BIN="$TMP/cronfire"
-swiftc -O -sdk "$SDK" AMORGroundTruth.swift AMORCronStatusReader.swift AMORExecutionTruth.swift AMORStormSentinel.swift main.swift -lsqlite3 -o "$BIN"
+swiftc -O -sdk "$SDK" AMORGroundTruth.swift AMORCronStatusReader.swift AMORExecutionTruth.swift AMORStormSentinel.swift AMORStreakIntelligence.swift AMORPracticeSnapshot.swift main.swift -lsqlite3 -o "$BIN"
 "$BIN"
 
 echo ""

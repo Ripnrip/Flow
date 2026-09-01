@@ -199,7 +199,7 @@ enum AMORNudgeEngine {
         var nudges: [AMORNudgeDescriptor] = []
 
         for practice in practices {
-            let risk = AMORStreakIntelligence.assessRisk(practice: practice, referenceDate: referenceDate)
+            let risk = AMORStreakIntelligence.assessRisk(practice: practice.snapshot, referenceDate: referenceDate)
 
             switch risk {
             case .safe, .notStarted:
@@ -304,7 +304,7 @@ enum AMORNudgeEngine {
 
     /// Generates celebration nudge descriptors for practices hitting milestones today.
     static func generateMilestoneNudges(practices: [PracticeStreak]) -> [AMORNudgeDescriptor] {
-        let milestones = AMORStreakIntelligence.detectMilestones(practices: practices)
+        let milestones = AMORStreakIntelligence.detectMilestones(practices: practices.map { $0.snapshot })
 
         return milestones.map { milestoneText in
             AMORNudgeDescriptor(

@@ -57,7 +57,7 @@ struct AMORInsightsView: View {
                 StreakSummaryView(stats: tracker.computeStreakStats(practices: practices))
 
                 // Recovery desk — v4.7.0: the compiled-but-never-dispensed medicine, wired.
-                RecoveryDeskView(actions: AMORStreakIntelligence.recoveryActions(for: practices))
+                RecoveryDeskView(actions: AMORStreakIntelligence.recoveryActions(for: practices.map { $0.snapshot }))
 
                 // Monthly mirror — v4.7.0: computeMonthlyReport was dead since forging.
                 MonthlyMirrorView(report: tracker.computeMonthlyReport(sessions: sessions, practices: practices))

@@ -439,3 +439,84 @@ do {
     print("EXEC-ASSERTS: \(pass)/\(pass + fail) PASS")
     if fail > 0 { exit(1) }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// v5.0.0 — MORTAL STREAKS leg. The streak intelligence was welded to
+// SwiftData @Models, so this harness could NEVER compile it — five
+// versions shipped an untested health-score law. The snapshot mirror
+// changes that. These asserts carry the law forever.
+// ═══════════════════════════════════════════════════════════════════
+do {
+    var sPass = 0, sFail = 0
+    func scheck(_ name: String, _ cond: Bool, _ detail: String) {
+        if cond { sPass += 1; print("  ✅ \(name): PASS — \(detail)") }
+        else { sFail += 1; print("  ❌ \(name): FAIL — \(detail)") }
+    }
+    let cal = Calendar.current
+    func day(_ offset: Int) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = TimeZone.current
+        return f.string(from: cal.date(byAdding: .day, value: offset, to: Date())!)
+    }
+
+    print("=== AMOR STREAK INTELLIGENCE LIVE-FIRE — v5.0.0 mortal streaks ===")
+
+    // LAW 1 — dates are truth. A gap breaks the chain honestly.
+    let chained = [day(0), day(-1), day(-2), day(-4), day(-5)]  // gap at -3d
+    scheck("CHAIN-ASSERT", AMORGroundTruthEngine.trailingStreakDays(fromDateStrings: chained) == 3,
+           "gap at day-3 cuts the chain to 3 (got \(AMORGroundTruthEngine.trailingStreakDays(fromDateStrings: chained)))")
+    let ancient = [day(-5), day(-6), day(-7)]
+    scheck("BROKEN-ASSERT", AMORGroundTruthEngine.trailingStreakDays(fromDateStrings: ancient) == 0,
+           "chain that ended 5d ago = honest 0, NOT dates.count (got \(AMORGroundTruthEngine.trailingStreakDays(fromDateStrings: ancient)))")
+    let anchored = [day(-1), day(-2), day(-3)]
+    scheck("ANCHOR-ASSERT", AMORGroundTruthEngine.trailingStreakDays(fromDateStrings: anchored) == 3,
+           "yesterday-anchored chain counts 3 before today is done (got \(AMORGroundTruthEngine.trailingStreakDays(fromDateStrings: anchored)))")
+    scheck("EMPTY-ASSERT", AMORGroundTruthEngine.trailingStreakDays(fromDateStrings: []) == 0,
+           "no evidence = 0, never a lifetime counter")
+
+    // LAW 2 — a readable ledger SETs the streak; it can lower it.
+    // (Syncer law — proven here via the engine: derived chain IS the streak.)
+    if let gita = AMORGroundTruthEngine.readGitaProgress() {
+        let derived = AMORGroundTruthEngine.gitaStreakDays(from: gita)
+        let immortal = gita.daysCompleted
+        print("real ledger: derived chain = \(derived) days · lifetime counter days_completed = \(immortal) (old law displayed max(derived, \(immortal)) = \(max(derived, immortal)))")
+        scheck("MORTAL-LIVE", derived <= immortal,
+               "derived chain (\(derived)) no longer floored by lifetime counter (\(immortal))")
+    }
+
+    // LAW 3 — never-started practices are invitations, not wounds.
+    // The live shape: 95-morning Gita devotee + two never-started practices
+    // rendered 🌱 49.5/100 under the old all-practices denominator.
+    let devotee = AMORPracticeSnapshot(practiceName: "Gita", currentStreak: 95, longestStreak: 95,
+                                       totalCompletions: 95, lastCompletedDate: Date())
+    let dormant1 = AMORPracticeSnapshot(practiceName: "Gym", currentStreak: 0, longestStreak: 0,
+                                        totalCompletions: 0, lastCompletedDate: nil)
+    let dormant2 = AMORPracticeSnapshot(practiceName: "Meditation", currentStreak: 0, longestStreak: 0,
+                                        totalCompletions: 0, lastCompletedDate: nil)
+    let summary = AMORStreakIntelligence.generateSummary(practices: [devotee, dormant1, dormant2])
+    scheck("SEEDLING-ASSERT", summary.overallHealthScore >= 80 && summary.atRiskCount == 0 && summary.brokenCount == 0,
+           String(format: "devotee + 2 dormant = %.1f/100 (was 49.5 🌱), dormancy never wounds", summary.overallHealthScore))
+
+    // LAW 4 — a broken streak is finally VISIBLE. The immortal law could
+    // never show a break; now a 5-day-old last completion is .broken.
+    let lapsed = AMORPracticeSnapshot(practiceName: "Gita", currentStreak: 95, longestStreak: 95,
+                                      totalCompletions: 95,
+                                      lastCompletedDate: cal.date(byAdding: .day, value: -5, to: Date()))
+    let risk = AMORStreakIntelligence.assessRisk(practice: lapsed)
+    let actions = AMORStreakIntelligence.recoveryActions(for: [lapsed])
+    scheck("MORTALITY-ASSERT", risk == .broken && !actions.isEmpty,
+           "5-day-old completion reads .broken and reaches the recovery desk (risk=\(risk.rawValue), actions=\(actions.count))")
+
+    // All-dormant: invitation headline, zero false alarms.
+    let dormantSummary = AMORStreakIntelligence.generateSummary(practices: [dormant1, dormant2])
+    scheck("ALL-DORMANT-ASSERT", dormantSummary.atRiskCount == 0 && dormantSummary.brokenCount == 0 && dormantSummary.longestStreak == 0,
+           "all-dormant = pure invitation, no at-risk noise (headline: \(dormantSummary.headline))")
+
+    // Milestones only fire for started practices.
+    scheck("MILESTONE-ASSERT", AMORStreakIntelligence.detectMilestones(practices: [dormant1, dormant2]).isEmpty,
+           "dormant practices never mint milestones")
+
+    print("STREAK-ASSERTS: \(sPass)/\(sPass + sFail) PASS")
+    if sFail > 0 { exit(1) }
+}

@@ -163,56 +163,65 @@ enum AMORGroundTruthEngine {
         return formatter.string(from: date)
     }
 
-    /// UTC anchor date for a yyyy-MM-dd string (for day-counting math).
-    private static func utcDate(fromString s: String) -> Date? {
+    /// v5.0.0 MORTAL STREAKS — trailing consecutive-day chain from
+    /// yyyy-MM-dd strings, anchored to today or yesterday (a not-yet-done
+    /// today is not a break). Pure function; fixture-testable.
+    ///
+    /// LAW: dates are truth. A chain that ended 3 days ago yields 0 —
+    /// never the count of all completions, never a lifetime counter.
+    static func trailingStreakDays(fromDateStrings dateStrings: [String]) -> Int {
+        let calendar = Calendar.current
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        return formatter.date(from: s)
-    }
+        formatter.timeZone = TimeZone.current  // the cron writes LOCAL dates
 
-    /// Counts consecutive days of Gita completion ending today or yesterday.
-    /// Derives from the file's `history` array; falls back to days_completed.
-    static func gitaStreakDays(from progress: AMORGitaProgressFile) -> Int {
-        // Read raw JSON to access the un-decoded `history` array.
-        guard let data = try? Data(contentsOf: gitaProgressURL()),
-              let raw = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let history = raw["history"] as? [[String: Any]] else {
-            return progress.daysCompleted
-        }
-
-        let calendar = Calendar.current
         var dates = Set<Date>()
-        for entry in history {
-            if let ds = entry["date"] as? String, let d = utcDate(fromString: ds) {
+        for s in dateStrings {
+            if let d = formatter.date(from: s) {
                 dates.insert(calendar.startOfDay(for: d))
             }
         }
-        if let lc = progress.lastCompleted, let d = utcDate(fromString: lc.date) {
-            dates.insert(calendar.startOfDay(for: d))
-        }
+        guard !dates.isEmpty else { return 0 }
 
         var streak = 0
         var cursor = calendar.startOfDay(for: Date())
         // Anchor to today OR yesterday (a missed today is not yet a break).
         if !dates.contains(cursor) {
-            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: cursor) else {
-                return dates.count
-            }
-            if !dates.contains(yesterday) {
-                return dates.count
+            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: cursor),
+                  dates.contains(yesterday) else {
+                return 0  // chain broken — honest zero, not dates.count
             }
             cursor = yesterday
-            streak = 1
         }
         while dates.contains(cursor) {
             streak += 1
             guard let prev = calendar.date(byAdding: .day, value: -1, to: cursor) else { break }
             cursor = prev
         }
-        // History on disk may be pruned (27 entries retained while
-        // days_completed = 73). Take the larger of derived vs cumulative.
-        return max(streak, progress.daysCompleted > 0 ? progress.daysCompleted : 0)
+        return streak
+    }
+
+    /// Counts consecutive days of Gita completion ending today or yesterday.
+    /// Derives from the file's `history` array + `last_completed` anchor.
+    ///
+    /// v5.0.0 MORTAL STREAKS: the old law took max(derived, days_completed)
+    /// — but days_completed is a lifetime EVENT counter (audio + text
+    /// deliveries can both land in it; it exceeded days elapsed since
+    /// `started`), never a consecutive chain. As a floor it made the streak
+    /// immortal: it could never show a break. A number that cannot fall
+    /// is a number that means nothing. The derived chain is the streak.
+    static func gitaStreakDays(from progress: AMORGitaProgressFile) -> Int {
+        // Read raw JSON to access the un-decoded `history` array.
+        var dateStrings: [String] = []
+        if let data = try? Data(contentsOf: gitaProgressURL()),
+           let raw = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let history = raw["history"] as? [[String: Any]] {
+            dateStrings = history.compactMap { $0["date"] as? String }
+        }
+        if let lcDate = progress.lastCompleted?.date {
+            dateStrings.append(lcDate)
+        }
+        return trailingStreakDays(fromDateStrings: dateStrings)
     }
 
     // MARK: EOD dump parsing

@@ -82,6 +82,18 @@ nonisolated final class PracticeStreak {
         guard let last = lastCompletedDate else { return true }
         return !Calendar.current.isDateInToday(last)
     }
+
+    /// Model-free mirror for the intelligence engine + live-fire harness.
+    /// v5.0.0: AMORStreakIntelligence reasons over snapshots, never @Models.
+    var snapshot: AMORPracticeSnapshot {
+        AMORPracticeSnapshot(
+            practiceName: practiceName,
+            currentStreak: currentStreak,
+            longestStreak: longestStreak,
+            totalCompletions: totalCompletions,
+            lastCompletedDate: lastCompletedDate
+        )
+    }
     
     init(
         practiceName: String,

@@ -29,16 +29,21 @@ enum AMORGroundTruthSyncer {
         var result = AMORGroundTruthSyncResult()
 
         // ── 1. Gita ────────────────────────────────────────────────
+        // v5.0.0 MORTAL STREAKS: a readable ledger is TRUTH — it SETs the
+        // streak (it can lower it). Only an absent/unreadable file never
+        // touches anything. The old max() armor made the streak immortal:
+        // one imported day could never be un-imported. Evidence can raise
+        // AND lower; silence changes nothing.
         if let gita = AMORGroundTruthEngine.readGitaProgress() {
             let streakDays = AMORGroundTruthEngine.gitaStreakDays(from: gita)
             result.gitaDaysCompleted = gita.daysCompleted
             result.gitaLastCompletedDate = gita.lastCompleted?.date
             result.gitaCurrentPosition = "Ch \(gita.currentChapter) · V \(gita.currentVerse)"
 
-            if streakDays > 0, let lcDate = gita.lastCompleted?.date,
+            if let lcDate = gita.lastCompleted?.date,
                let completedDay = parseLocalDay(lcDate) {
                 if let practice = upsertPractice(named: "Gita", into: modelContext) {
-                    practice.currentStreak = max(practice.currentStreak, streakDays)
+                    practice.currentStreak = streakDays
                     practice.totalCompletions = max(practice.totalCompletions, gita.daysCompleted)
                     practice.longestStreak = max(practice.longestStreak, streakDays)
                     if let existing = practice.lastCompletedDate {

@@ -97,8 +97,8 @@ struct AMORWeeklyReviewView: View {
             summaries: summaries,
             reflections: reflections
         )
-        streakSummary = AMORStreakIntelligence.generateSummary(practices: practices)
-        milestones = AMORStreakIntelligence.detectMilestones(practices: practices)
+        streakSummary = AMORStreakIntelligence.generateSummary(practices: practices.map { $0.snapshot })
+        milestones = AMORStreakIntelligence.detectMilestones(practices: practices.map { $0.snapshot })
         if let summary = summary {
             markdownPreview = AMORWeeklyReviewEngine.generateWeeklyMarkdown(summary: summary)
         }
@@ -620,7 +620,7 @@ struct StreakIntelligenceCompactCard: View {
             }
             .onAppear {
                 if streakSummary == nil {
-                    streakSummary = AMORStreakIntelligence.generateSummary(practices: practices)
+                    streakSummary = AMORStreakIntelligence.generateSummary(practices: practices.map { $0.snapshot })
                 }
             }
         }
