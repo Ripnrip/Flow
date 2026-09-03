@@ -70,6 +70,9 @@ struct AMORJobExecutionStats: Identifiable {
     let stuck: Bool
     /// How long the stuck row has been claimed, in minutes (0 when not stuck).
     let stuckMinutes: Double
+    /// v5.1.0 — executions reaped to `unknown` mid-run (scheduler restart
+    /// raced the terminal write). Not failures — evidence the PIPE broke.
+    let reaped7d: Int
 
     /// Human-readable average duration — the hollow-run truth chip.
     var avgDurationText: String? {
@@ -110,6 +113,9 @@ struct AMORExecutionTruthResult {
     /// Per job, the newest non-failed attempt (completed/running/claimed)
     /// — recovery evidence. A failed attempt is NOT recovery.
     var lastNonFailureByJob: [String: Date] = [:]
+    // v5.1.0 alibi inputs — every in-window row that shows the pipe
+    /// state for a day: completed (delivered), failed, unknown (reaped).
+    var alibiInputs: [AMORAlibiExecution] = []
 }
 
 // MARK: - Execution Truth Reader
@@ -165,6 +171,7 @@ enum AMORExecutionTruth {
         result.stats = distilled.stats
         result.failureEvents = distilled.failureEvents
         result.lastNonFailureByJob = distilled.lastNonFailure
+        result.alibiInputs = distilled.alibiInputs
         return result
     }
 
@@ -214,6 +221,7 @@ enum AMORExecutionTruth {
         let stats: [String: AMORJobExecutionStats]
         let failureEvents: [AMORFailureEvent]
         let lastNonFailure: [String: Date]
+        let alibiInputs: [AMORAlibiExecution]
     }
 
     private static func distill(rows: [Row], now: Date) -> Distilled {
@@ -225,6 +233,8 @@ enum AMORExecutionTruth {
         // v4.9.0 storm inputs, accumulated across all jobs.
         var failureEvents: [AMORFailureEvent] = []
         var lastNonFailure: [String: Date] = [:]
+        // v5.1.0 alibi inputs — the day-by-day pipe state per job.
+        var alibiInputs: [AMORAlibiExecution] = []
 
         for (jobID, jobRows) in byJob {
             let completed = jobRows.filter { $0.status == "completed" }
@@ -250,6 +260,15 @@ enum AMORExecutionTruth {
             let durations = completed.compactMap { $0.durationSeconds }
             let avg = durations.isEmpty ? nil : durations.reduce(0, +) / Double(durations.count)
             let lastCompleted = completed.last?.durationSeconds
+
+            // v5.1.0 — alibi inputs: every row that speaks for a day's
+            // pipe state. Completed = delivered; failed = broken attempt;
+            // unknown = reaped mid-run (the watchdog-kill shape).
+            for row in jobRows {
+                if let c = row.claimedAt {
+                    alibiInputs.append(AMORAlibiExecution(jobID: jobID, date: c, status: row.status))
+                }
+            }
 
             // Most recent failure text — prefer the newest failed row that
             // actually carries an error (a bare reaped row answers nil).
@@ -281,10 +300,11 @@ enum AMORExecutionTruth {
                 lastDurationSeconds: lastCompleted,
                 lastError: recentError?.prefix(140).description,
                 stuck: stuck,
-                stuckMinutes: stuckMinutes
+                stuckMinutes: stuckMinutes,
+                reaped7d: jobRows.filter { $0.status == "unknown" }.count
             )
         }
-        return Distilled(stats: stats, failureEvents: failureEvents, lastNonFailure: lastNonFailure)
+        return Distilled(stats: stats, failureEvents: failureEvents, lastNonFailure: lastNonFailure, alibiInputs: alibiInputs)
     }
 }
 

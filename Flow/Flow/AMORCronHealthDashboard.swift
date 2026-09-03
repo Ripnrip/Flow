@@ -340,6 +340,16 @@ struct AMORCronHealthDashboard: View {
                             .foregroundStyle(.orange)
                     }
 
+                    // v5.1.0 — reaped executions: the scheduler restarted
+                    // mid-run and the terminal state was never written.
+                    // Distinct from failures (the run may have done its
+                    // work — or not); orange-brown, never red.
+                    if exec.reaped7d > 0 {
+                        Label("\(exec.reaped7d) reaped/7d", systemImage: "bolt.slash")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.brown)
+                    }
+
                     if let stuck = exec.stuckText {
                         Label(stuck, systemImage: "hourglass.bottomhalf.filled")
                             .font(AMORTypography.captionFont.bold())

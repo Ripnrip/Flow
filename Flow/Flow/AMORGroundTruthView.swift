@@ -18,6 +18,7 @@ struct AMORGroundTruthCard: View {
     @State private var result: AMORGroundTruthSyncResult?
     @State private var lastSync: Date?
     @State private var isSyncing = false
+    @State private var alibis: [String: AMORAlibi] = [:]
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
@@ -57,6 +58,13 @@ struct AMORGroundTruthCard: View {
                 Divider()
 
                 if let result {
+                    // ── v5.1.0 The Alibi — pipe-break banner ──────────
+                    // A ledger-proven pipeline break reframes the streak
+                    // card's story before the evidence rows render.
+                    if let gitaAlibi = alibis["Gita"] {
+                        AlibiBanner(alibi: gitaAlibi)
+                    }
+
                     // ── Gita evidence ────────────────────────────────
                     evidenceRow(
                         icon: "book.fill",
@@ -227,7 +235,59 @@ struct AMORGroundTruthCard: View {
         Task { @MainActor in
             result = AMORGroundTruthSyncer.sync(into: modelContext)
             lastSync = AMORGroundTruthSyncer.lastSyncDate()
+            // v5.1.0 — attribute any trailing break to its true cause
+            // (one ledger read; nil-safe when the ledger is absent).
+            alibis = AMORAlibiEngine.alibisFor(
+                [("Gita", result?.gitaLastCompletedDate.flatMap(AMORGroundTruthEngine.parseLocalDayString)),
+                 ("Gym", result?.gymEvidenceDates.first.flatMap(AMORGroundTruthEngine.parseLocalDayString)),
+                 ("Meditation", result?.meditationEvidenceDates.first.flatMap(AMORGroundTruthEngine.parseLocalDayString))],
+                hermesHome: AMORGroundTruthEngine.hermesHome()
+            )
             isSyncing = false
         }
+    }
+}
+
+// MARK: - Alibi Banner (v5.1.0)
+
+/// The pipe-break banner: ledger-proven cause attribution for a
+/// practice's trailing break. Orange (infrastructure), never red
+/// (character) — the streak number below stays exactly what the
+/// dates say.
+private struct AlibiBanner: View {
+    let alibi: AMORAlibi
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label {
+                Text(alibi.headline)
+                    .font(AMORTypography.captionFont.bold())
+            } icon: {
+                Image(systemName: "bolt.slash.fill")
+                    .foregroundStyle(AMORColorPalette.dawnOrange)
+            }
+
+            Text(alibi.detail)
+                .font(AMORTypography.captionFont)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 10) {
+                ForEach(Array(alibi.excusedDays.prefix(7).enumerated()), id: \.offset) { _, day in
+                    Text(day, format: .dateTime.month(.abbreviated).day())
+                        .font(AMORTypography.captionFont)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(.orange.opacity(0.12), in: Capsule())
+                }
+                if alibi.excusedDays.count > 7 {
+                    Text("+\(alibi.excusedDays.count - 7) more")
+                        .font(AMORTypography.captionFont)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
     }
 }

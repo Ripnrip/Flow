@@ -137,7 +137,10 @@ enum AMORStreakIntelligence {
     // MARK: - Insight Generation
 
     /// Generates a personalized insight for a single practice.
-    static func generateInsight(practice: AMORPracticeSnapshot, referenceDate: Date = .now) -> StreakInsight {
+    /// v5.1.0: `alibi` — when the executions ledger proves the break's
+    /// missed days carried broken delivery attempts, the message blames
+    /// the pipe, never the practitioner. The NUMBER never changes.
+    static func generateInsight(practice: AMORPracticeSnapshot, referenceDate: Date = .now, alibi: AMORAlibi? = nil) -> StreakInsight {
         let risk = assessRisk(practice: practice, referenceDate: referenceDate)
 
         let message: String
@@ -180,12 +183,39 @@ enum AMORStreakIntelligence {
             }
 
         case .atRisk:
-            message = "⚠️ \(practice.practiceName): Streak at risk — \(practice.currentStreak) days, last done yesterday."
-            suggestion = "Complete today to keep the streak alive. Tomorrow it resets to 1."
-            priority = 1
+            // v5.1.0 THE ALIBI (at-risk shape): the trailing miss is
+            // 2 days old and the ledger proves the pipe broke on those
+            // days — "keep the streak alive" would be a lie (it already
+            // reads 0). Blame the pipe; prescribe tonight's return.
+            if let alibi {
+                message = alibi.headline
+                switch alibi.verdict {
+                case .excused:
+                    suggestion = "The chain reads what the dates say — but these days weren't yours. Tonight's delivery restarts the count from 1."
+                case .partial:
+                    suggestion = "Some of these days the pipe failed you; on the others, only you know. Tonight's delivery restarts the count from 1."
+                }
+                priority = 1
+            } else {
+                message = "⚠️ \(practice.practiceName): Streak at risk — \(practice.currentStreak) days, last done yesterday."
+                suggestion = "Complete today to keep the streak alive. Tomorrow it resets to 1."
+                priority = 1
+            }
 
         case .broken:
-            if practice.longestStreak >= 7 {
+            // v5.1.0 THE ALIBI: if the executions ledger proves the pipe
+            // broke on the missed days, blame the pipe — never the
+            // practitioner. The streak number stays what the dates say.
+            if let alibi {
+                message = alibi.headline
+                switch alibi.verdict {
+                case .excused:
+                    suggestion = "The streak number reads what the dates say — but this break wasn't yours. Read today's verse from where you stand; the chain resumes tonight."
+                case .partial:
+                    suggestion = "Some of these days the pipe failed you; on the others, only you know. Either way the return is the same: one verse today."
+                }
+                priority = 2
+            } else if practice.longestStreak >= 7 {
                 message = "💔 \(practice.practiceName): Streak broken. You hit \(practice.longestStreak) days before."
                 suggestion = "You've proven you can do it. The path back starts with a single completion today. Begin again."
                 priority = 2
@@ -219,8 +249,10 @@ enum AMORStreakIntelligence {
     /// v5.0.0 law: health is graded on STARTED practices only — a dormant
     /// practice (never any completion evidence) is an open invitation, not
     /// a wound. It can never lower the health score.
-    static func generateSummary(practices: [AMORPracticeSnapshot], referenceDate: Date = .now) -> StreakSummary {
-        let insights = practices.map { generateInsight(practice: $0, referenceDate: referenceDate) }
+    /// v5.1.0: `alibis` — ledger-proven pipeline breaks reframe the
+    /// broken-count headline; the score itself never lies.
+    static func generateSummary(practices: [AMORPracticeSnapshot], referenceDate: Date = .now, alibis: [String: AMORAlibi] = [:]) -> StreakSummary {
+        let insights = practices.map { generateInsight(practice: $0, referenceDate: referenceDate, alibi: alibis[$0.practiceName]) }
             .sorted { $0.priority < $1.priority }
 
         let started = practices.filter { isStarted($0) }
@@ -260,7 +292,16 @@ enum AMORStreakIntelligence {
         } else if !started.isEmpty && activeCount == started.count {
             headline = "All started practices on track"
         } else if brokenCount > 0 {
-            headline = "\(brokenCount) streak\(brokenCount == 1 ? "" : "s") broken — time to rebuild"
+            // v5.1.0 — a ledger-proven pipeline break is not a character
+            // verdict. Excused breaks get the infrastructure headline.
+            let excusedNames = alibis.values.filter { $0.verdict == .excused }.map { $0.practiceName }
+            if excusedNames.count == brokenCount {
+                headline = "Delivery pipeline broke — \(brokenCount) streak\(brokenCount == 1 ? "" : "s") interrupted, not abandoned"
+            } else if !excusedNames.isEmpty {
+                headline = "\(brokenCount) streak\(brokenCount == 1 ? "" : "s") broken — \(excusedNames.count) by pipeline failure"
+            } else {
+                headline = "\(brokenCount) streak\(brokenCount == 1 ? "" : "s") broken — time to rebuild"
+            }
         } else if started.isEmpty {
             headline = "The first completion is waiting"
         } else {
@@ -323,8 +364,11 @@ enum AMORStreakIntelligence {
     // MARK: - Recovery Suggestions
 
     /// Generates specific recovery actions for broken or at-risk streaks.
-    static func recoveryActions(for practices: [AMORPracticeSnapshot], referenceDate: Date = .now) -> [String] {
-        let insights = practices.map { generateInsight(practice: $0, referenceDate: referenceDate) }
+    /// v5.1.0: an excused break prescribes the same return — one
+    /// completion — but names the true cause. The pipe broke; the
+    /// practice resumes tonight. No shame, no shame-adjacent framing.
+    static func recoveryActions(for practices: [AMORPracticeSnapshot], referenceDate: Date = .now, alibis: [String: AMORAlibi] = [:]) -> [String] {
+        let insights = practices.map { generateInsight(practice: $0, referenceDate: referenceDate, alibi: alibis[$0.practiceName]) }
         let needAttention = insights.filter { $0.priority <= 2 }
 
         guard !needAttention.isEmpty else { return [] }
@@ -335,9 +379,17 @@ enum AMORStreakIntelligence {
             case .dueToday:
                 actions.append("Complete \(insight.practiceName) now — \(insight.currentStreak)-day streak depends on today")
             case .atRisk:
-                actions.append("⚠️ Complete \(insight.practiceName) immediately — streak breaks tomorrow")
+                if let alibi = alibis[insight.practiceName] {
+                    actions.append("🔌 \(insight.practiceName) lapse \(alibi.verdict == .excused ? "was the pipeline, not you" : "was partly the pipeline") (\(alibi.excusedSpanText)) — tonight's delivery restarts the count from 1")
+                } else {
+                    actions.append("⚠️ Complete \(insight.practiceName) immediately — streak breaks tomorrow")
+                }
             case .broken:
-                actions.append("Start \(insight.practiceName) fresh — your record was \(insight.longestStreak) days")
+                if let alibi = alibis[insight.practiceName] {
+                    actions.append("🔌 \(insight.practiceName) break \(alibi.verdict == .excused ? "was the pipeline, not you" : "was partly the pipeline") (\(alibi.excusedSpanText)) — resume tonight; the chain rebuilds from tonight's completion")
+                } else {
+                    actions.append("Start \(insight.practiceName) fresh — your record was \(insight.longestStreak) days")
+                }
             default:
                 break
             }

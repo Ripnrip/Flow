@@ -163,6 +163,17 @@ enum AMORGroundTruthEngine {
         return formatter.string(from: date)
     }
 
+    /// v5.1.0 — inverse of localDateString: yyyy-MM-dd → midday-anchored
+    /// local Date (midday dodges midnight/DST edges, matching the syncer's
+    /// parseLocalDay law). Nil on malformed input — never a guess.
+    static func parseLocalDayString(_ s: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        guard let midnight = formatter.date(from: s) else { return nil }
+        return Calendar.current.date(byAdding: .hour, value: 12, to: midnight)
+    }
+
     /// v5.0.0 MORTAL STREAKS — trailing consecutive-day chain from
     /// yyyy-MM-dd strings, anchored to today or yesterday (a not-yet-done
     /// today is not a break). Pure function; fixture-testable.

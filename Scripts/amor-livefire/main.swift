@@ -520,3 +520,106 @@ do {
     print("STREAK-ASSERTS: \(sPass)/\(sPass + sFail) PASS")
     if sFail > 0 { exit(1) }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// v5.1.0 — THE ALIBI leg. Two days after mortal streaks shipped, the
+// gateway's GIL pressure reaped BOTH Gita delivery crons at BOTH slots
+// for two straight days (150+ executions → `unknown`, 64 watchdog
+// kills in 3 days). The mortal streak read the missing dates and said
+// "Streak broken. Begin again." — shaming a devotion for a murder the
+// infrastructure committed. These asserts carry the attribution law.
+// ═══════════════════════════════════════════════════════════════════
+do {
+    var aPass = 0, aFail = 0
+    func acheck(_ name: String, _ cond: Bool, _ detail: String) {
+        if cond { aPass += 1; print("  ✅ \(name): PASS — \(detail)") }
+        else { aFail += 1; print("  ❌ \(name): FAIL — \(detail)") }
+    }
+    let cal = Calendar.current
+    func dayDate(_ offset: Int, hour: Int = 10) -> Date {
+        let d = cal.date(byAdding: .day, value: offset, to: Date())!
+        return cal.date(bySettingHour: hour, minute: 0, second: 0, of: d)!
+    }
+
+    print("=== AMOR ALIBI LIVE-FIRE — v5.1.0 the pipe broke, not you ===")
+
+    // The live shape, replayed as fixture: last evidence 2 days ago
+    // (Sept 1), both delivery jobs reaped (unknown) on the two missed
+    // days since (Sept 2 + Sept 3 = yesterday + today).
+    let gitaJobs = AMORAlibiEngine.deliveryJobs["Gita"]!
+    var fixture: [AMORAlibiExecution] = []
+    for offset in [-1, 0] {
+        for job in gitaJobs {
+            fixture.append(AMORAlibiExecution(jobID: job, date: dayDate(offset), status: "unknown"))
+        }
+    }
+    // LAW: fully-evidenced trailing break → .excused, number untouched.
+    let alibi = AMORAlibiEngine.attributed(practiceName: "Gita",
+                                           lastEvidenceDay: dayDate(-2),
+                                           executions: fixture)
+    acheck("EXCUSED-ASSERT", alibi?.verdict == .excused && alibi?.excusedDays.count == 2,
+           "both delivery pipes reaped on both missed days → excused (verdict=\(alibi?.verdict.rawValue ?? "nil"), days=\(alibi?.excusedDays.count ?? -1))")
+
+    // LAW: the number stays mortal — an alibi never resurrects.
+    // With 2-day-old evidence the risk is honestly .atRisk today
+    // (it becomes .broken tomorrow) — either way it is LAPSED, never
+    // resurrected to .safe/.dueToday by the alibi's presence.
+    let devoteeBroken = AMORPracticeSnapshot(practiceName: "Gita", currentStreak: 0, longestStreak: 9,
+                                             totalCompletions: 95, lastCompletedDate: dayDate(-2))
+    let risk = AMORStreakIntelligence.assessRisk(practice: devoteeBroken)
+    acheck("NO-RESURRECTION-ASSERT", risk == .atRisk || risk == .broken,
+           "an alibi excuses blame, never resurrects the chain (risk=\(risk.rawValue), still lapsed)")
+
+    // LAW: the message blames the pipe, not the practitioner.
+    let insight = AMORStreakIntelligence.generateInsight(practice: devoteeBroken, alibi: alibi)
+    acheck("VOICE-ASSERT", insight.message.contains("pipe") && !insight.message.contains("Begin again"),
+           "broken-with-alibi says 'the pipe broke' (msg: \(insight.message.prefix(70))…)")
+
+    // LAW: partial evidence → .partial. One delivered day among the
+    // missed breaks the full excuse — the app never launders a lapse.
+    var partialFixture = fixture
+    partialFixture.append(AMORAlibiExecution(jobID: gitaJobs[0], date: dayDate(0, hour: 14), status: "completed"))
+    let partial = AMORAlibiEngine.attributed(practiceName: "Gita",
+                                             lastEvidenceDay: dayDate(-2),
+                                             executions: partialFixture)
+    acheck("PARTIAL-ASSERT", partial?.verdict == .partial && partial?.excusedDays.count == 1,
+           "delivered-but-unrecorded day is NOT excused (verdict=\(partial?.verdict.rawValue ?? "nil"), excused=\(partial?.excusedDays.count ?? -1))")
+
+    // LAW: no pipe evidence → the break stands unattributed (nil).
+    let clean = AMORAlibiEngine.attributed(practiceName: "Gita",
+                                           lastEvidenceDay: dayDate(-2),
+                                           executions: [])
+    acheck("NO-EVIDENCE-ASSERT", clean == nil,
+           "a genuine lapse is never laundered into an outage (nil alibi)")
+
+    // LAW: daily-delivered pipes make the alibi impossible by design —
+    // a completion on the missed day voids the excuse for that day.
+    var deliveredFixture: [AMORAlibiExecution] = []
+    for offset in [-1, 0] {
+        deliveredFixture.append(AMORAlibiExecution(jobID: gitaJobs[0], date: dayDate(offset), status: "completed"))
+    }
+    let delivered = AMORAlibiEngine.attributed(practiceName: "Gita",
+                                               lastEvidenceDay: dayDate(-2),
+                                               executions: deliveredFixture)
+    acheck("DELIVERED-ASSERT", delivered == nil,
+           "days the pipe delivered are never excused, even unrecorded (nil alibi)")
+
+    // REAL LEDGER verdict (report-only; live data changes as the window
+    // slides — fixtures carry the law). The Sept 2–3 outage, live:
+    if let gita = AMORGroundTruthEngine.readGitaProgress(),
+       let lastStr = gita.lastCompleted?.date,
+       let lastDay = AMORGroundTruthEngine.parseLocalDayString(lastStr) {
+        let truth = AMORExecutionTruth.read(hermesHome: AMORGroundTruthEngine.hermesHome())
+        let live = AMORAlibiEngine.attributed(practiceName: "Gita",
+                                              lastEvidenceDay: lastDay,
+                                              executions: truth.alibiInputs)
+        if let live {
+            print("real ledger: Gita trailing break → \(live.verdict.rawValue) · \(live.excusedDays.count)/\(live.missedDayCount) missed days carry broken-pipe evidence · span \(live.excusedSpanText)")
+        } else {
+            print("real ledger: Gita trailing break carries no delivery-pipe evidence — the break stands unattributed")
+        }
+    }
+
+    print("ALIBI-ASSERTS: \(aPass)/\(aPass + aFail) PASS")
+    if aFail > 0 { exit(1) }
+}
