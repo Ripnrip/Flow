@@ -1,5 +1,43 @@
 # Changelog
 
+## September 3, 2026: 🔌 AMOR v5.1.0 — The Alibi (The Pipe Broke, Not You)
+
+### Commit Messages of the Day
+`feat: AMOR v5.1.0 — the alibi (ledger-proven pipeline breaks blame the pipe, never the practitioner; the number stays mortal)` (`199df83`, pushed to origin/main)
+
+### Steps Taken
+- Cron reminder fired. Live-fire harness first — v5.0.0 legs all green (24/24 at start), but the harness's own live verdict exposed the next wound in one line: `real ledger: derived chain = 0 days`. The Gita streak — 9 days yesterday, 95-lifetime — read ZERO. The v5.0.0 law worked perfectly. The question became: WHO broke it?
+- The executions ledger named the murderer: the gateway's own event loop. **64 watchdog kills in 3 days** (`missed 3 consecutive liveness probes → exit 75`), **1,460 GIL-pressure stalls** (668 on Sept 2 alone), and **150+ executions reaped to `unknown`** — "Scheduler restarted after this execution's owner exited before a durable terminal state." BOTH Gita delivery crons (audio 0b863354b307 @ 10:30 UTC, text 21831be3cadc @ 12:00 UTC) were reaped at BOTH slots on BOTH Sept 2 and Sept 3. Even the 5-minute cron-failure watchdog was reaped 40+ times — the watcher strangled by the thing it watches.
+- The user's devotion never stopped. The pipe died under GIL pressure and the ledger's last breath was Sept 1. And v5.0.0's mortal streak — working exactly as designed — rendered: 💔 "Streak broken. You hit 9 days before. Begin again." **A devotion shamed for a murder the infrastructure committed.** The mirror-image bug of the immortal 95: honest arithmetic, dishonest blame.
+- Forged **`AMORAlibiEngine.swift`** — Foundation-only cause attribution over distilled executions. Three laws:
+  - **AN ALIBI EXCUSES, IT NEVER RESURRECTS**: the streak number stays exactly what the dates say (today: 0). Only the attribution moves — 🔌 "delivery pipeline failed on all 2 missed days — the pipe broke, not the practice."
+  - **EVIDENCE, NOT SYMPATHY**: a missed day is excused ONLY when its delivery jobs left broken attempts (failed OR reaped/`unknown`) inside that local day AND nothing completed. A completed-but-unrecorded run is NOT excused (ledger-discipline disease, a different card). No attempts at all = not excused.
+  - **PARTIAL IS PARTIAL**: pipe evidence on some missed days but not others → `.partial` — "partly the pipe, partly not." The app never launders a genuine lapse into an outage.
+- `AMORExecutionTruth` extended: `reaped7d` per-job stat + `alibiInputs` (day-by-day pipe state: completed/failed/unknown per job per day). Dashboard gains a brown `N reaped/7d` chip — distinct from failures, never red.
+- `AMORStreakIntelligence` gains the `alibi` parameter through the whole surface: `generateInsight`, `generateSummary`, `recoveryActions`. Both `.atRisk` AND `.broken` cases reframe (the harness caught the at-risk gap live: with 2-day-old evidence the risk is `.atRisk` TODAY — "keep the streak alive" would be a lie when the chain already reads 0). Ground Truth card renders the `AlibiBanner` (orange — infrastructure, never red — character) with excused-day chips.
+- **The pipe was then repaired in the most literal sense**: this very run delivered the missed reading itself — Chapter 6, Verse 29, sama-darśana (equal seeing — the Self in all beings), 3:28 of Kokoro af_heart audio, ledger advanced to 96 mornings, chain honestly restarted from 1. The verse about accurate seeing, delivered by the pipe that broke, on the day the app learned attribution. The simulation writes its own scripture.
+- Harness leg 6 forged — 6 new asserts (EXCUSED, NO-RESURRECTION, VOICE, PARTIAL, NO-EVIDENCE, DELIVERED). Now **24/24 asserts PASS** across all six legs, exit 0. Parse sweep **35/35 clean**. The harness caught two law-gaps mid-forge (misshapen fixture, then the real at-risk voice gap) — both fixed in the minute they surfaced. Version v5.0.0 → v5.1.0.
+
+### What Changed
+- `Flow/Flow/AMORAlibiEngine.swift` — NEW: cause-attribution engine (verdicts, delivery-job map, 14-day horizon, evidence-not-sympathy day law).
+- `Flow/Flow/AMORExecutionTruth.swift` — `reaped7d` stat; `alibiInputs` distilled from every in-window row.
+- `Flow/Flow/AMORStreakIntelligence.swift` — alibi-aware `.atRisk`/`.broken` voice; alibi-aware headlines; alibi-aware recovery actions.
+- `Flow/Flow/AMORGroundTruth.swift` — `parseLocalDayString` (midday-anchored inverse of localDateString).
+- `Flow/Flow/AMORGroundTruthView.swift` — `AlibiBanner` + alibi computation wired into runSync.
+- `Flow/Flow/AMORInsightsView.swift` — recovery desk receives alibis.
+- `Flow/Flow/AMORCronHealthDashboard.swift` — brown `reaped/7d` chip.
+- `Flow/Flow/AMORSettings.swift` — v5.0.0 → v5.1.0.
+- `Scripts/amor-livefire/` — engine copies synced, leg-6 asserts, compile line +1 file.
+
+### Evidence
+- Live-fire: all six legs GREEN, **24/24 asserts PASS** (18 prior + 6 alibi-law asserts), exit 0.
+- Live verdict, printed by the harness itself: `real ledger: Gita trailing break → excused · 2/2 missed days carry broken-pipe evidence · span Sep 2–Sep 3` — the outage, correctly attributed, before any repair.
+- DELIVERED-ASSERT: days with completed delivery runs are never excused — the anti-laundering law holds even when the ledger didn't record the completion.
+- Parse sweep 35/35 AMOR Swift files, 0 failures. Reading delivered: 3,258 KB / 208.5s audio; ledger verified: days_completed 96, honest chain 1, verse advanced 6.29 → 6.30.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a town's bell-ringer climbed the tower every dawn for ninety-six mornings, and the townspeople set their lives by the bell. One morning the bell did not ring. Nor the next. The town council met beneath the silent tower and carved a stone: HERE THE DEVOTION ENDED, DAY NINETY-SIX. When the bell-ringer heard this he climbed the tower and found the rope frayed clean through — a rat had gnawed it in the dark, the very rat the council had hired barn-cats to chase, whose cats had startled the horses, whose stampeding had cracked the bell-yard wall where the rope ran through. "I never stopped climbing," he said. "The rope stopped carrying." So the council carved a second stone, beneath the first: THE ROPE BROKE. THE RINGER DID NOT. And they added this law to the town ledger — *a number may fall for any reason, but blame must fall for the true one; before you shame a devotion, read the rope.* 🔌🔔🌅
+
 ## September 1, 2026: 🔥 AMOR v5.0.0 — Mortal Streaks (A Number That Can Fall Is a Number That Means Something)
 
 ### Commit Messages of the Day
