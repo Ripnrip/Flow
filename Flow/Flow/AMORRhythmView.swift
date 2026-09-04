@@ -19,9 +19,17 @@ import SwiftData
 struct AMORRhythmView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
     @Query private var reflections: [ReflectionEntry]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var reflectionsSnap: [AMORReflectionSnapshot] { reflections.map { $0.snapshot } }
 
     var body: some View {
         ScrollView {
@@ -63,21 +71,29 @@ struct AMORRhythmView: View {
 struct ScoreHeroCard: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
     @Query private var reflections: [ReflectionEntry]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var reflectionsSnap: [AMORReflectionSnapshot] { reflections.map { $0.snapshot } }
 
     private var score: RhythmScore {
         AMORRhythmEngine.computeScore(
-            sessions: sessions,
-            practices: practices,
-            cronJobs: cronJobs,
-            reflections: reflections
+            sessions: sessionsSnap,
+            practices: practicesSnap,
+            cronJobs: cronJobsSnap,
+            reflections: reflectionsSnap
         )
     }
 
     private var momentum: RhythmMomentum? {
-        AMORRhythmEngine.computeMomentum(sessions: sessions, practices: practices)
+        AMORRhythmEngine.computeMomentum(sessions: sessionsSnap, practices: practicesSnap)
     }
 
     var body: some View {
@@ -136,14 +152,22 @@ struct ScoreHeroCard: View {
 struct ScoreBreakdownCard: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
     @Query private var reflections: [ReflectionEntry]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var reflectionsSnap: [AMORReflectionSnapshot] { reflections.map { $0.snapshot } }
 
     private var score: RhythmScore {
         AMORRhythmEngine.computeScore(
-            sessions: sessions, practices: practices,
-            cronJobs: cronJobs, reflections: reflections
+            sessions: sessionsSnap, practices: practicesSnap,
+            cronJobs: cronJobsSnap, reflections: reflectionsSnap
         )
     }
 
@@ -207,10 +231,14 @@ struct ComponentBar: View {
 struct MomentumCard: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
 
     private var momentum: RhythmMomentum? {
-        AMORRhythmEngine.computeMomentum(sessions: sessions, practices: practices)
+        AMORRhythmEngine.computeMomentum(sessions: sessionsSnap, practices: practicesSnap)
     }
 
     var body: some View {
@@ -273,10 +301,14 @@ struct MomentumCard: View {
 struct CorrelationsCard: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
 
     private var correlations: [RhythmCorrelation] {
-        AMORRhythmEngine.detectCorrelations(sessions: sessions, practices: practices)
+        AMORRhythmEngine.detectCorrelations(sessions: sessionsSnap, practices: practicesSnap)
     }
 
     var body: some View {
@@ -352,21 +384,29 @@ struct CorrelationRow: View {
 struct InsightsCard: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
     @Query private var reflections: [ReflectionEntry]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var reflectionsSnap: [AMORReflectionSnapshot] { reflections.map { $0.snapshot } }
 
     private var insights: [RhythmInsight] {
         let score = AMORRhythmEngine.computeScore(
-            sessions: sessions, practices: practices,
-            cronJobs: cronJobs, reflections: reflections
+            sessions: sessionsSnap, practices: practicesSnap,
+            cronJobs: cronJobsSnap, reflections: reflectionsSnap
         )
-        let momentum = AMORRhythmEngine.computeMomentum(sessions: sessions, practices: practices)
-        let correlations = AMORRhythmEngine.detectCorrelations(sessions: sessions, practices: practices)
+        let momentum = AMORRhythmEngine.computeMomentum(sessions: sessionsSnap, practices: practicesSnap)
+        let correlations = AMORRhythmEngine.detectCorrelations(sessions: sessionsSnap, practices: practicesSnap)
         return AMORRhythmEngine.generateInsights(
             score: score, momentum: momentum, correlations: correlations,
-            sessions: sessions, practices: practices,
-            cronJobs: cronJobs, reflections: reflections
+            sessions: sessionsSnap, practices: practicesSnap,
+            cronJobs: cronJobsSnap, reflections: reflectionsSnap
         )
     }
 
@@ -432,14 +472,22 @@ struct InsightRow: View {
 struct FrictionCard: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
     @Query private var reflections: [ReflectionEntry]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var reflectionsSnap: [AMORReflectionSnapshot] { reflections.map { $0.snapshot } }
 
     private var frictions: [RhythmFriction] {
         AMORRhythmEngine.detectFriction(
-            sessions: sessions, practices: practices,
-            cronJobs: cronJobs, reflections: reflections
+            sessions: sessionsSnap, practices: practicesSnap,
+            cronJobs: cronJobsSnap, reflections: reflectionsSnap
         )
     }
 
@@ -500,14 +548,22 @@ struct FrictionRow: View {
 struct NarrativeOpeningCard: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
     @Query private var reflections: [ReflectionEntry]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var reflectionsSnap: [AMORReflectionSnapshot] { reflections.map { $0.snapshot } }
 
     private var snapshot: WeeklyRhythmSnapshot {
         AMORRhythmEngine.generateWeeklySnapshot(
-            sessions: sessions, practices: practices,
-            cronJobs: cronJobs, reflections: reflections
+            sessions: sessionsSnap, practices: practicesSnap,
+            cronJobs: cronJobsSnap, reflections: reflectionsSnap
         )
     }
 
@@ -546,19 +602,27 @@ struct NarrativeOpeningCard: View {
 struct RhythmScoreCompactCard: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
     @Query private var reflections: [ReflectionEntry]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var reflectionsSnap: [AMORReflectionSnapshot] { reflections.map { $0.snapshot } }
 
     private var score: RhythmScore {
         AMORRhythmEngine.computeScore(
-            sessions: sessions, practices: practices,
-            cronJobs: cronJobs, reflections: reflections
+            sessions: sessionsSnap, practices: practicesSnap,
+            cronJobs: cronJobsSnap, reflections: reflectionsSnap
         )
     }
 
     private var momentum: RhythmMomentum? {
-        AMORRhythmEngine.computeMomentum(sessions: sessions, practices: practices)
+        AMORRhythmEngine.computeMomentum(sessions: sessionsSnap, practices: practicesSnap)
     }
 
     var body: some View {

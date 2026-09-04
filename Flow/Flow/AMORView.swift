@@ -319,8 +319,14 @@ extension Notification.Name {
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
 
     var today: Date { Date() }
 
@@ -426,6 +432,8 @@ struct DashboardView: View {
 struct HeaderSection: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var summary: [DailySummary]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var summarySnap: [AMORDailySummarySnapshot] { summary.map { $0.snapshot } }
     
     var todaySummary: DailySummary? {
         summary.filter { $0.date >= Calendar.current.startOfDay(for: Date()) }.first
@@ -712,6 +720,8 @@ struct CompletePracticeSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     
     var body: some View {
         NavigationStack {
@@ -749,6 +759,8 @@ struct SessionsLogView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var searchText = ""
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     
     var filteredSessions: [DailySession] {
         if searchText.isEmpty {
@@ -803,6 +815,8 @@ struct SessionRow: View {
 struct PracticesView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     
     var body: some View {
         NavigationStack {
@@ -844,6 +858,8 @@ struct PracticeDetailRow: View {
 struct CronHealthView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var jobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var jobsSnap: [AMORCronJobSnapshot] { jobs.map { $0.snapshot } }
     
     var body: some View {
         NavigationStack {
@@ -914,14 +930,20 @@ struct CronJobDetailRow: View {
 struct AMORNudgeStatusCard: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
 
     private var nudgeResult: AMORNudgeResult {
         AMORNudgeEngine.evaluate(
-            practices: practices,
-            cronJobs: cronJobs,
-            sessions: sessions
+            practices: practicesSnap,
+            cronJobs: cronJobsSnap,
+            sessions: sessionsSnap
         )
     }
 

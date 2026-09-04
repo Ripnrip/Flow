@@ -10,15 +10,29 @@
 #   3. Dump parser v2   (real ~/wiki/raw/daily-summaries/*.md)
 #   4. Second brain     (real ~/wiki vault: discovery, daily/ casing, EOD dumps, write round-trip)
 #   5. Streak intelligence (v5.0.0 — mortal streaks, snapshot-fed; was never harness-compilable before)
+#   6. Alibi engine     (v5.1.0 — cause attribution; executions ledger proves the pipe broke)
+#   7. Engines          (v5.2.0 — the full illumination: Rhythm, Briefing, Nudge, WeeklyReview,
+#                        SessionDump, DumpGenerator, ProgressTracker — 4,200+ lines never
+#                        harness-compilable before the mirrors)
 set -e
 cd "$(dirname "$0")"
 SDK="$(xcrun --show-sdk-path)"
 TMP="$(mktemp -d)"
 
-# Legs 1-3
+# Legs 1-3 + 5-6 (single binary: cron health, gita streak, dump parser, streak intel, alibi)
 BIN="$TMP/cronfire"
 swiftc -O -sdk "$SDK" AMORGroundTruth.swift AMORCronStatusReader.swift AMORExecutionTruth.swift AMORStormSentinel.swift AMORStreakIntelligence.swift AMORPracticeSnapshot.swift AMORAlibiEngine.swift main.swift -lsqlite3 -o "$BIN"
 "$BIN"
+
+echo ""
+
+# Leg 7 (v5.2.0): the full illumination — all seven engines, Foundation-only.
+# (Top-level statements require a file literally named main.swift; the leg-1-6
+# binary is already linked, so overwriting the temp main.swift is safe.)
+BIN7="$TMP/enginesfire"
+cp engines-main.swift "$TMP/main.swift"
+swiftc -O -sdk "$SDK" AMORMirror.swift AMORPracticeSnapshot.swift AMORExecutionTruth.swift AMORStormSentinel.swift AMORAlibiEngine.swift AMORStreakIntelligence.swift AMORWeeklyReviewEngine.swift AMORRhythmEngine.swift AMORBriefingEngine.swift AMORNudgeEngine.swift AMORSessionDumpAutomation.swift AMORDumpGenerator.swift AMORProgressTracker.swift "$TMP/main.swift" -lsqlite3 -o "$BIN7"
+"$BIN7"
 
 echo ""
 

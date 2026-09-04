@@ -251,13 +251,19 @@ struct FlowApp: App {
         let cronJobs = (try? ctx.fetch(FetchDescriptor<CronJobHealth>())) ?? []
         let summaries = (try? ctx.fetch(FetchDescriptor<DailySummary>())) ?? []
         let reflections = (try? ctx.fetch(FetchDescriptor<ReflectionEntry>())) ?? []
+        // v5.2.0: engines reason over Foundation snapshots, never @Models.
+        let sessionsSnap = sessions.map { $0.snapshot }
+        let practicesSnap = practices.map { $0.snapshot }
+        let cronJobsSnap = cronJobs.map { $0.snapshot }
+        let summariesSnap = summaries.map { $0.snapshot }
+        let reflectionsSnap = reflections.map { $0.snapshot }
 
         let result = automation.generateDailyDump(
-            sessions: sessions,
-            practices: practices,
-            cronJobs: cronJobs,
-            summaries: summaries,
-            reflections: reflections
+            sessions: sessionsSnap,
+            practices: practicesSnap,
+            cronJobs: cronJobsSnap,
+            summaries: summariesSnap,
+            reflections: reflectionsSnap
         )
 
         if let result = result {
@@ -281,6 +287,12 @@ struct FlowApp: App {
         let cronJobs = (try? ctx.fetch(FetchDescriptor<CronJobHealth>())) ?? []
         let summaries = (try? ctx.fetch(FetchDescriptor<DailySummary>())) ?? []
         let reflections = (try? ctx.fetch(FetchDescriptor<ReflectionEntry>())) ?? []
+        // v5.2.0: engines reason over Foundation snapshots, never @Models.
+        let sessionsSnap = sessions.map { $0.snapshot }
+        let practicesSnap = practices.map { $0.snapshot }
+        let cronJobsSnap = cronJobs.map { $0.snapshot }
+        let summariesSnap = summaries.map { $0.snapshot }
+        let reflectionsSnap = reflections.map { $0.snapshot }
 
         let home = FileManager.default.homeDirectoryForCurrentUser
         let dumpsDir = home
@@ -292,11 +304,11 @@ struct FlowApp: App {
             .appendingPathComponent("Journal")
 
         let result = AMORWeeklyReviewEngine.autoGenerateWeeklyDump(
-            sessions: sessions,
-            practices: practices,
-            cronJobs: cronJobs,
-            summaries: summaries,
-            reflections: reflections,
+            sessions: sessionsSnap,
+            practices: practicesSnap,
+            cronJobs: cronJobsSnap,
+            summaries: summariesSnap,
+            reflections: reflectionsSnap,
             dumpsDir: dumpsDir,
             obsidianJournalDir: obsidianDir
         )
@@ -338,11 +350,15 @@ struct FlowApp: App {
         let practices = (try? ctx.fetch(FetchDescriptor<PracticeStreak>())) ?? []
         let cronJobs = (try? ctx.fetch(FetchDescriptor<CronJobHealth>())) ?? []
         let sessions = (try? ctx.fetch(FetchDescriptor<DailySession>())) ?? []
+        // v5.2.0: engines reason over Foundation snapshots, never @Models.
+        let practicesSnap = practices.map { $0.snapshot }
+        let cronJobsSnap = cronJobs.map { $0.snapshot }
+        let sessionsSnap = sessions.map { $0.snapshot }
 
         await notificationManager.runFullNudgeCycle(
-            practices: practices,
-            cronJobs: cronJobs,
-            sessions: sessions
+            practices: practicesSnap,
+            cronJobs: cronJobsSnap,
+            sessions: sessionsSnap
         )
     }
 

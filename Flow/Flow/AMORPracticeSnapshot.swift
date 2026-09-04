@@ -31,4 +31,20 @@ struct AMORPracticeSnapshot {
     let longestStreak: Int
     let totalCompletions: Int
     let lastCompletedDate: Date?
+    /// v5.2.0: engines read the goal law ("daily", "3x per week").
+    /// Default preserves the 5-param fixtures across the harness.
+    var goal: String = "daily"
+
+    /// Whether the streak is currently active (not broken) — verbatim @Model law.
+    var isActive: Bool {
+        guard let last = lastCompletedDate else { return false }
+        return Calendar.current.isDateInToday(last) ||
+               Calendar.current.isDateInYesterday(last)
+    }
+
+    /// Whether practice is due today — verbatim @Model law.
+    var isDueToday: Bool {
+        guard let last = lastCompletedDate else { return true }
+        return !Calendar.current.isDateInToday(last)
+    }
 }

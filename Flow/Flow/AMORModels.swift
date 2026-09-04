@@ -33,7 +33,18 @@ nonisolated final class DailySession {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
-    
+
+    /// Model-free mirror for the engines + live-fire harness.
+    /// v5.2.0: engines reason over snapshots, never @Models.
+    var snapshot: AMORSessionSnapshot {
+        AMORSessionSnapshot(
+            id: id, date: date, title: title, notes: notes,
+            durationMinutes: durationMinutes, toolsUsed: toolsUsed,
+            skillsLearned: skillsLearned, mood: mood,
+            completedTasks: completedTasks, timestamp: timestamp
+        )
+    }
+
     init(
         date: Date = .now,
         title: String,
@@ -172,7 +183,19 @@ nonisolated final class CronJobHealth {
         if lastRunDate == nil { return "never_run" }
         return "healthy"
     }
-    
+
+    /// Model-free mirror for the engines + live-fire harness.
+    /// v5.2.0: engines reason over snapshots, never @Models.
+    var snapshot: AMORCronJobSnapshot {
+        AMORCronJobSnapshot(
+            id: id, jobName: jobName, lastRunDate: lastRunDate,
+            lastStatus: lastStatus, errorMessage: errorMessage,
+            schedule: schedule, isEnabled: isEnabled,
+            consecutiveFailures: consecutiveFailures,
+            lastSuccessDate: lastSuccessDate
+        )
+    }
+
     init(
         jobName: String,
         lastRunDate: Date? = nil,
@@ -231,7 +254,19 @@ nonisolated final class DailySummary {
         formatter.dateStyle = .full
         return formatter.string(from: date)
     }
-    
+
+    /// Model-free mirror for the engines + live-fire harness.
+    /// v5: engines reason over snapshots, never @Models.
+    var snapshot: AMORDailySummarySnapshot {
+        AMORDailySummarySnapshot(
+            id: id, date: date, sessionCount: sessionCount,
+            totalFocusMinutes: totalFocusMinutes,
+            tasksCompleted: tasksCompleted,
+            practicesCompleted: practicesCompleted, mood: mood,
+            notes: notes, timestamp: timestamp
+        )
+    }
+
     init(
         date: Date = .now,
         sessionCount: Int = 0,

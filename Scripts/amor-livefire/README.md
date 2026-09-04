@@ -20,6 +20,12 @@ files and compare with reality. That's what this harness does.
   (re-copy after editing the app files; the copies exist only so the
   harness is self-contained).
 - `cron-health-main.swift` — entry point (compiled as `main.swift`).
+- `engines-main.swift` — v5.2.0 leg-7 entry point: all seven engines.
+- `AMORMirror.swift` + the five engine copies (`AMORBriefingEngine.swift`,
+  `AMORRhythmEngine.swift`, `AMORNudgeEngine.swift`,
+  `AMORWeeklyReviewEngine.swift`, `AMORSessionDumpAutomation.swift`,
+  `AMORDumpGenerator.swift`, `AMORProgressTracker.swift`) — verbatim
+  copies of the app sources (re-copy after editing the app files).
 - `secondbrain-main.swift` — v4.2.0 second-brain leg (compiled as
   `main.swift`; writes a round-trip daily note then the runner removes it —
   LEDGER LAW: no phantom evidence).
@@ -44,6 +50,15 @@ live-fire: cron health table + failing jobs + last-3-dumps tools assertion.
 4. **Second brain (v4.2.0)** — discovers the real `~/wiki` vault, asserts
    lowercase `daily/` casing, parses EOD dumps (sessions/messages/tools),
    and completes a write round-trip into `daily/<today>.md` (removed after).
+5. **Streak intelligence (v5.0.0)** — mortal streaks: derived chains, honest
+   zeros, started-only denominators, all-dormant invitation.
+6. **Alibi engine (v5.1.0)** — cause attribution: ledger-proven pipe breaks
+   excuse blame, never resurrect the number.
+7. **Engines (v5.2.0 — the full illumination)** — Rhythm, Briefing, Nudge,
+   WeeklyReview, SessionDump, DumpGenerator, ProgressTracker: 21 asserts
+   over 4,200+ lines that were NEVER harness-compilable before the
+   Foundation-only mirrors (`AMORMirror.swift`). Includes the anti-wolf
+   nudge-cadence law (both edges) and the evidence-safe dump cleanup.
 
 ## Expected output (2026-08-22 reference)
 

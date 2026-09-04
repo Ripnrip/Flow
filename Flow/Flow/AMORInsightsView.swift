@@ -11,17 +11,23 @@ import SwiftData
 struct AMORInsightsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
 
     @State private var tracker = AMORProgressTracker()
     @State private var selectedWeeksAgo = 0
 
     private var insights: WeeklyInsights {
         tracker.computeWeeklyInsights(
-            sessions: sessions,
-            practices: practices,
-            cronJobs: cronJobs,
+            sessions: sessionsSnap,
+            practices: practicesSnap,
+            cronJobs: cronJobsSnap,
             weeksAgo: selectedWeeksAgo
         )
     }
@@ -54,7 +60,7 @@ struct AMORInsightsView: View {
                 }
 
                 // Streak stats
-                StreakSummaryView(stats: tracker.computeStreakStats(practices: practices))
+                StreakSummaryView(stats: tracker.computeStreakStats(practices: practicesSnap))
 
                 // Recovery desk — v4.7.0: the compiled-but-never-dispensed medicine, wired.
                 // v5.1.0: ledger-proven pipeline breaks reach the desk with their alibi.
@@ -67,7 +73,7 @@ struct AMORInsightsView: View {
                 ))
 
                 // Monthly mirror — v4.7.0: computeMonthlyReport was dead since forging.
-                MonthlyMirrorView(report: tracker.computeMonthlyReport(sessions: sessions, practices: practices))
+                MonthlyMirrorView(report: tracker.computeMonthlyReport(sessions: sessionsSnap, practices: practicesSnap))
 
                 Spacer(minLength: 40)
             }

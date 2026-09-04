@@ -1,5 +1,43 @@
 # Changelog
 
+## September 4, 2026: 💡 AMOR v5.2.0 — The Full Illumination (No Dark Engines)
+
+### Commit Messages of the Day
+`feat: AMOR v5.2.0 — the full illumination (seven engines freed from the SwiftData weld; 4,200+ lines of law become harness-testable forever)`
+
+### Steps Taken
+- Cron reminder fired. Live-fire harness first — v5.1.0 legs all green (24/24). The hunt: an audit of every `AMOR*Engine.swift` for the v5.0.0 disease found it STILL ALIVE in **seven more engines**: BriefingEngine (801 lines), RhythmEngine (927), NudgeEngine (478), WeeklyReviewEngine (540), SessionDumpAutomation (710), DumpGenerator (347), ProgressTracker (404) — **4,208 lines** welded to SwiftData `@Model` params, none compilable into the harness (the macro plugin ships only with Xcode.app; this box runs CLT). Five-plus versions shipped briefing voice, rhythm scores, nudge cadence, weekly reviews, and the **daily session-dump pipeline itself — the heart of this very reminder — with ZERO test coverage**. The blind-spot factory, still running at full capacity.
+- Proof the factory was shipping real defects: the very first compile of `AMORSessionDumpAutomation`'s reflection section failed — `promptText`/`responseText` don't exist; the @Model fields are `prompt`/`response`. **Code that had never once been compiled, shipping in every AMOR build since v3.3.0.** If it ever ran, it would have crashed the dump. The illumination caught it in the first minute.
+- Forged **`AMORMirror.swift`** — Foundation-only snapshots for every @Model the engines reason over: `AMORSessionSnapshot`, `AMORCronJobSnapshot`, `AMORDailySummarySnapshot`, `AMORReflectionSnapshot`. Each @Model gains a one-line `.snapshot` conversion (the v5.0.0 `PracticeStreak.snapshot` pattern, now universal). Bonus law relocation: `CronJobHealth.healthStatus`/`statusEmoji` and `PracticeStreak.isActive`/`isDueToday` now live Foundation-only in the mirrors — assertable for the first time.
+- `AMORPracticeSnapshot` extended with `goal` (memberwise default "daily" — all existing harness fixtures compile unchanged) + the `isActive`/`isDueToday` computed laws.
+- **Seven engines rewired**: 91 param-type changes (`[DailySession]` → `[AMORSessionSnapshot]` etc.), every `import SwiftData` burned out of the engines. `AMORSessionDumpAutomation.swift` SPLIT — the Foundation engine (436 lines) separated from its SwiftUI views (`AMORSessionDumpViews.swift`, new file, auto-synced into the Xcode project via the FileSystem-Synchronized group). `AMORProgressTracker`'s lone `Color` island `#if canImport(SwiftUI)`-guarded. `AMORNudgeEngine`'s settings dependency decoupled from the SwiftUI-welded `AMORSettingsManager` — reads UserDefaults directly (same keys, same defaults, mirror-matches the law).
+- **68 view call sites** rewired to pass snapshots (`sessionsSnap`-style computed bridges next to each `@Query`; FlowApp fetch-blocks map after fetch). Identity law where snapshots carry no UUID: practices identified by `practiceName` (the ledgers' natural key).
+- **Harness leg 7 forged** — 21 new asserts across all seven engines: RHYTHM-SCORE/MOOD-LAW/MOMENTUM/CORRELATIONS/INSIGHTS, BRIEFING-GENERATED/RECAP/TOMORROW, NUDGE-EVALUATE/STREAK/ANTI-WOLF/CRITICAL, WEEKLY-GENERATED/MARKDOWN, DUMP-GENERATED/MARKDOWN-LAW/CRON-HEALTH, MANUAL-DUMP, TRACKER-WEEKLY/STREAKS/MONTHLY. Now **45/45 asserts PASS across all seven legs**, exit 0.
+- The harness proved its worth mid-forge TWICE: (1) NUDGE-STREAK failed on first run — investigation showed the ENGINE LAW IS DELIBERATE (broken streaks only nudge when `longestStreak >= 7` — anti-wolf, v5.0.0 recovery desk handles minor breaks); fixture aligned, and the law now has BOTH sides asserted (significant break reaches the user, minor break stays silent). (2) my first cleanup draft used recursive `removeItem` on the dumps dir — caught it before shipping: cleanup now removes the harness's own dump and the dir ONLY if empty (**never destroy real evidence** — the highest law).
+- Parse sweep **72/72 clean** (up from 35). Engine-stack typecheck (all 13 Foundation files together): **zero errors**. LEDGER LAW verified: harness leaves no phantom dumps, no vault leaks (`~/wiki/Journal` absent), real daily note restored after second-brain round-trip.
+
+### What Changed
+- `Flow/Flow/AMORMirror.swift` — NEW: Foundation-only mirrors for DailySession/CronJobHealth/DailySummary/ReflectionEntry (+ relocated health/emoji laws).
+- `Flow/Flow/AMORSessionDumpViews.swift` — NEW: SwiftUI views split from the dump engine (AutoDumpStatusCard, AMORProgressTimelineView, ProgressSnapshotRow).
+- `Flow/Flow/AMORPracticeSnapshot.swift` — `goal` field + isActive/isDueToday laws (computed, Foundation-only).
+- `Flow/Flow/AMORModels.swift`, `AMORReflection.swift` — `.snapshot` bridges on all five @Models.
+- `Flow/Flow/AMORBriefingEngine.swift`, `AMORRhythmEngine.swift`, `AMORNudgeEngine.swift`, `AMORWeeklyReviewEngine.swift`, `AMORSessionDumpAutomation.swift`, `AMORDumpGenerator.swift`, `AMORProgressTracker.swift` — snapshot params, SwiftData imports burned, latent `promptText` crash fixed.
+- `Flow/Flow/AMORBriefingView.swift`, `AMORRhythmView.swift`, `AMORWeeklyReviewView.swift`, `AMORInsightsView.swift`, `AMORDumpView.swift`, `AMORView.swift`, `AMORNotificationManager.swift`, `FlowApp.swift` — snapshot bridges + call-site rewires; runFullNudgeCycle takes snapshots.
+- `Flow/Flow/AMORSettings.swift` — v5.1.0 → v5.2.0.
+- `Scripts/amor-livefire/` — 13 engine copies synced, `engines-main.swift` (leg 7), `run.sh` leg 7 wired.
+
+### Evidence
+- Live-fire: all seven legs GREEN, **45/45 asserts PASS** (24 prior + 21 engine-law asserts), exit 0.
+- The never-compiled confession: `reflection.promptText` — a field that never existed, shipped since v3.3.0, dead-on-arrival if executed. Fixed in the minute the illumination exposed it.
+- ANTI-WOLF-ASSERT live: 9-day break nudges ("💔 Gym streak broken"), 3-day break stays silent — the cadence law now has both edges tested forever.
+- Engine-stack typecheck: 13 files, 0 errors. Parse sweep 72/72.
+- Real-pipe check: both Gita crons completed today (10:30 audio, 12:00 text); ledger days_completed 98, verse 6.31 → 6.32 delivered.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a city kept seven libraries of law — how to greet the morning, how to read a week's rhythm, when to knock on a door and when to let a man rest — and each library's books were bound with locks that only one workshop in the world could open. The city had no such workshop. So for years the citizens copied the books by hand, shelf after shelf, generation after generation, never once able to open one and check whether the words inside were true. One day a traveler asked to read the law of reflections. The librarian unlocked nothing — she could not — but recited from memory: "and the scribe shall record the promptText of the soul." "What is promptText?" asked the traveler. No one knew. It was a word from a dream someone had in 2025, copied faithfully ever since. So the city forged plain keys for every lock, and that afternoon, by honest light, read its own laws for the first time — and found one dream-word, one sleeping crash, and a cadence law more merciful than anyone remembered. They carved this into the first page of every book: *a law that cannot be opened cannot be trusted; bind the truth in plain bindings, and let every reader hold the key.* 💡📖🗝️
+
+---
+
 ## September 3, 2026: 🔌 AMOR v5.1.0 — The Alibi (The Pipe Broke, Not You)
 
 ### Commit Messages of the Day

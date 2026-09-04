@@ -55,6 +55,16 @@ nonisolated final class ReflectionEntry {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
+
+    /// Model-free mirror for the engines + live-fire harness.
+    /// v5.2.0: engines reason over snapshots, never @Models.
+    var snapshot: AMORReflectionSnapshot {
+        AMORReflectionSnapshot(
+            id: id, date: date, prompt: prompt, response: response,
+            theme: theme, moodBefore: moodBefore, moodAfter: moodAfter,
+            timestamp: timestamp
+        )
+    }
 }
 
 // MARK: - Reflection Prompt System

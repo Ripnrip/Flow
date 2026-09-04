@@ -16,10 +16,20 @@ import SwiftData
 struct AMORWeeklyReviewView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
     @Query private var summaries: [DailySummary]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var summariesSnap: [AMORDailySummarySnapshot] { summaries.map { $0.snapshot } }
     @Query private var reflections: [ReflectionEntry]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var reflectionsSnap: [AMORReflectionSnapshot] { reflections.map { $0.snapshot } }
 
     @State private var summary: WeeklyReviewSummary?
     @State private var streakSummary: StreakSummary?
@@ -91,11 +101,11 @@ struct AMORWeeklyReviewView: View {
 
     private func loadData() {
         summary = AMORWeeklyReviewEngine.generateWeeklyReview(
-            sessions: sessions,
-            practices: practices,
-            cronJobs: cronJobs,
-            summaries: summaries,
-            reflections: reflections
+            sessions: sessionsSnap,
+            practices: practicesSnap,
+            cronJobs: cronJobsSnap,
+            summaries: summariesSnap,
+            reflections: reflectionsSnap
         )
         streakSummary = AMORStreakIntelligence.generateSummary(practices: practices.map { $0.snapshot })
         milestones = AMORStreakIntelligence.detectMilestones(practices: practices.map { $0.snapshot })
@@ -585,6 +595,8 @@ struct ShareWeeklyCard: View {
 
 struct StreakIntelligenceCompactCard: View {
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
 
     @State private var streakSummary: StreakSummary?
 

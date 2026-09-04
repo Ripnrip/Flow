@@ -15,8 +15,14 @@ import UIKit
 struct AMORDumpView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
 
     @State private var dumpGenerator = AMORDumpGenerator()
     @State private var tracker = AMORProgressTracker()
@@ -97,23 +103,23 @@ struct AMORDumpView: View {
         switch selectedFormat {
         case .dailyMarkdown:
             dumpContent = dumpGenerator.generateDailyDump(
-                sessions: sessions,
-                practices: practices,
-                cronJobs: cronJobs,
+                sessions: sessionsSnap,
+                practices: practicesSnap,
+                cronJobs: cronJobsSnap,
                 mood: selectedMood,
                 reflections: reflections
             )
         case .weeklyMarkdown:
             dumpContent = dumpGenerator.generateWeeklyDump(
-                sessions: sessions,
-                practices: practices,
-                cronJobs: cronJobs,
+                sessions: sessionsSnap,
+                practices: practicesSnap,
+                cronJobs: cronJobsSnap,
                 tracker: tracker
             )
         case .jsonExport:
-            dumpContent = dumpGenerator.generateJSONExport(sessions: sessions) ?? "{}"
+            dumpContent = dumpGenerator.generateJSONExport(sessions: sessionsSnap) ?? "{}"
         case .csvExport:
-            dumpContent = dumpGenerator.generateCSVExport(sessions: sessions)
+            dumpContent = dumpGenerator.generateCSVExport(sessions: sessionsSnap)
         }
     }
 

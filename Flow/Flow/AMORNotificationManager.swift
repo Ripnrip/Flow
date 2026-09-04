@@ -301,9 +301,9 @@ extension AMORNotificationManager {
     /// Runs a complete nudge evaluation + delivery cycle.
     /// Call this on app foreground with fresh SwiftData context data.
     func runFullNudgeCycle(
-        practices: [PracticeStreak],
-        cronJobs: [CronJobHealth],
-        sessions: [DailySession]
+        practices: [AMORPracticeSnapshot],
+        cronJobs: [AMORCronJobSnapshot],
+        sessions: [AMORSessionSnapshot]
     ) async {
         let result = AMORNudgeEngine.evaluate(
             practices: practices,

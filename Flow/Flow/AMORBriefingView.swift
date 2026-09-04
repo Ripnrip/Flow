@@ -16,11 +16,19 @@ import SwiftData
 struct AMORBriefingView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var sessions: [DailySession]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var sessionsSnap: [AMORSessionSnapshot] { sessions.map { $0.snapshot } }
     @Query private var practices: [PracticeStreak]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var practicesSnap: [AMORPracticeSnapshot] { practices.map { $0.snapshot } }
     @Query private var cronJobs: [CronJobHealth]
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var cronJobsSnap: [AMORCronJobSnapshot] { cronJobs.map { $0.snapshot } }
 
     @State private var briefing: DailyBriefing?
     @State private var reflections: [ReflectionEntry] = []
+    /// v5.2.0: engine inputs as Foundation snapshots (engines never touch @Models).
+    private var reflectionsSnap: [AMORReflectionSnapshot] { reflections.map { $0.snapshot } }
 
     var body: some View {
         ScrollView {
@@ -141,16 +149,16 @@ struct AMORBriefingView: View {
         var rhythmScore: Int? = nil
         var rhythmGrade: String? = nil
         let scoreResult = AMORRhythmEngine.computeScore(
-            sessions: sessions, practices: practices, cronJobs: cronJobs, reflections: reflections
+            sessions: sessionsSnap, practices: practicesSnap, cronJobs: cronJobsSnap, reflections: reflectionsSnap
         )
         rhythmScore = scoreResult.score
         rhythmGrade = scoreResult.grade.emoji
 
         briefing = AMORBriefingEngine.generateBriefing(
-            sessions: sessions,
-            practices: practices,
-            cronJobs: cronJobs,
-            reflections: reflections,
+            sessions: sessionsSnap,
+            practices: practicesSnap,
+            cronJobs: cronJobsSnap,
+            reflections: reflectionsSnap,
             rhythmScore: rhythmScore,
             rhythmGrade: rhythmGrade,
             date: .now
