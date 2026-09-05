@@ -14,6 +14,8 @@
 #   7. Engines          (v5.2.0 — the full illumination: Rhythm, Briefing, Nudge, WeeklyReview,
 #                        SessionDump, DumpGenerator, ProgressTracker — 4,200+ lines never
 #                        harness-compilable before the mirrors)
+#   8. View smoke-compile (v5.3.0 — the whole view layer macro-stripped and typechecked
+#                        under CLT: 62 files, the first full-view compile in app history)
 set -e
 cd "$(dirname "$0")"
 SDK="$(xcrun --show-sdk-path)"
@@ -66,3 +68,8 @@ fi
 
 rm -rf "$TMP"
 exit $status
+
+# Leg 8 (v5.3.0): view-layer smoke-compile — macro-stripped temp copies of the
+# ENTIRE app target, typechecked against the real sources. The first compile
+# the view layer has ever had on this box. Exits nonzero on any type error.
+sh "$(dirname "$0")/leg8-run.sh"

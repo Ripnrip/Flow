@@ -151,7 +151,7 @@ struct AMORBriefingView: View {
         let scoreResult = AMORRhythmEngine.computeScore(
             sessions: sessionsSnap, practices: practicesSnap, cronJobs: cronJobsSnap, reflections: reflectionsSnap
         )
-        rhythmScore = scoreResult.score
+        rhythmScore = scoreResult.overall
         rhythmGrade = scoreResult.grade.emoji
 
         briefing = AMORBriefingEngine.generateBriefing(

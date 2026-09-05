@@ -339,8 +339,21 @@ struct ToastView: View {
 struct ShareSheetView: UIViewControllerRepresentable {
     let url: URL
 
+    init(url: URL) {
+        self.url = url
+    }
+
+    /// Text-sharing convenience for markdown payloads (weekly review, dumps).
+    init(text: String) {
+        self.url = URL(fileURLWithPath: "/dev/null")
+        self.textPayload = text
+    }
+
+    private var textPayload: String? = nil
+
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        let items: [Any] = textPayload.map { [$0] } ?? [url]
+        return UIActivityViewController(activityItems: items, applicationActivities: nil)
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}

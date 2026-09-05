@@ -145,7 +145,7 @@ extension ActiveTaskSnapshot: Equatable {
     }
 }
 
-extension ActiveTaskSnapshot: Codable {
+extension ActiveTaskSnapshot {
     nonisolated init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.taskId = try container.decode(String.self, forKey: .taskId)

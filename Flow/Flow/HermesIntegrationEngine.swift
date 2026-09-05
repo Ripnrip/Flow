@@ -515,7 +515,7 @@ final class HermesIntegrationEngine {
             totalSessions: recent.count,
             totalFocusMinutes: totalMinutes,
             averageSessionMinutes: recent.isEmpty ? 0 : totalMinutes / recent.count,
-            topDomains: Array(domains.prefix(5)),
+            topDomains: domains.prefix(5).map { (domain: $0.key, count: $0.value) },
             avgMessagesPerSession: recent.isEmpty ? 0 : recent.reduce(0) { $0 + $1.messageCount } / recent.count
         )
     }

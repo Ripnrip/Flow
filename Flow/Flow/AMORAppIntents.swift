@@ -230,7 +230,7 @@ struct DailySummaryIntent: AppIntent {
             parts.append("\(snapshot.cronFailed) system alert\(snapshot.cronFailed > 1 ? "s" : "")")
         }
 
-        return .result(dialog: "Today: " + parts.joined(separator: ", ") + ".")
+        return .result(dialog: IntentDialog(LocalizedStringResource(stringLiteral: "Today: " + parts.joined(separator: ", ") + ".")))
     }
 }
 
@@ -272,7 +272,7 @@ struct SetMoodIntent: AppIntent {
 struct AMORShortcutsProvider: AppShortcutsProvider {
 
     @AppShortcutsBuilder
-    static var appShortcuts: some AppShortcut {
+    static var appShortcuts: [AppShortcut] {
         // Core daily actions
         AppShortcut(
             intent: LogSessionIntent(),
@@ -370,8 +370,8 @@ enum AMORIntentReconciler {
                 let session = DailySession(
                     title: title,
                     durationMinutes: duration,
+                    toolsUsed: tools,
                     mood: mood,
-                    toolsUsed: tools
                 )
                 context.insert(session)
                 sessionsLogged += 1

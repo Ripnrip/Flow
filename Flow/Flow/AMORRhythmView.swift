@@ -425,7 +425,7 @@ struct InsightsCard: View {
                         .padding(.vertical, 8)
                 } else {
                     ForEach(insights) { insight in
-                        InsightRow(insight: insight)
+                        RhythmInsightRow(insight: insight)
                         if insight.id != insights.last?.id {
                             Divider()
                         }
@@ -436,7 +436,7 @@ struct InsightsCard: View {
     }
 }
 
-struct InsightRow: View {
+struct RhythmInsightRow: View {
     let insight: RhythmInsight
 
     private var severityColor: Color {

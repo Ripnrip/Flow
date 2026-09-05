@@ -76,3 +76,12 @@ live-fire: cron health table + failing jobs + last-3-dumps tools assertion.
   parser bug — cross-check the failing list at the bottom).
 - `sessionsToday=0` on most days is expected: the EOD dump only counts
   user-facing work sessions, not cron runs.
+
+## Leg 8 — View smoke-compile (v5.3.0)
+`leg8-prep.py` + `leg8-run.sh`. Macro-strips temp copies of the whole app
+target (`@Model`, `@Query`, `#Predicate`, `parameterSummary`, `#Preview`;
+swaps `import SwiftData`/`ActivityKit`/`BackgroundTasks` for in-module
+signature shims) and typechecks all 62 files with the CLT macosx SDK.
+Catches wrong field names, bad argument labels, redeclarations, phantom
+inits — everything the engine harness cannot see. Repo untouched; temp
+dir removed. Exits nonzero on any error.

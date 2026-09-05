@@ -311,7 +311,7 @@ struct HermesSessionSyncView: View {
                     .padding(.vertical)
             } else {
                 ForEach(sessions) { session in
-                    SessionRow(session: session)
+                    HermesSessionRow(session: session)
                 }
             }
         }
@@ -342,7 +342,7 @@ private struct StatBlock: View {
     }
 }
 
-private struct SessionRow: View {
+private struct HermesSessionRow: View {
     let session: HermesSession
 
     var body: some View {

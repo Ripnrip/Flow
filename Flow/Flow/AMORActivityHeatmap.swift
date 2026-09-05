@@ -138,7 +138,7 @@ struct AMORActivityHeatmapView: View {
                 Divider().frame(height: 40)
                 statBlock(value: "\(stats.totalMinutes / 60)h", label: "Focus Time", icon: "hourglass")
                 Divider().frame(height: 40)
-                statBlock(value: "\(stats.avgPerWeek, specifier: "%.1f")", label: "Per Week", icon: "chart.bar.fill")
+                statBlock(value: String(format: "%.1f", stats.avgPerWeek), label: "Per Week", icon: "chart.bar.fill")
             }
             .frame(maxWidth: .infinity, alignment: .center)
         }

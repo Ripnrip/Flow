@@ -187,7 +187,7 @@ struct AMORProgressTimelineView: View {
                 HStack {
                     weeklyStat(value: "\(avgSessions)", label: "Sessions/day")
                     Divider().frame(height: 40)
-                    weeklyStat(value: Self.formatFocus(avgMinutes), label: "Focus/day")
+                    weeklyStat(value: Self.formatFocus(minutes: avgMinutes), label: "Focus/day")
                     Divider().frame(height: 40)
                     weeklyStat(value: "\(totalTasks)", label: "Tasks (7d)")
                     Divider().frame(height: 40)

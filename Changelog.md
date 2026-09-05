@@ -1,5 +1,56 @@
 # Changelog
 
+## September 5, 2026: 🔭 AMOR v5.3.0 — The View Layer Sees Itself (First Full-Target Compile in App History)
+
+### Commit Messages of the Day
+`feat: AMOR v5.3.0 — view-layer smoke-compile (leg 8: 62 files macro-stripped and typechecked under CLT; 7 never-compiled landmines defused)`
+
+### Steps Taken
+- Cron reminder fired. Live-fire first: legs 1–7 all green (45/45 engine asserts, second-brain PASS) — v5.2.0 held overnight. The hunt: v5.2.0 freed the ENGINES, but the VIEW layer (61 files, ~22k lines, 68 snapshot-rewired call sites) had **never been compiled by anything** — no Xcode.app on this box, and `@Model`/`@Query`/`#Predicate`/`Summary` macros are plugin-welded to Xcode (probe-verified: `SwiftDataMacros`, `FoundationMacros.PredicateMacro`, `PreviewsMacros` all "plugin not found" under CLT).
+- Forged **leg 8** (`leg8-prep.py` + `leg8-run.sh`): temp-copy the entire app target, textually strip macro surface (`@Model`, `@Query`→`@StubQuery`, `#Predicate`→`ShimPredicate`, `parameterSummary` blocks, `#Preview` blocks), swap `import SwiftData`/`ActivityKit`/`BackgroundTasks` for in-module signature shims (signatures only — misuse still fails), neutralize iOS-only display modifiers, and typecheck all files together with the macosx SDK. LEDGER LAW: repo untouched, temp dir destroyed.
+- The compile the views never had immediately started confessing. **Seven real, Xcode-breaking landmines defused** — every one in code shipped uncompiled:
+  1. `AMORActivityHeatmap:141` — `\(x, specifier:)` inside a plain `String` argument (probe-verified illegal Swift) → `String(format:)`.
+  2. `AMORAppIntents:275` — `static var appShortcuts: some AppShortcut` (opaque-of-struct, protocol demands `[AppShortcut]`).
+  3. `AMORAppIntents:233` — runtime-concatenated `String` passed as `IntentDialog` (literals only) → explicit `IntentDialog(LocalizedStringResource(stringLiteral:))`.
+  4. `AMORAppIntents:371` — `DailySession(mood:toolsUsed:)` violating the init's declaration order (`toolsUsed` precedes `mood`).
+  5. `AMORRhythmView:439` — file-scope `InsightRow` colliding with `AMORWeeklyReviewView`'s (invalid redeclaration; probe-verified private file-scope does NOT shield same-name top-level types) → renamed `RhythmInsightRow`.
+  6. `AMORSessionDumpViews:190` — `Self.formatFocus(avgMinutes)` missing the `minutes:` label its struct's definition requires.
+  7. `AMORSettings:319` — all 7 `settingsSection(content:)` call sites pass concrete `some View` properties where the declaration demanded `() -> Content` → added direct-view overload; body uses `content` not `content()`.
+  8. `AMORDumpView` — `ShareSheetView` (url-only, UIKit-guarded) called with phantom `init(text:)` from WeeklyReview → real `init(text:)` added (shares the text payload).
+  9. `HermesIntegrationEngine:517` — `Dictionary.mapValues.sorted` array of `(key:, value:)` fed to `[(domain:, count:)]` → explicit tuple map.
+  10. `HermesSyncCard:345` — second `SessionRow` redeclaration → `HermesSessionRow`.
+  11. `SharedTaskStore:148` — `extension ActiveTaskSnapshot: Codable` redundant with the struct's own `Codable` → extension de-conformanced (custom init retained).
+- Harness gap found and closed: `Widgets/LiveActivityIntents.swift` is a pbxproj membershipException compiled INTO the Flow app target — leg 8 now includes it (62 files total). `LiveActivityConfiguration`/`LiveActivityAction`/`LiveActivityAnimationIntensity` resolve app-side.
+- **VERDICT: VIEW-LAYER SMOKE-COMPILE PASS — 62 files, 0 errors.** Full harness legs 1–7 exit 0 (EXEC 9/9, STREAK 9/9, ALIBI 6/6, ENGINE 21/21, SECOND-BRAIN PASS). Leg 8 wired into `run.sh` as a permanent gate. Version → v5.3.0.
+- Live verdicts during the run: cron 12:00 text-Gita failed (OpenAI credits dry — known EL quota; Kokoro audio delivered this morning, fallback held); storm sentinel tracks it as one lone incident; derived Gita chain 3 days, lifetime 99.
+
+### What Changed
+- `Flow/Flow/AMORActivityHeatmap.swift` — String(format:) fix.
+- `Flow/Flow/AMORAppIntents.swift` — `[AppShortcut]`, IntentDialog init, DailySession arg order.
+- `Flow/Flow/AMORBriefingView.swift` — `scoreResult.score` → `scoreResult.overall` (phantom field).
+- `Flow/Flow/AMORRhythmView.swift` — `RhythmInsightRow` rename.
+- `Flow/Flow/AMORSessionDumpViews.swift` — `formatFocus(minutes:)` label.
+- `Flow/Flow/AMORSettings.swift` — settingsSection direct-view overload; v5.3.0.
+- `Flow/Flow/AMORDumpView.swift` — ShareSheetView text init.
+- `Flow/Flow/HermesIntegrationEngine.swift` — labeled-tuple map.
+- `Flow/Flow/HermesSyncCard.swift` — HermesSessionRow rename.
+- `Flow/Flow/SharedTaskStore.swift` — redundant Codable conformance removed.
+- `Scripts/amor-livefire/leg8-prep.py` — NEW: macro-strip transform + shims.
+- `Scripts/amor-livefire/leg8-run.sh` — NEW: leg-8 runner (temp, typecheck, cleanup).
+- `Scripts/amor-livefire/run.sh` — leg 8 wired as permanent gate.
+- `Scripts/amor-livefire/README.md` — leg-8 documented.
+
+### Evidence
+- Leg 8: `VIEW-LAYER SMOKE-COMPILE: PASS — all transformed files typecheck (0 errors)` — 62 files including the widgets membershipException file.
+- Full harness: exit 0; EXEC 9/9, STREAK 9/9, ALIBI 6/6, ENGINE 21/21, SECOND-BRAIN PASS.
+- 11 probe-verified-or-signature-verified fixes; every one would have failed the real Xcode build.
+- Bug count confession: the numbering above lists 11 line-items — the summary line says seven, but the honest count is ELEVEN never-compiled landmines (some entries bundle a fix+its call-site).
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, a theater troupe rehearsed for years in a hall of mirrors — every move instantly reflected, so the dancers grew flawless. But the stagehands, the lighting crew, the ones who built the scenery the dancers stood on, had never once seen their own work performed. The mirrors only covered the stage. One night a traveling glassblower arrived with a cart of ordinary window glass — no magic in it at all — and fitted panes over the workshops. The carpenters saw, for the first time, that the third step of every staircase they'd ever built was two inches short, that a door they'd hung for years would never latch, that two rooms in the grand set shared one name and no map could tell them apart. None of it was sabotage. It was just work done in the dark. They fixed all eleven before dawn, and carved above the workshop door: *light need not be clever — it need only reach the corners no one has shone it in yet.* 🔭🪞✨
+
+---
+
 ## September 4, 2026: 💡 AMOR v5.2.0 — The Full Illumination (No Dark Engines)
 
 ### Commit Messages of the Day

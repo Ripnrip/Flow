@@ -806,7 +806,7 @@ struct AMORSettingsView: View {
                     .font(AMORTypography.captionFont)
                     .foregroundStyle(.secondary)
 
-                Text("v5.2.0")
+                Text("v5.3.0")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .padding(.top, 4)
@@ -830,6 +830,16 @@ struct AMORSettingsView: View {
         icon: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
+        settingsSection(title: title, icon: icon, content: content())
+    }
+
+    /// Direct-view overload: call sites pass concrete `some View` properties
+    /// (e.g. `content: hermesSection`), which cannot convert to `() -> Content`.
+    private func settingsSection<Content: View>(
+        title: String,
+        icon: String,
+        content: Content
+    ) -> some View {
         AMORComponents.ContemplativeCard {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 10) {
@@ -840,7 +850,7 @@ struct AMORSettingsView: View {
                         .font(AMORTypography.titleFont)
                 }
 
-                content()
+                content
             }
         }
     }
