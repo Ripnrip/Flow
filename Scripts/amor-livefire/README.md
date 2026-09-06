@@ -85,3 +85,21 @@ signature shims) and typechecks all 62 files with the CLT macosx SDK.
 Catches wrong field names, bad argument labels, redeclarations, phantom
 inits — everything the engine harness cannot see. Repo untouched; temp
 dir removed. Exits nonzero on any error.
+
+## Leg 9 — Widget-extension smoke-compile (v5.4.0)
+`leg9-prep.py` + `leg9-run.sh`. The WidgetsExtension TARGET never saw a
+compiler on this box: 12 widget files (~3.6k lines — Dynamic Island Live
+Activity, five home-screen widgets, Control Center toggle, widget intents)
+plus the shared app files the pbxproj compiles into the extension
+(AMORWidgetShared, SharedTaskStore, TaskService, Item, SharedModels,
+CommonViews, FlowLogger, TaskLingeringActor, TodoistService, FlowServerService,
+CommandTile, DailyFocusSummary). Same law as leg 8: macro-strip temp copies,
+signature-shim the iOS-only surface (ActivityKit, DynamicIsland,
+ControlWidget, Liquid Glass), typecheck as ONE unit against the macosx SDK.
+WidgetsControl.swift (pure iOS-18 Control-Center surface) is #if os(iOS)
+wrapped in temp copies. Repo untouched; temp dir removed. Exits nonzero on
+any error.
+
+NOTE (v5.4.0): leg 8 previously sat AFTER `exit $status` in run.sh — dead
+code, the gate never gated. Both legs now run before the harness exits and
+fail the run on any error.

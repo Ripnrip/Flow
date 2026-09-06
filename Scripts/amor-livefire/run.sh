@@ -67,9 +67,26 @@ elif [ -f "$HOME/wiki/daily/$TODAY.md" ]; then
 fi
 
 rm -rf "$TMP"
-exit $status
 
 # Leg 8 (v5.3.0): view-layer smoke-compile — macro-stripped temp copies of the
 # ENTIRE app target, typechecked against the real sources. The first compile
 # the view layer has ever had on this box. Exits nonzero on any type error.
-sh "$(dirname "$0")/leg8-run.sh"
+# (v5.4.0 fix: this block previously sat AFTER `exit $status` — dead code; the
+# gate never gated. Legs 8 and 9 now run before the harness exits and their
+# failures fail the run.)
+sh leg8-run.sh
+status8=$?
+
+echo ""
+
+# Leg 9 (v5.4.0): widget-extension smoke-compile — the WidgetsExtension target
+# (12 widget files + shared app files per the pbxproj) typechecked as one unit
+# for the first time. Dynamic Island, Live Activity, Control Center, all five
+# home-screen widgets. Exits nonzero on any type error.
+sh leg9-run.sh
+status9=$?
+
+if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ]; then
+  exit 1
+fi
+exit 0

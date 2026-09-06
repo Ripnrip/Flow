@@ -99,6 +99,7 @@
 				AMORWidgetShared.swift,
 				CommonViews.swift,
 				FlowLogger.swift,
+				FlowServerService.swift,
 				Item.swift,
 				SharedModels.swift,
 				SharedTaskStore.swift,

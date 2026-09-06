@@ -1,5 +1,41 @@
 # Changelog
 
+## September 6, 2026: 🏝️ AMOR v5.4.0 — The Island Sees Itself (Widget-Extension Smoke-Compile, First Target Compile + A Dead Gate Resurrected)
+
+### Commit Messages of the Day
+`feat: AMOR v5.4.0 — widget-extension smoke-compile (leg 9: WidgetsExtension target typechecked as one unit for the first time; 2 real code landmines + 1 real pbxproj landmine defused; dead leg-8 gate resurrected)`
+
+### Steps Taken
+- Cron reminder fired. Live-fire heartbeat first: v5.3.0 held overnight — EXEC 9/9, STREAK 9/9, ALIBI 6/6, ENGINE 21/21, SECOND-BRAIN PASS, cron 12/12 healthy. The hunt: v5.3.0 compiled the APP target, but the **WidgetsExtension target** — a separate build unit — had never been compiled by anything: 12 widget files (~3,588 lines: Dynamic Island Live Activity, five home-screen widgets, Control Center toggle, widget intents) + the shared app files the pbxproj compiles into the extension. Only the `LiveActivityIntents.swift` orphan ever saw leg 8. The blind-spot factory, one target deeper.
+- Forged **leg 9** (`leg9-prep.py` + `leg9-run.sh`): the extension's TRUE membership (12 widget files + 12 shared app files per pbxproj + de-facto deps) macro-stripped into temp copies and typechecked as ONE unit against the macosx SDK. Signature-shims for the iOS-only surface: ActivityKit (`Activity`, `ActivityContent`, `ActivityViewContext` with real `.state`/`.attributes`, `ActivityConfiguration: WidgetConfiguration`), Dynamic Island (`DynamicIsland` with result-builder `expanded:` + NON-ViewBuilder `dynamicIsland:` closure — the ViewBuilder was a silent type-poison I isolated via 4 minimal probes), Control Center (`LiveActivityIntent`, `ControlConfigurationIntent`, `AppIntentControlValueProvider`, `ControlCenter`), Liquid Glass + `activityBackgroundTint`/`activitySystemActionForegroundColor`. `WidgetsControl.swift` (pure iOS-18 Control-Center) is `#if os(iOS)`-wrapped in temp copies. `#Preview` stripper generalized to swallow LABELED trailing closures (`timeline:`, `contentStates:`). LEDGER LAW: repo untouched, temp dir destroyed.
+- **The compile the island never had confessed immediately — landmines defused:**
+  1. `AMORWidget.swift:337,369,388` — THREE `Font.system(size:design:weight:)` call sites — **that overload does not exist** (probe-verified: design-before-weight = 2 errors; weight-before-design = legal). Would fail the real Xcode build. → reordered `weight:` before `design:`.
+  2. `WidgetsLiveActivity.swift:494` — `doneLabel(for:)` called; the function is `liveActivityDoneLabel(for:)` (line 724). Phantom symbol. → fixed.
+  3. **pbxproj landmine** — `TaskService.swift` (extension member) references `FlowServerService` + `ExternalSourceType`, defined in `FlowServerService.swift`, which was **NOT in the extension's membershipExceptions**. The real WidgetsExtension target could not link. → `FlowServerService.swift` added to the pbxproj exception set.
+  4. (De-facto deps confirmed and documented: `CommandTile.swift`, `DailyFocusSummary.swift` — types the extension cannot link without; now explicit in leg 9's file set.)
+- **DEAD GATE RESURRECTED** — reading run.sh to wire leg 9 revealed leg 8 sat AFTER `exit $status`: **dead code; the v5.3.0 "permanent gate" never gated.** Restructured: legs 8 and 9 now run before the harness exits; failures fail the run.
+- Version → v5.4.0 (`AMORSettings`).
+
+### What Changed
+- `Flow/Widgets/AMORWidget.swift` — 3× Font.system argument-order fixes (weight before design).
+- `Flow/Widgets/WidgetsLiveActivity.swift` — `doneLabel` → `liveActivityDoneLabel` phantom fix.
+- `Flow/Flow.xcodeproj/project.pbxproj` — `FlowServerService.swift` added to the WidgetsExtension membershipExceptions (real link fix).
+- `Scripts/amor-livefire/leg9-prep.py` — NEW: extension-prep transform + iOS-surface shims.
+- `Scripts/amor-livefire/leg9-run.sh` — NEW: leg-9 runner (temp, typecheck, cleanup).
+- `Scripts/amor-livefire/run.sh` — legs 8+9 wired as REAL gates (dead-code fix).
+- `Scripts/amor-livefire/README.md` — leg 9 + dead-gate note documented.
+- `Flow/Flow/AMORSettings.swift` — v5.4.0.
+
+### Evidence
+- Leg 9: `WIDGET-EXTENSION SMOKE-COMPILE: PASS — all transformed files typecheck (0 errors)` — 24 files (12 widget + 12 shared app).
+- Full harness post-restructure: legs 1–7 all green (EXEC 9/9, STREAK 9/9, ALIBI 6/6, ENGINE 21/21, SECOND-BRAIN PASS) + legs 8–9 PASS, exit 0.
+- 4 probe-verified fixes (3 Font call sites + 1 phantom function) and 1 real pbxproj link fix — every one would have failed the real Xcode build.
+
+### Once Upon a Runtime Error...
+Once upon a runtime error, there was an island off the coast of a great city — a shimmering district of towers and lights that every citizen could see from the shore. But no ferry had ever landed there, no inspector ever walked its streets, because the harbor master's rulebook ended at the water's edge. The island's builders worked proudly in the dark, and the darkness hid small things: a sign hung backwards on three doors, a street named after a function that had been renamed years ago, and a bridge to the mainland drawn on the blueprints but never bolted to the rock. One night a lantern-keeper rowed across — not to conquer the island, but simply to walk every street with her lamp held high. She found the crooked signs, the ghost street, the unbolted bridge, and by morning all were true. The lesson the island carved into its seawall: *being visible from the shore is not the same as being walked. Light must touch ground.* 🏝️🔦✨
+
+---
+
 ## September 5, 2026: 🔭 AMOR v5.3.0 — The View Layer Sees Itself (First Full-Target Compile in App History)
 
 ### Commit Messages of the Day

@@ -334,7 +334,7 @@ struct AMORMediumWidget: View {
                         Image(systemName: "plus")
                             .font(.system(size: 9, weight: .bold))
                         Text("30m")
-                            .font(.system(size: 10, design: .rounded, weight: .semibold))
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
                     }
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
@@ -366,7 +366,7 @@ struct AMORMediumWidget: View {
                 .frame(width: 32, height: 32)
                 .rotationEffect(.degrees(-90))
             Text("\(snap.cronHealthy)")
-                .font(.system(size: 11, design: .rounded, weight: .bold))
+                .font(.system(size: 11, weight: .bold, design: .rounded))
         }
     }
 }
@@ -385,7 +385,7 @@ struct AMORAccessoryCircular: View {
                         .font(.system(size: 14))
                         .widgetAccentable()
                     Text("\(topStreak.currentStreak)")
-                        .font(.system(size: 16, design: .rounded, weight: .bold))
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
                         .widgetAccentable()
                 }
             }

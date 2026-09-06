@@ -491,7 +491,7 @@ struct WidgetsLiveActivity: Widget {
                                 Image(systemName: "checkmark.circle.fill")
                                     .symbolEffect(.bounce, value: true)
                                     .font(.system(size: 13))
-                                Text(doneLabel(for: style))
+                                Text(liveActivityDoneLabel(for: style))
                                     .font(.system(size: 13, weight: .semibold))
                             }
                             .frame(maxWidth: .infinity)
