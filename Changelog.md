@@ -1,5 +1,37 @@
 # Changelog
 
+## September 9, 2026: 🌊 AMOR v5.5.0 — FlowServer's First Breath (Server Target Born + the Monday Time-Bomb Defused)
+
+### Commit Messages of the Day
+`feat: AMOR v5.5.0 — FlowServer builds & serves for the first time (tools-6.2 template bomb defused, Sendable wall broken); Monday time-bomb defused in weekly fixtures; yesterday's closed tasks reach the briefing`
+
+### Steps Taken
+- Cron reminder fired. Repo audit found an **interrupted v5.5.0 in the tree** (Sep 7 session forged it 20:02–20:07 then died before version bump/verify/commit; Sep 8's run lasted 16 seconds and dropped the baton — execution-ledger-proven). Recovery-first discipline: verified the orphaned diff, then finished the rite.
+- **Live-fire heartbeat first**: interrupted code passed all 9 legs GREEN on a live Wednesday-W37 run — including the **Monday time-bomb fix**: the weekly-review fixtures used a rolling `daysAgo 0–4` window that straddles the ISO Monday-00:00 week boundary, detonating on 2026-09-07 when only today's sessions remained in-week. The ENGINE's calendar-week law is correct (a weekly review reviews the WEEK); the FIXTURE was time-bombed. Weekly fixtures now anchor to THIS week's Monday (+0/+1/+2/+4 days) so they sit inside the window on every run day, forever.
+- **YesterdayRecap gained `tasksCompleted`** (app + livefire mirror): the engine computed yesterday's closed tasks then discarded them (unused-var warning) — the number never reached the recap headline. Now renders "N tasks closed" alongside sessions/focus.
+- **FlowServer Package.swift: tools 6.2 → 6.1.** The template default (6.2) exceeded this box's Swift 6.1.2 CLT, so the package could NEVER resolve, let alone build. All pins verified 6.1-compatible (hummingbird 2.25, NIO 2.101, realm 10.54.6, supabase 2.49); `swift-configuration` dep (needs 6.2) dropped; `Package.resolved` regenerated Sep 7 20:07.
+- **The Sendable wall** (where Sep 7 died): `SupabaseSyncService.syncTasks()` awaited non-Sendable `PostgrestResponse<[RemoteSuperTask]>` across actor isolation — Swift 6 strict concurrency error. Fixed with `@preconcurrency import Supabase` (downgrades lib-side diagnostics to warnings without weakening this target's own isolation).
+- **First build in FlowServer history**: `swift build` EXIT 0, 0 errors, 32.6 MB executable. **First boot**: Hummingbird listening on 0.0.0.0:17777, Realm opened + seeded, Supabase stub-mode declared. **First probe**: `GET /health` → `🎉 FlowServer is alive` in 13ms. Smoke instance retired cleanly.
+- Version → v5.5.0 (`AMORSettings`).
+
+### What Changed
+- `FlowServer/Package.swift` — swift-tools-version 6.1 (was template 6.2; unresolvable on CLT 6.1.2).
+- `FlowServer/Package.resolved` — regenerated; `swift-configuration` pin dropped.
+- `FlowServer/Sources/FlowServer/Services/SupabaseSyncService.swift` — `@preconcurrency import Supabase`.
+- `Flow/Flow/AMORBriefingEngine.swift` + `Scripts/amor-livefire/AMORBriefingEngine.swift` — `tasksCompleted` in `YesterdayRecap` + headline rendering (mirrors in lockstep).
+- `Scripts/amor-livefire/engines-main.swift` — week-anchored weekly fixtures (Monday time-bomb defused).
+- `Flow/Flow/AMORSettings.swift` — v5.5.0.
+
+### Evidence
+- Live-fire (post version-bump, full gate): EXEC 9/9, STREAK 9/9, ALIBI 6/6, ENGINE 21/21 PASS; SECOND-BRAIN PASS; VIEW-LAYER (leg 8) PASS; WIDGET-EXTENSION (leg 9) PASS; 0 failing enabled cron jobs; HARNESS-EXIT=0.
+- FlowServer: `swift build` EXIT 0; boot log `Server started and listening on 0.0.0.0:17777`; `/health` 200-equivalent JSON `🎉 FlowServer is alive` (13ms).
+- Weekly engine on live run: `8 sessions (week-anchored fixtures), streak 98 days`, markdown `# AMOR Weekly Review — 2026-W37`.
+
+### 🧭 Open Thread
+- FlowServer now builds/serves but has no launchd/launch agent wiring — next session candidate: daemonize (launchd plist) or wire into the iOS app's sync path.
+
+---
+
 ## September 6, 2026: 🏝️ AMOR v5.4.0 — The Island Sees Itself (Widget-Extension Smoke-Compile, First Target Compile + A Dead Gate Resurrected)
 
 ### Commit Messages of the Day

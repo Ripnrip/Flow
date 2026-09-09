@@ -1,4 +1,7 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.1
+// v5.5.0: was 6.2 (template default) — this box runs Swift 6.1.2 CLT, so the
+// package could NEVER resolve, let alone build. Declared 6.1; all pins are
+// 6.1-compatible (hummingbird 2.25, NIO 2.101, realm 10.54.6, supabase 2.49).
 // The swift-tools-version declares the minimum Swift required to build this package.
 
 import PackageDescription

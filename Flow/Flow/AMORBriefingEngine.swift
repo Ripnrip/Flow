@@ -126,6 +126,7 @@ struct BriefingAction: Identifiable {
 struct YesterdayRecap {
     let sessionsCount: Int
     let focusMinutes: Int
+    let tasksCompleted: Int       // v5.5.0 — was computed and discarded (unused-var warning); yesterday's closed tasks now reach the briefing
     let practicesCompleted: [String]
     let practicesMissed: [String]
     let topTools: [String]
@@ -151,6 +152,9 @@ struct YesterdayRecap {
             } else {
                 parts.append("\(mins)m focused")
             }
+        }
+        if tasksCompleted > 0 {   // v5.5.0 — closed work reaches the recap headline
+            parts.append("\(tasksCompleted) task\(tasksCompleted == 1 ? "" : "s") closed")
         }
         if !practicesCompleted.isEmpty {
             parts.append("\(practicesCompleted.count) practice\(practicesCompleted.count == 1 ? "" : "s")")
@@ -271,6 +275,7 @@ enum AMORBriefingEngine {
         return YesterdayRecap(
             sessionsCount: yesterdaySessions.count,
             focusMinutes: focusMinutes,
+            tasksCompleted: tasksCompleted,
             practicesCompleted: completedYesterday,
             practicesMissed: missedYesterday,
             topTools: topTools,

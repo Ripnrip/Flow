@@ -1,5 +1,10 @@
 import Foundation
-import Supabase
+// v5.5.0: @preconcurrency — supabase-swift's PostgrestResponse<T> is not yet
+// Sendable-annotated, so Swift 6 strict concurrency rejects awaiting it across
+// actor isolation (build error at syncTasks' .execute()). Preconcurrency import
+// downgrades the library-side diagnostics to warnings without weakening this
+// target's own isolation checking.
+@preconcurrency import Supabase
 
 /// 🌉 Pulls SuperProductivity tasks from Supabase and persists them in Realm
 /// via `RealmService`. This lets the Hummingbird backend act as the single

@@ -161,13 +161,37 @@ do {
 }
 
 // ── Weekly review engine ──
+// v5.5.0 FIXTURE LAW: the ISO week resets MONDAY 00:00. The original fixtures
+// (daysAgo 0–4, a rolling window) straddle that boundary whenever the harness
+// runs early in the week — first detonation Monday 2026-09-07, when only the
+// two today-sessions remained in-week and this assert died overnight. The
+// ENGINE's calendar-week law is correct (a weekly review reviews the WEEK);
+// the fixture was time-bombed. Weekly fixtures are now anchored to THIS week's
+// Monday (+0d/+1d/+2d/+4d) so all four sit inside the window on every run day.
 do {
+    let monday = AMORWeeklyReviewEngine.weekStart(for: .now)
+    func weekSession(_ day: Int, hour: Int, minutes: Int) -> AMORSessionSnapshot {
+        let d = cal.date(byAdding: .day, value: day, to: monday)!
+        let anchored = cal.date(bySettingHour: hour, minute: 0, second: 0, of: d) ?? d
+        return AMORSessionSnapshot(
+            id: UUID(), date: anchored, title: "Week session day+\(day)",
+            notes: "", durationMinutes: minutes, toolsUsed: "terminal",
+            skillsLearned: "swift", mood: "focused", completedTasks: 2,
+            timestamp: anchored
+        )
+    }
+    let weekAnchored: [AMORSessionSnapshot] = [
+        weekSession(0, hour: 10, minutes: 40),
+        weekSession(1, hour: 11, minutes: 50),
+        weekSession(2, hour: 12, minutes: 60),
+        weekSession(4, hour: 13, minutes: 45),
+    ]
     let summary = AMORWeeklyReviewEngine.generateWeeklyReview(
-        sessions: sessions, practices: practices, cronJobs: cronJobs,
+        sessions: weekAnchored + sessions, practices: practices, cronJobs: cronJobs,
         summaries: summaries, reflections: reflections
     )
     echeck("WEEKLY-GENERATED", summary.totalSessions >= 4,
-           "weekly review: \(summary.totalSessions) sessions, streak \(summary.longestActiveStreak) days")
+           "weekly review: \(summary.totalSessions) sessions (week-anchored fixtures), streak \(summary.longestActiveStreak) days")
 
     let markdown = AMORWeeklyReviewEngine.generateWeeklyMarkdown(summary: summary)
     echeck("WEEKLY-MARKDOWN", markdown.contains("# ") && markdown.contains("AMOR"),
