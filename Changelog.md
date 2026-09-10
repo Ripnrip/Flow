@@ -1,5 +1,17 @@
 # Changelog
 
+## September 10, 2026: ✅ AMOR v5.5.0 Full-Stack Verification Run (All 9 Legs GREEN, 12/12 Crons Healthy, Zero Failures)
+
+### Steps Taken
+- Cron reminder fired. No new AMOR code to build — v5.5.0 shipped Sep 9 (FlowServer builds/boots :17777; smoke instance retired by design, port silent = correct). Tonight's mission: full-stack re-verification against **today's real artifacts**.
+- **All 9 harness legs GREEN**: alibi 6/6, engines 21/21 asserts, second-brain write round-trip into real `~/wiki/daily/2026-09-10.md` (restored after, evidence preserved), view-layer 62-file smoke-compile 0 errors, widget-extension 24-file smoke-compile 0 errors.
+- **Cron health: 12/12 enabled jobs OK, zero failures** — healthiest table in months. Notably: Monographs feeder `6267cc96c42c` last ran 0.1h ago OK (Reminders permission alive — the July denial is ancient history).
+- **Practices today**: Gita completed (Ch 6 V 41, day 106); gym/meditation honest zeros (5PM check-in window open, ledger law intact).
+- **Drive-by fix**: `leg8-run.sh` lacked the executable bit — direct invocation `./leg8-run.sh` was permission-denied (only `run.sh`'s subshell path worked). `chmod +x`, committed `ff18272`.
+
+### What Changed
+- `Scripts/amor-livefire/leg8-run.sh` — executable bit restored (commit `ff18272`).
+
 ## September 9, 2026: 🌊 AMOR v5.5.0 — FlowServer's First Breath (Server Target Born + the Monday Time-Bomb Defused)
 
 ### Commit Messages of the Day
