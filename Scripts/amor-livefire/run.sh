@@ -16,6 +16,9 @@
 #                        harness-compilable before the mirrors)
 #   8. View smoke-compile (v5.3.0 — the whole view layer macro-stripped and typechecked
 #                        under CLT: 62 files, the first full-view compile in app history)
+#   9. Widget smoke-compile (v5.4.0 — WidgetsExtension typechecked as one unit)
+#  10. FlowServer daemon  (v5.6.0 — the Undying Flame: launchd KeepAlive + /health
+#                        on :17777; a dead mortal server fails the leg)
 set -e
 cd "$(dirname "$0")"
 SDK="$(xcrun --show-sdk-path)"
@@ -86,7 +89,16 @@ echo ""
 sh leg9-run.sh
 status9=$?
 
-if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ]; then
+echo ""
+
+# Leg 10 (v5.6.0): FlowServer daemon gate — the Undying Flame. The server
+# must be registered with launchd (KeepAlive + RunAtLoad) AND answering
+# /health on :17777. A manually-booted mortal that died with its shell
+# fails here. Negative-tested: uninstall → exit 1.
+sh leg10-run.sh
+status10=$?
+
+if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ]; then
   exit 1
 fi
 exit 0

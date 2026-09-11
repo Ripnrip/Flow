@@ -1,5 +1,27 @@
 # Changelog
 
+## September 11, 2026: 🔥 AMOR v5.6.0 "The Undying Flame" — FlowServer Daemonized via launchd (All 10 Legs GREEN)
+
+### Steps Taken
+- Cron fired. Tree clean at `1852d52`; Sep 10 was a verification-only run. The open thread from v5.5.0 burned: **FlowServer had no launchd wiring — a mortal, manually booted, dead on crash, dead on reboot, port 17777 dark for the iOS app's sync path.** Evidence at recon: `lsof :17777` empty.
+- Built the daemon rig: `Scripts/flowserver-daemon.sh` (install/uninstall/start/stop/status/run) + generated plist `com.amor.flowserver` with `RunAtLoad` + `KeepAlive` + `ThrottleInterval 10`. The plist invokes the wrapper's `run` verb; the wrapper datestamps logs to `~/.hermes/logs/flowserver/` and rotates (keeps last 7 pairs — LEDGER LAW: no unbounded growth). Rotation lives in the wrapper because `StandardErrorPath`-based `RotateAt` keys are not guaranteed on this macOS.
+- `swift build -c release` EXIT 0 (245s, 22.4 MB exe — first release build ever; v5.5.0 verified only debug).
+- **Immortality proven with blood**: `kill -9` on PID 27189 → launchd resurrected PID 27222 within seconds, `/health` green throughout the aftermath. A mortal stays dead; this one rose.
+- **Leg 10 forged — the FlowServer daemon gate**: launchd registration AND live `/health` on :17777, else exit 1 with relight instructions. Negative-tested both ways: uninstall → gate FAILS (exit 1); relight → gate PASSES.
+- API surface verified on the daemon: `GET /api/v1/tasks` serves the seeded task; `POST /api/v1/sync` degrades gracefully with no Supabase creds (0 tasks, no crash).
+- Full 10-leg harness: EXIT 0, 60 PASS assertions. Realm path verified launchd-safe (default home-anchored config, no cwd bomb; WorkingDirectory pinned in plist anyway).
+
+### What Changed
+- `Scripts/flowserver-daemon.sh` — NEW: daemon control rig (plist generation, log rotation, health status).
+- `Scripts/amor-livefire/leg10-run.sh` — NEW: Undying Flame gate (negative-tested).
+- `Scripts/amor-livefire/run.sh` — leg 10 wired into the master gate; header law updated.
+- `~/Library/LaunchAgents/com.amor.flowserver.plist` — installed (machine-local, not in repo).
+- Harness: 9 legs → **10 legs**, all GREEN.
+
+### Next
+- iOS app: point the sync path at `http://<mac>.local:17777` (Tailscale/MagicDNS makes this LAN- and away-proof).
+- FlowServer API is still task/session-shaped; the AMOR snapshot endpoints (streaks, cron health, briefings) are the next server surface.
+
 ## September 10, 2026: ✅ AMOR v5.5.0 Full-Stack Verification Run (All 9 Legs GREEN, 12/12 Crons Healthy, Zero Failures)
 
 ### Steps Taken
