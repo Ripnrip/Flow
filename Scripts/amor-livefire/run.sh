@@ -19,6 +19,8 @@
 #   9. Widget smoke-compile (v5.4.0 — WidgetsExtension typechecked as one unit)
 #  10. FlowServer daemon  (v5.6.0 — the Undying Flame: launchd KeepAlive + /health
 #                        on :17777; a dead mortal server fails the leg)
+#  11. The Open Vein     (v5.7.0 — end-to-end: daemon → /amor/evidence → shipped
+#                        client mirror → engine law; brain write + LEDGER LAW restore)
 set -e
 cd "$(dirname "$0")"
 SDK="$(xcrun --show-sdk-path)"
@@ -98,7 +100,17 @@ echo ""
 sh leg10-run.sh
 status10=$?
 
-if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ]; then
+echo ""
+
+# Leg 11 (v5.7.0): THE OPEN VEIN — end-to-end. The daemon relays the
+# evidence plane verbatim; the SHIPPED client engine mirrors it and the
+# law runs on the mirror. The write vein round-trips the real vault
+# daily note (restored — LEDGER LAW). Compiles Flow/Flow/ sources
+# directly, so harness-vs-shipped drift is impossible.
+sh leg11-run.sh
+status11=$?
+
+if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ]; then
   exit 1
 fi
 exit 0

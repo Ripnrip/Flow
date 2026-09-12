@@ -185,12 +185,19 @@ struct FlowApp: App {
                 }
 
                 // v4.0.0: Ground Truth sync — practice evidence from files.
-                // Reads gita_progress.json + gym_selfie_progress.json and the
-                // EOD session dumps, then upserts REAL streak evidence into
-                // SwiftData (positive-evidence-only; never lowers manual data).
-                let gtResult = AMORGroundTruthSyncer.sync(into: sharedModelContainer.mainContext)
-                if gtResult.gitaStreakUpdated {
-                    FlowLogger.lifecycle.info("🌱 Ground truth: Gita streak synced (\(gtResult.gitaDaysCompleted) days, \(gtResult.gitaCurrentPosition))")
+                // v5.7.0: THE OPEN VEIN runs first — mirror the Mac's
+                // evidence plane (ledgers, jobs.json, EOD dumps) into the
+                // sandbox at the paths the engines read, so a physical
+                // iPhone sees the same truth a Mac sees. On the Mac this
+                // converges to a no-op (bytes already match — LEDGER LAW).
+                // (.onChange demands a synchronous closure — the vein
+                // rides its own Task, caught by leg 8 on first strike.)
+                Task { @MainActor in
+                    _ = await AMORRemoteSyncEngine.sync()
+                    let gtResult = AMORGroundTruthSyncer.sync(into: sharedModelContainer.mainContext)
+                    if gtResult.gitaStreakUpdated {
+                        FlowLogger.lifecycle.info("🌱 Ground truth: Gita streak synced (\(gtResult.gitaDaysCompleted) days, \(gtResult.gitaCurrentPosition))")
+                    }
                 }
 
                 // v3.3.0: Auto-generate daily session dump.

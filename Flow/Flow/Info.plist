@@ -26,7 +26,11 @@
 
 	<!--
 	    🌐 Base URL for the Flow Hummingbird backend.
-	    Default points to the local dev server. Override for staging/production.
+	    Simulator + macOS: http://localhost:17777 works as-is.
+	    PHYSICAL iPHONES: replace with your Mac's LAN address or Tailscale
+	    hostname (e.g. http://Admins-MacBook.local:17777) — localhost on a
+	    phone points at the phone itself. The daemon binds 0.0.0.0:17777,
+	    so it is reachable from day one; only this string changes.
 	-->
 	<key>FlowServerBaseURL</key>
 	<string>http://localhost:17777</string>

@@ -54,9 +54,9 @@ class FlowServerService {
     private var modelContext: ModelContext
 
     /// 🌐 Base URL for the Hummingbird backend, read from Info.plist (`FlowServerBaseURL`).
-    /// Defaults to localhost for development shenanigans.
+    /// v5.7.0: default corrected from phantom :8085 to the real daemon :17777.
     private var baseURL: String {
-        Bundle.main.object(forInfoDictionaryKey: "FlowServerBaseURL") as? String ?? "http://localhost:8085"
+        Bundle.main.object(forInfoDictionaryKey: "FlowServerBaseURL") as? String ?? "http://127.0.0.1:17777"
     }
 
     init(modelContext: ModelContext) {

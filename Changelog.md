@@ -1,5 +1,33 @@
 # Changelog
 
+## September 12, 2026: 🩸 AMOR v5.7.0 "The Open Vein" — Evidence Plane Relayed to iOS (All 11 Legs GREEN)
+
+### Steps Taken
+- Cron fired. The v5.6.0 "Next" thread burned bright: **the iOS app's ground-truth engines are filesystem-direct (`~/.hermes/`, `~/wiki/`) — on a physical iPhone there is no shared filesystem, so every streak, cron grade, and dump parse has been reading an empty sandbox since v4.0.0. Honest zeros, but zeros.** Plus a latent landmine: `FlowServerService` defaulted to phantom `:8085` while the daemon serves `:17777`.
+- **The Open Vein architecture**: FlowServer gains `GET /api/v1/amor/evidence` — relays the ledgers (gita/gym/meditation), `cron/jobs.json`, newest 7 EOD session dumps, today's daily note, and the vault changelog **VERBATIM** (no law on the server). The shipped client engine `AMORRemoteSyncEngine` fetches it and materializes each file under the app-sandbox home at the exact relative paths the engines already read. Zero lines of engine law changed — the phone becomes a mirror of the Mac's evidence plane. Write vein: `POST /api/v1/amor/brain` appends a heading block to the REAL vault daily note (append-only, LEDGER LAW).
+- Idempotence law: materialize writes NOTHING when destination bytes already match — on the Mac the vein converges to a no-op and can never re-touch unchanged evidence. Traversal defense: path segments `..`/`.` dropped before disk.
+- Leg 8 caught a real bug on first strike (its purpose in life): my `.onChange(of: scenePhase)` closure went async (`await` at top level of the closure) — illegal. Fixed: the vein rides its own `Task { @MainActor in … }`. The view-layer smoke-compile leg paid for itself again.
+- Server built clean: debug + `swift build -c release` EXIT 0 (~15s incremental); daemon redeployed (stop/start), `/api/v1/amor/evidence` serving 13 files, 15 jobs (12 enabled), 7 dumps.
+- **Leg 11 forged — the Open Vein live-fire**: compiles the SHIPPED client engine straight from `Flow/Flow/` (drift impossible by construction) against the REAL daemon: 14 checks green — vein reachable, ledgers mirrored, streak law runs on mirror (lastCompleted=2026-09-12 → chain≥1; daysCompleted=110, Ch6:V46), cron law grades mirror (15 jobs / 12 enabled / 0 failing), dump law parses mirror, daily note mirrored, idempotent second pass, brain write 200 → landed in real vault → **original note bytes restored** (LEDGER LAW), traversal rejected.
+- Full 11-leg harness: EXIT 0. Alibi 6/6, engines 21/21, second-brain round-trip, view-layer 63-file smoke-compile 0 errors (bug caught + fixed), widget 24-file smoke-compile 0 errors, daemon gate PASS, vein 14/14.
+
+### What Changed
+- `FlowServer/Sources/FlowServer/AMORRelay.swift` — NEW: verbatim evidence relay + brain write (stateless, Sendable, Swift 6 mode).
+- `FlowServer/Sources/FlowServer/FlowServer.swift` — `/amor/evidence` + `/amor/brain` routes.
+- `Flow/Flow/AMORRemoteSyncEngine.swift` — NEW: shipped client vein (fetch → mirror → injectable home for harness; appendToBrain).
+- `Flow/Flow/AMORGroundTruthView.swift` — Ground Truth card remote-first (host subtitle: "Mirrored from <Mac> via the Open Vein").
+- `Flow/Flow/FlowApp.swift` — foreground pipeline opens the vein before ground-truth sync (Task-wrapped).
+- `Flow/Flow/FlowServerService.swift` — ghost-port landmine defused (`:8085` → `:17777`).
+- `Flow/Flow/Info.plist` — deploy note: physical iPhones need the Mac's LAN/Tailscale address, not localhost.
+- `Scripts/amor-livefire/leg11-main.swift` + `leg11-run.sh` — NEW: end-to-end vein gate.
+- `Scripts/amor-livefire/run.sh` — leg 11 wired; master gate 10 → **11 legs**.
+- Harness: 10 legs → **11 legs**, all GREEN (95+ asserts).
+
+### Next
+- Physical-iPhone smoke: set `FlowServerBaseURL` to the Mac's `.local`/Tailscale hostname, run the app, tap Ground Truth sync — the subtitle should read "Mirrored from <Mac> via the Open Vein".
+- Cron dashboard on-device still reads the sandbox mirror via jobs.json — already covered by the vein (jobs.json is relayed); verify grades render on hardware.
+- Optional next surface: briefing/rhythm snapshots over the same vein.
+
 ## September 11, 2026: 🔥 AMOR v5.6.0 "The Undying Flame" — FlowServer Daemonized via launchd (All 10 Legs GREEN)
 
 ### Steps Taken

@@ -19,6 +19,8 @@ struct AMORGroundTruthCard: View {
     @State private var lastSync: Date?
     @State private var isSyncing = false
     @State private var alibis: [String: AMORAlibi] = [:]
+    /// v5.7.0 — whose evidence plane we mirrored (Open Vein).
+    @State private var remoteHost: String?
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
@@ -168,6 +170,9 @@ struct AMORGroundTruthCard: View {
         if lastSync == nil {
             return "Evidence read from this Mac"
         }
+        if let host = remoteHost, !host.isEmpty {
+            return "Mirrored from \(host) via the Open Vein"
+        }
         return "Evidence synced from this Mac"
     }
 
@@ -231,8 +236,15 @@ struct AMORGroundTruthCard: View {
 
     private func runSync() {
         isSyncing = true
-        // Syncer is MainActor + synchronous file I/O; hop out and back.
+        // v5.7.0 THE OPEN VEIN: remote-first. Pull the Mac's evidence
+        // plane over HTTP and materialize it where the engines read;
+        // then run the law. Filesystem-direct remains the fallback —
+        // on the Mac both paths converge on the same files.
         Task { @MainActor in
+            let remote = await AMORRemoteSyncEngine.sync()
+            if remote.ok {
+                remoteHost = remote.host
+            }
             result = AMORGroundTruthSyncer.sync(into: modelContext)
             lastSync = AMORGroundTruthSyncer.lastSyncDate()
             // v5.1.0 — attribute any trailing break to its true cause

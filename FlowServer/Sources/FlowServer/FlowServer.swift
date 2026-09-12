@@ -51,6 +51,19 @@ struct FlowServer {
             return MessageResponse(message: "🔄 Synced \(count) tasks from Supabase")
         }
 
+        // 🧘 AMOR v5.7.0 — The Open Vein: ground-truth evidence relay.
+        // Verbatim bytes only; every law stays client-side (harness-guarded).
+        api.get("/amor/evidence") { _, _ in
+            AMORRelay.evidence()
+        }
+
+        // 🧠 AMOR v5.7.0 — second-brain write-back (append-only daily note).
+        api.post("/amor/brain") { request, context in
+            let body = try await context.requestDecoder.decode(AMORBrainWriteRequest.self, from: request, context: context)
+            return try AMORRelay.writeBrain(body)
+        }
+
+
         router.get("/health") { _, _ in
             Response(status: .ok, body: .init(byteBuffer: .init(string: "🎉 FlowServer is alive")))
         }
