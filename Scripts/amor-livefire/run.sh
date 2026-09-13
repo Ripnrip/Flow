@@ -21,6 +21,9 @@
 #                        on :17777; a dead mortal server fails the leg)
 #  11. The Open Vein     (v5.7.0 — end-to-end: daemon → /amor/evidence → shipped
 #                        client mirror → engine law; brain write + LEDGER LAW restore)
+#  12. The Iron Pulse    (v5.8.0 — binary vein: executions ledger snapshot →
+#                        mirror → run-truth/storm/alibi law on-device;
+#                        MARKER LAW: live evidence never clobbered)
 set -e
 cd "$(dirname "$0")"
 SDK="$(xcrun --show-sdk-path)"
@@ -110,7 +113,18 @@ echo ""
 sh leg11-run.sh
 status11=$?
 
-if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ]; then
+echo ""
+
+# Leg 12 (v5.8.0): THE IRON PULSE — the binary vein. The run-truth
+# engine reads SQLite, not text: the daemon snapshots the executions
+# ledger (Online Backup API) and ships it in binaryFiles; the shipped
+# client materializes REAL SQLite under the sandbox home and the
+# run-truth/storm/alibi law runs on the mirror. MARKER LAW guards the
+# Mac's live ledger against ever being clobbered.
+sh leg12-run.sh
+status12=$?
+
+if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ] || [ $status12 -ne 0 ]; then
   exit 1
 fi
 exit 0

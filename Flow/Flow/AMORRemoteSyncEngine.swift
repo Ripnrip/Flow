@@ -1,9 +1,9 @@
 //
 //  AMORRemoteSyncEngine.swift
-//  Flow — AMOR v5.7.0
+//  Flow — AMOR v5.8.0
 //
 //  ┌─────────────────────────────────────────────────────────────┐
-//  │        THE OPEN VEIN, CLIENT SIDE — v5.7.0 MIRROR           │
+//  │     THE OPEN VEIN, CLIENT SIDE — v5.8.0 IRON PULSE MIRROR   │
 //  └─────────────────────────────────────────────────────────────┘
 //
 //  MISSION: AMOR's engines are filesystem-direct by law. On a
@@ -44,9 +44,17 @@ struct AMOREvidenceFile: Codable, Sendable {
         let jobs: Int
         let enabledJobs: Int
         let dumps: Int
+        /// v5.8.0: the run ledger snapshot shipped in `binaryFiles`.
+        let executionsDB: Bool
+        /// v5.8.0: total rows in the relayed executions ledger.
+        let executionRows: Int
     }
     let server: ServerInfo
     let files: [String: String]
+    /// v5.8.0 — THE IRON PULSE: binary evidence (relative path →
+    /// base64). Currently the run-ledger snapshot; the run-truth,
+    /// storm-sentinel and alibi law read SQLite, not text.
+    let binaryFiles: [String: String]
     let counts: Counts
 }
 
@@ -199,6 +207,62 @@ enum AMORRemoteSyncEngine {
                 written += 1
             } catch {
                 // One unreadable file never sinks the whole mirror.
+                continue
+            }
+        }
+
+        // v5.8.0 — THE IRON PULSE: binary evidence (SQLite snapshots).
+        written += materializeBinary(payload: payload, under: home)
+
+        return written
+    }
+
+    // MARK: Binary mirror law (v5.8.0)
+
+    /// Sidecar marker stamped next to every binary file the vein
+    /// writes: `<name>.vein`. Presence of the marker is the ONLY
+    /// proof a binary file belongs to the mirror.
+    static let veinMarkerSuffix = "vein"
+
+    /// v5.8.0: binary mirror law — base64 → raw bytes on disk.
+    ///
+    /// MARKER LAW (the Mac must never be wounded): a binary
+    /// destination that exists WITHOUT our marker is LIVE evidence —
+    /// the Mac's own run ledger — and is never clobbered by the
+    /// mirror. The iPhone sandbox has no such file, so it receives
+    /// the snapshot; the Mac's live ledger is untouchable. Idempotence
+    /// for marked mirrors: same bytes → no write.
+    static func materializeBinary(payload: AMOREvidenceFile, under home: URL) -> Int {
+        guard !payload.binaryFiles.isEmpty else { return 0 }
+        let fm = FileManager.default
+        var written = 0
+
+        for (rel, b64) in payload.binaryFiles {
+            guard let data = Data(base64Encoded: b64), !data.isEmpty else { continue }
+            guard let dest = mirrorDest(for: rel, under: home) else { continue }
+            let dir = dest.deletingLastPathComponent()
+            let marker = dest.appendingPathExtension(veinMarkerSuffix)
+
+            do {
+                let exists = fm.fileExists(atPath: dest.path)
+                let marked = fm.fileExists(atPath: marker.path)
+                if exists && !marked {
+                    // Live evidence — the Mac's own ledger. Untouchable.
+                    continue
+                }
+                if exists && marked {
+                    // Our mirror: idempotence — same bytes, no write.
+                    if fm.contents(atPath: dest.path) == data {
+                        written += 1
+                        continue
+                    }
+                }
+                try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+                try data.write(to: dest, options: .atomic)
+                try "vein".write(to: marker, atomically: true, encoding: .utf8)
+                written += 1
+            } catch {
+                // One failed binary never sinks the whole mirror.
                 continue
             }
         }

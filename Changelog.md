@@ -1,5 +1,27 @@
 # Changelog
 
+## September 13, 2026: ⚡ AMOR v5.8.0 "The Iron Pulse" — Binary Run-Truth Over the Vein (All 12 Legs GREEN)
+
+### Steps Taken
+- Cron fired. Tree clean at `f054d1a`; v5.7.0's "Next" thread burned: **the vein shipped TEXT evidence only — but `AMORExecutionTruth` reads SQLite. On iPhone the run ledger was dark since the day it was forged: `isExecutionTruthAvailable=false`, v4.9.0 storm sentinel starved, v5.1.0 alibi engine blind.**
+- **The Iron Pulse architecture**: FlowServer's `/api/v1/amor/evidence` gains `binaryFiles` — a CONSISTENT snapshot of the live `executions.db`, base64 on the wire (598KB → ~797KB b64), plus `counts.executionsDB` / `counts.executionRows`. The shipped client materializes it as REAL SQLite under the sandbox home at the exact path the engine reads. Zero engine-law changes; the entire run-truth food chain (execution truth → storm sentinel → alibi) lights up on-device.
+- **SQLite snapshot physics, live-proven on this box** (a triage worth remembering): `-readonly` on a WAL db is **FLAKY** — error 14 while `-shm`/`-wal` are hot from live cron writers, fine after a checkpoint (it worked in the first shell test, failed minutes later — state fluctuates with the writer). `VACUUM INTO` is refused by readonly (14) AND by `query_only` (8). The law that ALWAYS works: **READWRITE open + `PRAGMA query_only=ON` + `.backup`** (Online Backup API) — query_only guarantees no SQL writes, the backup API writes only the destination. Same law the v4.8.0 client engine proved on this exact ledger.
+- **MARKER LAW (the Mac must never be wounded)**: the vein stamps a `.vein` sidecar next to every binary file it writes. A binary destination that exists WITHOUT the marker is LIVE evidence — the Mac's own run ledger — and is never clobbered. The iPhone sandbox has no such file, so it receives the snapshot; on the Mac the binary mirror is a permanent no-op.
+- First daemon deployment served `binaryFiles: []` — silent nil from the flaky `-readonly`. Isolated via standalone Swift repro (`/tmp/snapdiag.swift`), caught the flake by re-running the SAME shell test that had passed, then matrix-tested all open modes. Root cause killed, not patched around.
+- **Leg 12 forged — the Iron Pulse live-fire**: compiles the SHIPPED client engine straight from `Flow/Flow/` (drift impossible) against the REAL daemon: 13 checks green — vein reachable (14 files), ledger mirrored with SQLite magic intact, marker stamped, **`AMORExecutionTruth` opens the mirror: 1001 rows in the 7d window**, storm sentinel clusters relayed failure events (0 live + synthetic 3-failure/2-job storm → 1 ACTIVE incident), alibi law fed, idempotent second pulse, MARKER LAW holds (unmarked live ledger untouched, no stray marker), fresh marked home receives the ledger.
+- Leg 12 caught its own bug on first strike: `read(hermesHome:)` takes the `.hermes` directory itself (the engine appends `cron/executions.db`), not the container — harness passed the container, engine read a ghost. Fixed with the same law the app's callers use.
+
+### What Changed
+- `FlowServer/Sources/FlowServer/AMORRelay.swift` — `binaryFiles` field, `ExecutionSnapshot`, `executionSnapshot()` via sqlite3 CLI `.backup` under `query_only`.
+- `Flow/Flow/AMORRemoteSyncEngine.swift` — `binaryFiles` decode, `materializeBinary()` with the MARKER LAW (`.vein` sidecar), binary idempotence.
+- `Scripts/amor-livefire/leg12-main.swift` + `leg12-run.sh` — NEW: Iron Pulse e2e gate (13 checks).
+- `Scripts/amor-livefire/run.sh` — leg 12 wired; master gate 11 → **12 legs**.
+- Server rebuilt (debug 16s + release 43s, EXIT 0), daemon redeployed, evidence now ~895KB carrying 1001 execution rows.
+
+### Next
+- Physical-iPhone smoke: run the app, tap Ground Truth sync — the cron dashboard subtitle should now read "run ledger live" on-device (was "dark" since v4.0.0).
+- Optional vein surfaces: briefing/rhythm snapshots (their engine inputs — ledgers + dumps — are already relayed; only UI wiring remains).
+
 ## September 12, 2026: 🩸 AMOR v5.7.0 "The Open Vein" — Evidence Plane Relayed to iOS (All 11 Legs GREEN)
 
 ### Steps Taken

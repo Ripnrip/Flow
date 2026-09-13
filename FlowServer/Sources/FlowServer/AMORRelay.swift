@@ -1,9 +1,9 @@
 //
 //  AMORRelay.swift
-//  FlowServer — AMOR v5.7.0
+//  FlowServer — AMOR v5.8.0
 //
 //  ┌─────────────────────────────────────────────────────────────┐
-//  │            THE OPEN VEIN — v5.7.0 EVIDENCE RELAY            │
+//  │      THE OPEN VEIN + THE IRON PULSE — v5.8.0 EVIDENCE       │
 //  └─────────────────────────────────────────────────────────────┘
 //
 //  MISSION: AMOR's engines are filesystem-direct — they read the
@@ -51,6 +51,10 @@ struct AMOREvidenceResponse: Codable, Sendable, ResponseEncodable {
         let jobs: Int
         let enabledJobs: Int
         let dumps: Int
+        /// v5.8.0: the run ledger snapshot shipped in `binaryFiles`.
+        let executionsDB: Bool
+        /// v5.8.0: total rows in the relayed executions ledger.
+        let executionRows: Int
     }
 
     /// ISO 8601 timestamp of relay generation.
@@ -59,6 +63,12 @@ struct AMOREvidenceResponse: Codable, Sendable, ResponseEncodable {
     /// relative path ("hermes/logs/gita_progress.json",
     /// "wiki/raw/daily-summaries/session-dump-….md") → verbatim bytes.
     let files: [String: String]
+    /// v5.8.0 — THE IRON PULSE: binary evidence, relative path →
+    /// base64 bytes. Currently one entry: a consistent `VACUUM INTO`
+    /// snapshot of `hermes/cron/executions.db`. The run-truth engine
+    /// (and the alibi + storm law downstream) reads SQLite, not text —
+    /// without this field the iPhone's run ledger has been dark.
+    let binaryFiles: [String: String]
     let counts: Counts
 }
 
@@ -167,6 +177,20 @@ enum AMORRelay {
 
         let host = Host.current().localizedName ?? "mac"
 
+        // ── v5.8.0 THE IRON PULSE: run-ledger snapshot ────────────────
+        // The run-truth engine reads SQLite, not text. Relay a CONSISTENT
+        // snapshot of the live executions ledger via the Online Backup
+        // API — a point-in-time copy that escapes the WAL trap (a raw
+        // snapshot of a WAL-mode db can miss recent commits, and a
+        // readonly connection refuses VACUUM INTO outright). Zero new
+        // server deps: the system sqlite3 CLI does the backup.
+        var binaryFiles: [String: String] = [:]
+        var executionRows = 0
+        if let snapshot = executionSnapshot() {
+            binaryFiles["hermes/cron/executions.db"] = snapshot.base64
+            executionRows = snapshot.rows
+        }
+
         return AMOREvidenceResponse(
             generatedAt: isoNow(),
             server: AMOREvidenceResponse.ServerInfo(
@@ -175,8 +199,86 @@ enum AMORRelay {
                 host: host
             ),
             files: files,
-            counts: AMOREvidenceResponse.Counts(files: files.count, jobs: jobs, enabledJobs: enabled, dumps: dumps)
+            binaryFiles: binaryFiles,
+            counts: AMOREvidenceResponse.Counts(
+                files: files.count,
+                jobs: jobs,
+                enabledJobs: enabled,
+                dumps: dumps,
+                executionsDB: !binaryFiles.isEmpty,
+                executionRows: executionRows
+            )
         )
+    }
+
+    // MARK: Executions ledger snapshot (v5.8.0)
+
+    /// One vacuumed snapshot of the run ledger: base64 bytes + row count.
+    private struct ExecutionSnapshot {
+        let base64: String
+        let rows: Int
+    }
+
+    /// Snapshots the live ledger into a temp file via the system
+    /// sqlite3 CLI using the Online Backup API (`.backup`), then reads
+    /// it back as base64. Physics (live-proven on this box, WAL state
+    /// fluctuating with live cron writers):
+    ///   • `-readonly` on a WAL db is FLAKY — error 14 while -shm/-wal
+    ///     are hot, fine after a checkpoint. Unreliable = disqualified.
+    ///   • `VACUUM INTO` is refused by readonly (14) and query_only (8).
+    ///   • READWRITE open + `PRAGMA query_only=ON` + `.backup` ALWAYS
+    ///     works: query_only guarantees no SQL writes, and the backup
+    ///     API writes only the destination. This is the same law the
+    ///     v4.8.0 client engine proved on this exact ledger.
+    /// Returns nil when the ledger is missing or the backup fails —
+    /// a dark run plane degrades to "no binary evidence", never a 500.
+    private static func executionSnapshot() -> ExecutionSnapshot? {
+        let source = hermesHome().appendingPathComponent("cron/executions.db")
+        guard FileManager.default.fileExists(atPath: source.path) else { return nil }
+
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("amor-exec-\(UUID().uuidString).db")
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
+        process.arguments = [
+            source.path,
+            "-cmd", "PRAGMA query_only=ON;",
+            ".backup '\(tmp.path)'"
+        ]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return nil
+        }
+        guard process.terminationStatus == 0 else { return nil }
+
+        guard let data = FileManager.default.contents(atPath: tmp.path),
+              !data.isEmpty else { return nil }
+
+        // Row count from the snapshot itself — the harness asserts on it.
+        var rows = 0
+        let count = Process()
+        count.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
+        count.arguments = [tmp.path, "SELECT COUNT(*) FROM executions;"]
+        let pipe = Pipe()
+        count.standardOutput = pipe
+        count.standardError = FileHandle.nullDevice
+        if (try? count.run()) != nil {
+            count.waitUntilExit()
+            if count.terminationStatus == 0,
+               let out = try? pipe.fileHandleForReading.readToEnd(),
+               let text = String(data: out, encoding: .utf8),
+               let parsed = Int(text.trimmingCharacters(in: .whitespacesAndNewlines)) {
+                rows = parsed
+            }
+        }
+
+        return ExecutionSnapshot(base64: data.base64EncodedString(), rows: rows)
     }
 
     // MARK: POST /api/v1/amor/brain
