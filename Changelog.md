@@ -1,5 +1,32 @@
 # Changelog
 
+## September 14, 2026: 📜 AMOR v5.9.0 "The Living Index" — Session Truth Over the Vein (All 13 Legs GREEN)
+
+### Steps Taken
+- Cron fired. Tree clean at `2526f42` (v5.8.0 unpushed — 1 ahead of origin; both ride tonight). Baseline first: daemon ALIVE on :17777, full 12-leg harness GREEN. The v5.8.0 "Next" thread named vein surfaces — recon found the deeper rot beneath it.
+- **THE LANDMINE (live since v2.1.0)**: `HermesIntegrationEngine.discoverSessions()` globs `~/.hermes/sessions/*.jsonl` — a graveyard holding ONE stale jsonl and 596 `request_dump_*.json` API-failure artifacts. The REAL sessions (1,893+) live in `~/.hermes/state.db`, whose own `sessions.json` mirror declares "This is NOT the session list. ALL sessions live in ~/.hermes/state.db." Every "sessions today" count, rhythm score, weekly review, and EOD dump has been importing GHOSTS since the day the feature was forged — on Mac AND iPhone.
+- **The Living Index architecture**: state.db is 671 MB — far too fat for the vein. FlowServer's `/api/v1/amor/evidence` now carries `hermes/sessions/index.json`: a projection of the trailing 14 days of the sessions table (13 columns incl. honest user/assistant message splits via correlated counts on `messages`, and cache-inclusive input tokens) as a ~94 KB JSON array. The shipped client engine `AMORSessionIndex` reads **index-first** (vein mirror — the iPhone's only door), **ledger-second** (direct SQLite on the Mac, using the v4.8.0 WAL law: READWRITE open + `PRAGMA query_only=ON`), and only when BOTH doors are dark falls back to the legacy jsonl scan. `HermesIntegrationEngine` maps index rows through the unchanged import law (dedupe, domain inference, `[Hermes]` titling) and now renders source/model/tokens into session notes.
+- **Wire-format physics, live-proven on this box's sqlite 3.43.2**: `-json` emits ONE pretty-printed JSON ARRAY (JSONL arrived in 3.45 — do not assume); `PRAGMA busy_timeout=3000;` ECHOES "3000" to stdout, polluting the payload — the silent `.timeout 3000` dot-command is the law; `-arg` parameter binding does not exist — the cutoff is inlined as a regex-guarded `%.6f` numeric literal. And the **PIPE LAW**: the index (~94 KB) exceeds the 64 KB pipe buffer — `readToEnd()` BEFORE `waitUntilExit()` or sqlite3 blocks writing while the harness blocks reaping: deadlock. Caught at the forge, not in production.
+- **Pipeline order fixed**: the vein now runs BEFORE the Hermes import in `FlowApp`'s foreground pipeline — a first launch on fresh hardware sees the full 14-day history immediately instead of an empty store until the second foreground.
+- **Drive-by fixes**: About label was three versions stale (v5.5.0 → v5.9.0); Swift 6 strict-concurrency unhandled-throw in the new export; a mangled large patch was caught by post-patch grep verification (`AMOR_SESSION_COALESCE`-class garbage) and surgically repaired before any build.
+- **Leg 13 forged — the Living Index live-fire**: compiles the SHIPPED `AMORSessionIndex` + `AMORRemoteSyncEngine` straight from `Flow/Flow/` (drift impossible) against the REAL daemon. 13 checks green: vein reachable (14 files), index mirrored at `~/.hermes/sessions/index.json`, parses (257 sessions), **both doors agree on count and every id** (index=257, ledger=257, zero drift), newest row agrees to the second, import law maps real fields (title/duration/message-split/model), idempotent second pulse (mtime stable), **dark-phone law** (fresh home + only the mirrored index → full 257-session plane, origin=index), and both-doors-dark → nil (legacy fallback intact).
+- Full 13-leg harness: EXIT 0. View-layer smoke-compile (leg 8) typechecked the app target INCLUDING the new engine and all wiring — 0 errors.
+
+### What Changed
+- `Flow/Flow/AMORSessionIndex.swift` — NEW: the Living Index engine (index-first, ledger-second; JSON-array parser with JSONL tolerance; WAL-safe direct SQLite door).
+- `FlowServer/Sources/FlowServer/AMORRelay.swift` — `sessionIndexJSON()` export (sqlite3 CLI, `.timeout` + `query_only`, PIPE LAW); header v5.9.0.
+- `Flow/Flow/HermesIntegrationEngine.swift` — `discoverSessions()` reads the Living Index first; `HermesSession` gains `source`/`inputTokens`/`outputTokens`/`model` (defaulted); import notes carry model + token truth.
+- `Flow/Flow/FlowApp.swift` — vein runs before session import (first-launch law).
+- `Flow/Flow/AMORSettings.swift` — About v5.9.0.
+- `Flow/Flow/AMORRemoteSyncEngine.swift` — header v5.9.0.
+- `Scripts/amor-livefire/leg13-main.swift` + `leg13-run.sh` — NEW: Living Index e2e gate (13 checks).
+- `Scripts/amor-livefire/run.sh` — leg 13 wired; master gate 12 → **13 legs**.
+- Server release rebuilt (EXIT 0), daemon redeployed; evidence now 14 files / 257 session rows / 1001 execution rows.
+
+### Next
+- Physical-iPhone smoke (still the standing thread): with the vein + index, a fresh install should show a full Briefing/Rhythm session plane on FIRST launch.
+- Optional: surface model/token stats in the Rhythm tab UI (the data now reaches SwiftData via session notes; a dedicated view could chart it).
+
 ## September 13, 2026: ⚡ AMOR v5.8.0 "The Iron Pulse" — Binary Run-Truth Over the Vein (All 12 Legs GREEN)
 
 ### Steps Taken

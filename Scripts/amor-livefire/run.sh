@@ -124,7 +124,18 @@ echo ""
 sh leg12-run.sh
 status12=$?
 
-if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ] || [ $status12 -ne 0 ]; then
+echo ""
+
+# Leg 13 (v5.9.0): THE LIVING INDEX — session truth over the vein.
+# The session plane read sessions/*.jsonl since v2.1.0 — a graveyard.
+# The real sessions live in state.db; the server projects the
+# trailing 14 days into JSONL over the vein, and the shipped client
+# reads index-first / ledger-second. Asserts BOTH DOORS AGREE —
+# server export law and client SQL law cannot drift.
+sh leg13-run.sh
+status13=$?
+
+if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ] || [ $status12 -ne 0 ] || [ $status13 -ne 0 ]; then
   exit 1
 fi
 exit 0

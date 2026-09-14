@@ -390,6 +390,16 @@ struct FlowApp: App {
             FlowLogger.network.info("🌐 Syncing Todoist…")
             await todoistService.inhaleTasks()
 
+            // v5.9.0 — THE VEIN RUNS FIRST. The Hermes import reads
+            // ~/.hermes/sessions/index.json (the living index) — on
+            // the Mac it is relayed and materialized as a no-op
+            // mirror; on the iPhone it IS the session plane. Running
+            // the vein before the import means a first launch on new
+            // hardware sees the full 14-day history immediately
+            // instead of an empty store until the second foreground.
+            FlowLogger.network.info("🩸 Opening the vein before session import…")
+            _ = await AMORRemoteSyncEngine.sync()
+
             // Hermes integration auto-sync (session-dump automation)
             FlowLogger.network.info("🌉 Syncing Hermes sessions…")
             let hermesEngine = HermesIntegrationEngine()

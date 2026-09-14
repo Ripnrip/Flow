@@ -31,6 +31,13 @@ struct HermesSession: Codable, Identifiable {
     let toolsAvailable: [String]  // tool names from session_meta
     let estimatedDurationMinutes: Int
     let firstUserMessage: String
+    // v5.9.0 — THE LIVING INDEX fields (state.db truth). Defaults
+    // keep the legacy jsonl parser and live-fire mirrors compiling
+    // without knowing they exist.
+    var source: String = "jsonl"
+    var inputTokens: Int = 0
+    var outputTokens: Int = 0
+    var model: String = ""
 
     /// Infers the primary tool/domain from the title and tool list
     var inferredDomain: String {
@@ -178,6 +185,37 @@ final class HermesIntegrationEngine {
     /// Scans the Hermes sessions directory and parses all JSONL files.
     /// Returns sessions sorted by date (newest first).
     func discoverSessions(limit: Int = 100) -> [HermesSession] {
+        // v5.9.0 — THE LIVING INDEX: session truth comes from
+        // state.db (directly on the Mac, mirrored over the vein on
+        // iPhone), never from the sessions/*.jsonl graveyard, which
+        // holds one stale file and 596 API request-dumps. The index
+        // engine is index-first, ledger-second; only when BOTH doors
+        // are dark do we fall back to the legacy jsonl scan (kept
+        // for exotic setups that really do write jsonl there).
+        if let index = AMORSessionIndex.load(hermesHome: hermesHome) {
+            return index.sessions.prefix(limit).map { row in
+                HermesSession(
+                    id: row.id,
+                    date: row.startDate,
+                    lastActivity: row.endedAt.map { Date(timeIntervalSince1970: $0) }
+                        ?? row.lastActivityAt.map { Date(timeIntervalSince1970: $0) }
+                        ?? row.startDate,
+                    messageCount: row.messageCount,
+                    userMessageCount: max(row.userMessageCount, 1),
+                    assistantMessageCount: max(row.assistantMessageCount, 1),
+                    title: row.title,
+                    toolsAvailable: [],
+                    estimatedDurationMinutes: row.durationMinutes,
+                    firstUserMessage: "",
+                    source: row.source,
+                    inputTokens: row.inputTokens,
+                    outputTokens: row.outputTokens,
+                    model: row.model
+                )
+            }
+        }
+
+        // Legacy jsonl fallback (pre-v5.9.0 path).
         guard FileManager.default.fileExists(atPath: sessionsDir.path) else {
             return []
         }
@@ -356,10 +394,25 @@ final class HermesIntegrationEngine {
             }
 
             // Create new DailySession
+            // v5.9.0: index sessions carry model + token truth —
+            // render it into the notes so session review shows the
+            // real cost of each session, not an inferred guess.
+            var notes = "Auto-imported from Hermes session. \(session.userMessageCount) user messages, \(session.assistantMessageCount) assistant responses. Domain: \(session.inferredDomain)"
+            if session.source != "jsonl" {
+                notes += ". Source: \(session.source)"
+                if !session.model.isEmpty {
+                    notes += " · \(session.model)"
+                }
+                if session.inputTokens > 0 || session.outputTokens > 0 {
+                    let inK = Double(session.inputTokens) / 1000.0
+                    let outK = Double(session.outputTokens) / 1000.0
+                    notes += String(format: " · %.1fk in / %.1fk out tokens", inK, outK)
+                }
+            }
             let dailySession = DailySession(
                 date: session.date,
                 title: "[Hermes] \(session.title)",
-                notes: "Auto-imported from Hermes session. \(session.userMessageCount) user messages, \(session.assistantMessageCount) assistant responses. Domain: \(session.inferredDomain)",
+                notes: notes,
                 durationMinutes: session.estimatedDurationMinutes,
                 toolsUsed: session.inferredTools,
                 skillsLearned: session.inferredDomain,

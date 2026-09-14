@@ -1,9 +1,9 @@
 //
 //  AMORRemoteSyncEngine.swift
-//  Flow — AMOR v5.8.0
+//  Flow — AMOR v5.9.0
 //
 //  ┌─────────────────────────────────────────────────────────────┐
-//  │     THE OPEN VEIN, CLIENT SIDE — v5.8.0 IRON PULSE MIRROR   │
+//  │   THE OPEN VEIN, CLIENT SIDE — v5.9.0 LIVING INDEX MIRROR   │
 //  └─────────────────────────────────────────────────────────────┘
 //
 //  MISSION: AMOR's engines are filesystem-direct by law. On a

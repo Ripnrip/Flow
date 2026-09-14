@@ -1,9 +1,9 @@
 //
 //  AMORRelay.swift
-//  FlowServer — AMOR v5.8.0
+//  FlowServer — AMOR v5.9.0
 //
 //  ┌─────────────────────────────────────────────────────────────┐
-//  │      THE OPEN VEIN + THE IRON PULSE — v5.8.0 EVIDENCE       │
+//  │   THE OPEN VEIN + IRON PULSE + LIVING INDEX — v5.9.0        │
 //  └─────────────────────────────────────────────────────────────┘
 //
 //  MISSION: AMOR's engines are filesystem-direct — they read the
@@ -138,6 +138,19 @@ enum AMORRelay {
             if let content = readText(at: hermesHome().appendingPathComponent(rel)) {
                 files["hermes/\(rel)"] = content
             }
+        }
+
+        // ── v5.9.0 THE LIVING INDEX — session truth over the vein ──
+        // The app's session plane was born reading sessions/*.jsonl —
+        // a graveyard (one stale file, 596 API request-dumps). The
+        // real sessions live in state.db (671 MB at forging — far too
+        // fat for the vein). This export projects the trailing 14
+        // days of the sessions table into ~100 KB of JSON relayed as
+        // plain text. LAW-BOUND to AMORSessionIndex.readLedger() in
+        // the shipped client: same columns, aliases, window, limit —
+        // leg 13 asserts both doors agree.
+        if let index = sessionIndexJSON() {
+            files["hermes/sessions/index.json"] = index
         }
 
         // ── EOD session dumps, newest 7 (the dump parser's diet) ─
@@ -279,6 +292,79 @@ enum AMORRelay {
         }
 
         return ExecutionSnapshot(base64: data.base64EncodedString(), rows: rows)
+    }
+
+    // MARK: Session index export (v5.9.0)
+
+    /// Projects the trailing 14 days of state.db's sessions table
+    /// into a JSON array via the system sqlite3 CLI. Same WAL-safe
+    /// physics as the executions snapshot: `PRAGMA query_only=ON`
+    /// as a dot-command so no SQL write can ever occur. Wire-format
+    /// LAW (live-proven on this box's sqlite 3.43.2): `-json` emits
+    /// ONE pretty-printed JSON ARRAY wrapped in [ ], with a comma
+    /// and newline between rows — NOT JSONL (that arrived in 3.45;
+    /// this CLI is 3.43). And `PRAGMA busy_timeout=3000;` ECHOES
+    /// "3000" to stdout, polluting the payload — use the silent
+    /// `.timeout 3000` dot-command instead. The cutoff is inlined
+    /// as a %.6f numeric literal: digits and a dot only, nothing
+    /// user-controlled ever touches the SQL text. Keys are the
+    /// exact aliases AMORSessionIndex decodes; leg 13 asserts both
+    /// doors agree.
+    private static func sessionIndexJSON() -> String? {
+        let dbPath = hermesHome().appendingPathComponent("state.db").path
+        guard FileManager.default.fileExists(atPath: dbPath) else { return nil }
+
+        let cutoff = Date().timeIntervalSince1970 - Double(14 * 86_400)
+        let cutoffLiteral = String(format: "%.6f", cutoff)
+        // Defense-in-depth: the literal is machine-formatted, but
+        // refuse anything that is not a plain number anyway.
+        guard cutoffLiteral.range(of: "^[0-9.]+$", options: .regularExpression) != nil else {
+            return nil
+        }
+
+        let sql = """
+        SELECT id, source, COALESCE(title, display_name, id) AS title, \
+        started_at AS startedAt, ended_at AS endedAt, \
+        last_activity_at AS lastActivityAt, \
+        message_count AS messageCount, tool_call_count AS toolCallCount, \
+        (SELECT COUNT(*) FROM messages m WHERE m.session_id = sessions.id AND m.role = 'user') AS userMessageCount, \
+        (SELECT COUNT(*) FROM messages m WHERE m.session_id = sessions.id AND m.role = 'assistant') AS assistantMessageCount, \
+        (COALESCE(input_tokens, 0) + COALESCE(cache_read_tokens, 0)) AS inputTokens, \
+        COALESCE(output_tokens, 0) AS outputTokens, \
+        COALESCE(model, '') AS model \
+        FROM sessions \
+        WHERE started_at >= \(cutoffLiteral) AND hidden = 0 \
+        ORDER BY started_at DESC \
+        LIMIT 500;
+        """
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
+        process.arguments = [
+            dbPath,
+            "-cmd", ".timeout 3000",
+            "-cmd", "PRAGMA query_only=ON;",
+            "-json",
+            sql,
+        ]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+        // PIPE LAW: the index (~100 KB) exceeds the 64 KB pipe
+        // buffer — readToEnd BEFORE waitUntilExit, or sqlite3 blocks
+        // writing while we block reaping: deadlock. readToEnd blocks
+        // until EOF (process exit closes the pipe), so waitUntilExit
+        // returns immediately after.
+        let data = (try? pipe.fileHandleForReading.readToEnd()) ?? Data()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { return nil }
+        guard !data.isEmpty else { return nil }
+        return String(data: data, encoding: .utf8)
     }
 
     // MARK: POST /api/v1/amor/brain
