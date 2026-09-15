@@ -75,6 +75,11 @@ struct AMORInsightsView: View {
                 // Monthly mirror — v4.7.0: computeMonthlyReport was dead since forging.
                 MonthlyMirrorView(report: tracker.computeMonthlyReport(sessions: sessionsSnap, practices: practicesSnap))
 
+                // Measured Breath — v6.0.0: model + token truth, visible at last.
+                // The Living Index carried it in prose notes; now it has structured
+                // fields, an engine, and a window.
+                AMORTokenBreathView(report: AMORTokenBreathEngine.compute(sessions: sessionsSnap, days: 14))
+
                 Spacer(minLength: 40)
             }
             .padding()

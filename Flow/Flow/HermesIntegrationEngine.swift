@@ -417,7 +417,10 @@ final class HermesIntegrationEngine {
                 toolsUsed: session.inferredTools,
                 skillsLearned: session.inferredDomain,
                 mood: "focused",
-                completedTasks: 0
+                completedTasks: 0,
+                modelName: session.source == "jsonl" ? "" : session.model,
+                inputTokens: session.source == "jsonl" ? 0 : session.inputTokens,
+                outputTokens: session.source == "jsonl" ? 0 : session.outputTokens
             )
 
             modelContext.insert(dailySession)

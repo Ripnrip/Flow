@@ -45,6 +45,11 @@ struct AMORSessionSnapshot: Identifiable {
     let skillsLearned: String   // CSV or JSON array — engines parse
     let mood: String            // e.g., "focused", "tired", "energized"
     let completedTasks: Int
+    // v6.0.0 Measured Breath: model + token truth. Defaults keep
+    // every legacy constructor law-valid ("" / 0 = unmeasured).
+    var modelName: String = ""
+    var inputTokens: Int = 0
+    var outputTokens: Int = 0
     let timestamp: Date
 
     var formattedDate: String {

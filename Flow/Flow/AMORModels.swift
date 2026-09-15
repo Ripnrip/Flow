@@ -25,6 +25,12 @@ nonisolated final class DailySession {
     var skillsLearned: String  // CSV or JSON array
     var mood: String  // e.g., "focused", "tired", "energized"
     var completedTasks: Int
+    /// v6.0.0 Measured Breath: the model + token truth of the Hermes
+    /// session that produced this log. Empty/0 = unmeasured (manual
+    /// logs, legacy imports) — never a zero-cost lie, just unmeasured.
+    var modelName: String = ""
+    var inputTokens: Int = 0
+    var outputTokens: Int = 0
     var timestamp: Date
     
     var formattedDate: String {
@@ -41,7 +47,9 @@ nonisolated final class DailySession {
             id: id, date: date, title: title, notes: notes,
             durationMinutes: durationMinutes, toolsUsed: toolsUsed,
             skillsLearned: skillsLearned, mood: mood,
-            completedTasks: completedTasks, timestamp: timestamp
+            completedTasks: completedTasks,
+            modelName: modelName, inputTokens: inputTokens,
+            outputTokens: outputTokens, timestamp: timestamp
         )
     }
 
@@ -54,6 +62,9 @@ nonisolated final class DailySession {
         skillsLearned: String = "",
         mood: String = "neutral",
         completedTasks: Int = 0,
+        modelName: String = "",
+        inputTokens: Int = 0,
+        outputTokens: Int = 0,
         timestamp: Date = .now
     ) {
         self.date = date
@@ -64,6 +75,9 @@ nonisolated final class DailySession {
         self.skillsLearned = skillsLearned
         self.mood = mood
         self.completedTasks = completedTasks
+        self.modelName = modelName
+        self.inputTokens = inputTokens
+        self.outputTokens = outputTokens
         self.timestamp = timestamp
     }
 }

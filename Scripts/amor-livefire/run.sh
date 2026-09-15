@@ -24,6 +24,12 @@
 #  12. The Iron Pulse    (v5.8.0 — binary vein: executions ledger snapshot →
 #                        mirror → run-truth/storm/alibi law on-device;
 #                        MARKER LAW: live evidence never clobbered)
+#  13. The Living Index    (v5.9.0 — session truth over the vein: state.db
+#                        sessions → 14-day JSON index → index-first/
+#                        ledger-second client; BOTH DOORS AGREE)
+#  14. The Measured Breath (v6.0.0 — model+token truth from prose notes to
+#                        structured fields → engine → Insights window;
+#                        conservation + honesty laws)
 set -e
 cd "$(dirname "$0")"
 SDK="$(xcrun --show-sdk-path)"
@@ -135,7 +141,18 @@ echo ""
 sh leg13-run.sh
 status13=$?
 
-if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ] || [ $status12 -ne 0 ] || [ $status13 -ne 0 ]; then
+echo ""
+
+# Leg 14 (v6.0.0): THE MEASURED BREATH — model + token truth made
+# visible. The Living Index carried it in prose notes; the Measured
+# Breath promotes it to structured fields, a Foundation-only engine
+# (totals, per-model splits, breath weight, zero-filled daily arc),
+# and an Insights window. Conservation + honesty laws fire against
+# the real vein-mirrored index.
+sh leg14-run.sh
+status14=$?
+
+if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ] || [ $status12 -ne 0 ] || [ $status13 -ne 0 ] || [ $status14 -ne 0 ]; then
   exit 1
 fi
 exit 0

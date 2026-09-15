@@ -1,5 +1,31 @@
 # Changelog
 
+## September 15, 2026: 🌬️ AMOR v6.0.0 "The Measured Breath" — Model & Token Truth Made Visible (All 14 Legs GREEN)
+
+### Steps Taken
+- Cron fired. Tree clean at `70a45e3` (v5.9.0 shipped Sep 14 — 1 ahead of origin, rides tonight). Baseline first: daemon alive on :17777, full 13-leg harness GREEN. The v5.9.0 "Next" thread named the rot: **model/token truth reached SwiftData buried inside a prose `notes` string — no structured fields, no aggregation, no window. 259 sessions of breath, no eye had seen it.**
+- **The Measured Breath architecture**: `DailySession` gains `modelName`/`inputTokens`/`outputTokens` (defaulted — legacy constructors stay law-valid; SwiftData lightweight migration handles the defaults). `AMORSessionSnapshot` carries the same fields into the Foundation-only plane. The importer writes structured truth (jsonl rows stay honestly unmeasured). New engine `AMORTokenBreathEngine` computes the report: totals, per-model splits, breath weight (in:out ratio), zero-filled daily arc, dominant-model share, honest measured/unmeasured boundary. New `AMORTokenBreathView` renders it in Insights: hero total, 14-day arc, model constellation, unmeasured footnote.
+- **Leg 14 caught a real bug on first fire** — its purpose in life: the engine's window filter cut at `-14d` while the arc spans 14 buckets ending today (`-13d..0`) — an off-by-one that left the 15th partial day's tokens counted in totals but in NO arc bucket: arc=94.1M vs sessions=105.7M, conservation broken. **WINDOW ≡ ARC LAW** forged: cutoff at `-(days-1)` from start-of-today makes window ≡ arc, always. Second fire exposed the same law mirrored in the leg's own comparison sets (engine and leg must share ONE cutoff law or the checks diverge). Third fire: 16/16 GREEN, conservation exact to the token.
+- pbxproj recon: objectVersion 77 + `PBXFileSystemSynchronizedRootGroup` — new files auto-discovered, zero pbxproj surgery, the v5.4.0 landmine class defused by format.
+- Real-history calibration: the 14-day window holds **94.5M tokens across 228 measured sessions** (glm-5 dominant at 71%, glm-5.2, nemotron-3-ultra, o3-mini, kimi-k2 in the constellation); 15 sessions honestly unmeasured.
+- Full 14-leg harness: EXIT 0. View-layer smoke-compile (leg 8) typechecked the app target INCLUDING the new engine + view — 0 errors.
+
+### What Changed
+- `Flow/Flow/AMORModels.swift` — `DailySession` gains `modelName`/`inputTokens`/`outputTokens` (defaulted, migration-safe); snapshot carries them.
+- `Flow/Flow/AMORMirror.swift` — `AMORSessionSnapshot` gains the same three fields (defaulted; every legacy constructor site law-valid).
+- `Flow/Flow/HermesIntegrationEngine.swift` — importer writes structured model/token truth (jsonl rows → unmeasured).
+- `Flow/Flow/AMORTokenBreathEngine.swift` — NEW: Foundation-only breath engine (totals, model splits, breath weight, zero-filled arc, WINDOW ≡ ARC LAW).
+- `Flow/Flow/AMORTokenBreathView.swift` — NEW: the Insights window (hero, daily arc, model constellation, honest unmeasured footnote).
+- `Flow/Flow/AMORInsightsView.swift` — Measured Breath section wired after Monthly Mirror.
+- `Flow/Flow/AMORSettings.swift` — About v6.0.0.
+- `Scripts/amor-livefire/AMORMirror.swift` — mirror synced (drift law).
+- `Scripts/amor-livefire/leg14-main.swift` + `leg14-run.sh` — NEW: Measured Breath e2e gate (16 checks).
+- `Scripts/amor-livefire/run.sh` — leg 14 wired; master gate 13 → **14 legs** (header law updated for 13+14).
+
+### Next
+- Physical-iPhone smoke (standing thread): the Measured Breath rides the same vein — first launch should show the full constellation.
+- Optional: per-model cost estimates (token counts × provider pricing) — the truth is structured now; price tables are the easy part.
+
 ## September 14, 2026: 📜 AMOR v5.9.0 "The Living Index" — Session Truth Over the Vein (All 13 Legs GREEN)
 
 ### Steps Taken
