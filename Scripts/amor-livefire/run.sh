@@ -30,6 +30,9 @@
 #  14. The Measured Breath (v6.0.0 — model+token truth from prose notes to
 #                        structured fields → engine → Insights window;
 #                        conservation + honesty laws)
+#  15. The Honest Ledger  (v6.1.0 — provider list prices over the conserved
+#                        breath splits → estimated dollars; longest-fragment
+#                        matching, cent conservation, unpriced honesty)
 set -e
 cd "$(dirname "$0")"
 SDK="$(xcrun --show-sdk-path)"
@@ -152,7 +155,17 @@ echo ""
 sh leg14-run.sh
 status14=$?
 
-if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ] || [ $status12 -ne 0 ] || [ $status13 -ne 0 ] || [ $status14 -ne 0 ]; then
+echo ""
+
+# Leg 15 (v6.1.0): THE HONEST LEDGER — the Measured Breath's Next
+# thread, burned. Provider list prices over the conserved per-model
+# splits: longest-fragment matching (glm-5 ⊂ glm-5.2 never cross-
+# matches), cent conservation, unpriced honesty. Fires against the
+# real vein-mirrored index.
+sh leg15-run.sh
+status15=$?
+
+if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ] || [ $status12 -ne 0 ] || [ $status13 -ne 0 ] || [ $status14 -ne 0 ] || [ $status15 -ne 0 ]; then
   exit 1
 fi
 exit 0

@@ -112,6 +112,59 @@ struct AMORTokenBreathView: View {
                     }
                 }
 
+                // v6.1.0 — The Honest Ledger: estimated dollars over
+                // the same conserved splits, unpriced models named.
+                let costReport = AMORCostLedger.estimate(from: report)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("The Honest Ledger")
+                        .font(AMORTypography.captionFont)
+                        .foregroundStyle(.secondary)
+
+                    HStack(alignment: .firstTextBaseline, spacing: 16) {
+                        Text(AMORCostLedger.formatCents(costReport.estimatedTotalCents))
+                            .font(AMORTypography.headingFont)
+                            .foregroundStyle(AMORColorPalette.sageGreen)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("estimated spend · \(costReport.windowDays)-day window")
+                                .font(AMORTypography.captionFont)
+                                .foregroundStyle(.secondary)
+                            Text("\(AMORCostLedger.formatCoverage(costReport.coverageShare)) of tokens priced · list prices, cache-inclusive input")
+                                .font(AMORTypography.captionFont)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+
+                    ForEach(costReport.modelCosts) { mc in
+                        HStack {
+                            Circle()
+                                .fill(AMORStringPalette.modelColor(mc.model))
+                                .frame(width: 8, height: 8)
+                            Text(AMORTokenBreathEngine.shortModelName(mc.model))
+                                .font(AMORTypography.captionFont)
+                                .lineLimit(1)
+                            Spacer()
+                            if mc.priced {
+                                Text(AMORCostLedger.formatCents(mc.costCents ?? 0))
+                                    .font(AMORTypography.monospaceFont)
+                                    .foregroundStyle(AMORColorPalette.deepIndigo)
+                                    .frame(width: 64, alignment: .trailing)
+                            } else {
+                                Text("unpriced")
+                                    .font(AMORTypography.captionFont)
+                                    .foregroundStyle(.tertiary)
+                                    .frame(width: 64, alignment: .trailing)
+                            }
+                        }
+                    }
+
+                    Text("Estimates from provider list prices — routing, caching, and discounts will differ from the bill.")
+                        .font(AMORTypography.captionFont)
+                        .foregroundStyle(.tertiary)
+                        .italic()
+                }
+
                 // Honest boundary
                 if report.unmeasuredSessions > 0 {
                     Text("\(report.unmeasuredSessions) session\(report.unmeasuredSessions > 1 ? "s" : "") unmeasured — manual logs and legacy imports carry no token truth. Honest zeros, no guesses.")

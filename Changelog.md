@@ -1,5 +1,25 @@
 # Changelog
 
+## September 16, 2026: 💰 AMOR v6.1.0 "The Honest Ledger" — The Breath, Priced (All 15 Legs GREEN)
+
+### Steps Taken
+- Cron fired. Tree clean at `aab3d09` (v6.0.0 shipped Sep 15 — 2 ahead of origin, ride tonight). Baseline first: daemon alive on :17777, full 14-leg harness GREEN. The v6.0.0 "Next" thread named today's forge: **per-model cost estimates — "the truth is structured now; price tables are the easy part."** The easy part still needed three laws to not lie.
+- **The Honest Ledger architecture**: new Foundation-only engine `AMORCostLedger` estimates dollars from the conserved per-model splits of `AMORBreathReport` via a curated price book of provider LIST prices (Z.AI, OpenAI, Moonshot, DeepInfra — verified 2026-09-16 from live sources). Three laws: **LONGEST-FRAGMENT** (model ids match by case-insensitive containment, longest fragment wins — because `glm-5` is contained in `glm-5.2` and a naive match silently misprices the whole constellation), **CENT-CONSERVATION** (total ≡ Σ per-model cents, exactly, by construction — never recomputed from raw tokens), **UNPRICED-HONESTY** (models absent from the book contribute zero dollars, are counted in tokens/sessions, and surface in `unpricedModels` — never guessed, never silently zero-filled).
+- **First fire: 20/20 GREEN.** The real 14-day window: **$102.51 estimated spend, 98% of tokens priced, all 5 constellation models priced** (glm-5.2, glm-5, nemotron-3-ultra, o3-mini, kimi-k2). The leg independently re-derives every model's cents from raw tokens × book prices and asserts exact Int64 agreement with the engine — no rounding drift, ever.
+- Honest-boundary hardening: synthetic unpriced model mixed into the real report adds exactly zero cents, is named with nil cost, and coverage counts tokens (not sessions) — 98%, never claiming precision it doesn't have. Formatters locale-stable (`$12.34`, `−$0.05`, whole-percent coverage).
+- Full 15-leg harness: EXIT 0. View-layer smoke-compile (leg 8) typechecked the app target INCLUDING the new Ledger section — 0 errors.
+
+### What Changed
+- `Flow/Flow/AMORCostLedger.swift` — NEW: the honest ledger engine (price book, longest-fragment lookup, cent-conserving aggregation, unpriced honesty, formatters).
+- `Flow/Flow/AMORTokenBreathView.swift` — "The Honest Ledger" section after the Model Constellation: hero estimate, coverage share, per-model cost rows ("unpriced" for unknowns), estimate-disclaimer footnote.
+- `Flow/Flow/AMORSettings.swift` — About v6.1.0.
+- `Scripts/amor-livefire/leg15-main.swift` + `leg15-run.sh` — NEW: Honest Ledger e2e gate (20 checks).
+- `Scripts/amor-livefire/run.sh` — leg 15 wired; master gate 14 → **15 legs**.
+
+### Next
+- Physical-iPhone smoke (standing thread): the Ledger rides the same vein — first launch shows the full priced constellation.
+- Optional: per-day cost arc (the cents are conserved per model; bucketing by day is mechanical), or provider-tier pricing (cache-hit rates) for a tighter estimate.
+
 ## September 15, 2026: 🌬️ AMOR v6.0.0 "The Measured Breath" — Model & Token Truth Made Visible (All 14 Legs GREEN)
 
 ### Steps Taken
