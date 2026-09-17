@@ -13,7 +13,16 @@
 import SwiftUI
 
 struct AMORTokenBreathView: View {
-    let report: AMORBreathReport
+    /// v6.2.0: takes session snapshots directly — the Daily Ledger
+    /// needs per-model-per-day cells, not the aggregated report.
+    /// The breath, the ledger, and the arc are computed here from
+    /// ONE source of truth.
+    let sessions: [AMORSessionSnapshot]
+    var days: Int = 14
+
+    private var report: AMORBreathReport {
+        AMORTokenBreathEngine.compute(sessions: sessions, days: days)
+    }
 
     private var maxDayTokens: Int {
         report.dailyArc.map { $0.totalTokens }.max() ?? 1
@@ -136,6 +145,47 @@ struct AMORTokenBreathView: View {
                         Spacer()
                     }
 
+                    // v6.2.0 — The Daily Ledger: the same conserved
+                    // cents, apportioned per day (ARC ≡ LEDGER).
+                    let arc = AMORCostLedger.dailyArc(sessions: sessions, days: days)
+                    let arcPeak = arc.peakDay?.estimatedCents ?? 0
+                    if !arc.days.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text("Daily Ledger")
+                                    .font(AMORTypography.captionFont)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                if let peak = arc.peakDay, peak.estimatedCents > 0 {
+                                    Text("peak \(AMORCostLedger.formatCents(peak.estimatedCents)) on \(peak.day.formatted(.dateTime.month(.abbreviated).day()))")
+                                        .font(AMORTypography.captionFont)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            HStack(alignment: .bottom, spacing: 4) {
+                                ForEach(arc.days) { d in
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(d.estimatedCents > 0
+                                              ? AMORColorPalette.sageGreen.opacity(0.5 + 0.5 * Double(d.estimatedCents) / Double(max(1, arc.peakDay?.estimatedCents ?? 1)))
+                                              : (d.sessions > 0
+                                                 ? AMORColorPalette.sageGreen.opacity(0.25)
+                                                 : AMORColorPalette.warmSand))
+                                        .frame(height: costBarHeight(d.estimatedCents, peak: arcPeak))
+                                        .accessibilityLabel("\(d.sessions) sessions, \(AMORCostLedger.formatCents(d.estimatedCents))")
+                                }
+                            }
+                            HStack {
+                                Text("Σ \(AMORCostLedger.formatCents(arc.days.reduce(Int64(0)) { $0 + $1.estimatedCents })) ≡ ledger")
+                                    .font(AMORTypography.captionFont)
+                                    .foregroundStyle(.tertiary)
+                                Spacer()
+                                Text("today")
+                                    .font(AMORTypography.captionFont)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+
                     ForEach(costReport.modelCosts) { mc in
                         HStack {
                             Circle()
@@ -180,6 +230,13 @@ struct AMORTokenBreathView: View {
     private func barHeight(_ tokens: Int) -> CGFloat {
         guard maxDayTokens > 0 else { return 3 }
         return max(3, CGFloat(tokens) / CGFloat(maxDayTokens) * 42)
+    }
+
+    /// v6.2.0: Daily Ledger bar height — same visual grammar as the
+    /// token arc, scaled to the peak cost day of this render's arc.
+    private func costBarHeight(_ cents: Int64, peak: Int64) -> CGFloat {
+        let p = max(1, peak)
+        return max(3, CGFloat(cents) / CGFloat(p) * 42)
     }
 }
 

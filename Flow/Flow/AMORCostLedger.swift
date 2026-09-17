@@ -207,3 +207,148 @@ enum AMORCostLedger {
         "\(Int((share * 100).rounded()))%"
     }
 }
+
+// MARK: - The Daily Ledger (v6.2.0)
+
+/// One day of the priced window. `estimatedCents` is the
+/// largest-remainder share of the per-model conserved cents —
+/// a day with no priced tokens earns exactly zero.
+struct AMORDayCost: Identifiable, Equatable {
+    var id: Date { day }
+    let day: Date
+    /// Measured sessions that day (priced or not — honest count).
+    let sessions: Int
+    /// Apportioned estimated cents; Σ over the arc ≡ the ledger
+    /// total, exactly (ARC ≡ LEDGER LAW).
+    let estimatedCents: Int64
+    /// True when at least one priced model breathed this day.
+    let hasPricedTokens: Bool
+}
+
+/// The per-day decomposition of the Honest Ledger.
+struct AMORCostArc: Equatable {
+    let windowDays: Int
+    /// Zero-filled, oldest → today.
+    let days: [AMORDayCost]
+    /// ≡ AMORCostReport.estimatedTotalCents by construction.
+    let estimatedTotalCents: Int64
+
+    /// The priciest day in the arc (first to win ties).
+    var peakDay: AMORDayCost? {
+        days.max { $0.estimatedCents < $1.estimatedCents }
+    }
+
+    var isEmpty: Bool {
+        estimatedTotalCents == 0 && days.allSatisfy { $0.sessions == 0 }
+    }
+}
+
+extension AMORCostLedger {
+
+    /// THE DAILY LEDGER — per-day cents from the same price book,
+    /// conserving the Honest Ledger exactly.
+    ///
+    /// ARC ≡ LEDGER LAW: each priced model's window cents are
+    /// computed ONCE with the identical arithmetic estimate(from:)
+    /// uses, then apportioned across its days by largest remainder.
+    /// The arc total is therefore the ledger total to the cent —
+    /// never recomputed per day, where 14 independent roundings
+    /// would silently drift from the priced rows above them.
+    ///
+    /// ZERO-TOKEN LAW: only days that breathed carry fractional
+    /// claims, so a day with no tokens for a model can never
+    /// receive that model's remainder cents.
+    static func dailyArc(sessions: [AMORSessionSnapshot], days windowDays: Int = 14) -> AMORCostArc {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        // WINDOW ≡ ARC LAW — the same cutoff the breath engine uses.
+        let cutoff = cal.date(byAdding: .day, value: -(windowDays - 1), to: today) ?? today
+        let window = sessions.filter { $0.date >= cutoff }
+
+        var dayDates: [Date] = []
+        for offset in stride(from: windowDays - 1, through: 0, by: -1) {
+            if let d = cal.date(byAdding: .day, value: -offset, to: today) { dayDates.append(d) }
+        }
+        let dayIndex: [Date: Int] = Dictionary(
+            uniqueKeysWithValues: dayDates.enumerated().map { ($1, $0) }
+        )
+
+        // Measured per-day session counts (honest — priced or not),
+        // and per-model per-day token cells.
+        var daySessions = [Int](repeating: 0, count: dayDates.count)
+        var cells: [String: [(inTok: Int, outTok: Int)]] = [:]
+
+        for s in window
+        where !s.modelName.isEmpty && (s.inputTokens > 0 || s.outputTokens > 0) {
+            let d = cal.startOfDay(for: s.date)
+            guard let idx = dayIndex[d] else { continue }
+            daySessions[idx] += 1
+            var row = cells[s.modelName] ?? []
+            while row.count < dayDates.count { row.append((0, 0)) }
+            row[idx].inTok += s.inputTokens
+            row[idx].outTok += s.outputTokens
+            cells[s.modelName] = row
+        }
+
+        // Apportion each priced model's conserved cents across its days.
+        var dayCents = [Int64](repeating: 0, count: dayDates.count)
+        var dayPriced = [Bool](repeating: false, count: dayDates.count)
+        var totalCents: Int64 = 0
+
+        for (model, row) in cells {
+            guard let p = price(for: model) else { continue } // unpriced: honest zero
+            let windowIn = row.reduce(0) { $0 + $1.inTok }
+            let windowOut = row.reduce(0) { $0 + $1.outTok }
+            // Rounded ONCE — byte-identical arithmetic to estimate(from:).
+            let exactWindow = (Double(windowIn) * p.inputPerMillion
+                               + Double(windowOut) * p.outputPerMillion) / 1_000_000.0
+            let modelCents = Int64((exactWindow * 100.0) + 0.5)
+
+            var floors = [Int64](repeating: 0, count: dayDates.count)
+            var fracs = [Double](repeating: 0, count: dayDates.count)
+            for i in dayDates.indices where row[i].inTok > 0 || row[i].outTok > 0 {
+                let exactDay = (Double(row[i].inTok) * p.inputPerMillion
+                                + Double(row[i].outTok) * p.outputPerMillion) / 1_000_000.0
+                let cents = exactDay * 100.0
+                floors[i] = Int64(cents) // floor; token costs are non-negative
+                fracs[i] = cents - Double(floors[i])
+                dayPriced[i] = true
+            }
+            var r = modelCents - floors.reduce(0, +)
+            // Largest remainder first; ties break to the earlier day —
+            // deterministic, so the live-fire leg can verify it.
+            let order = dayDates.indices
+                .filter { fracs[$0] > 0 }
+                .sorted { fracs[$0] != fracs[$1] ? fracs[$0] > fracs[$1] : $0 < $1 }
+            for i in order where r > 0 {
+                floors[i] += 1
+                r -= 1
+            }
+            // Defensive: ZERO-TOKEN LAW makes this unreachable (the
+            // fractional claims sum to at least r by construction),
+            // but if it ever fired, the cents still conserve.
+            if r > 0, let heaviest = dayDates.indices.max(by: {
+                (row[$0].inTok + row[$0].outTok) < (row[$1].inTok + row[$1].outTok)
+            }) {
+                floors[heaviest] += r
+            }
+
+            for i in dayDates.indices { dayCents[i] += floors[i] }
+            totalCents += modelCents
+        }
+
+        let days = zip(dayDates.indices, dayDates).map { i, d in
+            AMORDayCost(
+                day: d,
+                sessions: daySessions[i],
+                estimatedCents: dayCents[i],
+                hasPricedTokens: dayPriced[i]
+            )
+        }
+        return AMORCostArc(
+            windowDays: windowDays,
+            days: days,
+            estimatedTotalCents: totalCents
+        )
+    }
+}

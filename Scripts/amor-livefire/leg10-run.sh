@@ -22,14 +22,25 @@ fail() {
 ENTRY="$(launchctl list 2>/dev/null | grep "$LABEL" || true)"
 [ -n "$ENTRY" ] || fail "launchd does not know $LABEL (daemon not installed/loaded)"
 
-# Check 2: the flame itself
-BODY="$(curl -fsS -m 5 "$HEALTH_URL" 2>/dev/null || true)"
+# Check 2: the flame itself — THE PATIENT VEIN (v6.2.0): one knock
+# is not a verdict. The harness's own compile load (legs 8/9 run
+# seconds before) can starve a 4GB box into moments of silence;
+# the client engine retries (v6.2.0), so the gate must too. Dark
+# only after three knocks with a breath between.
+BODY=""
+for attempt in 1 2 3; do
+  BODY="$(curl -fsS -m 5 "$HEALTH_URL" 2>/dev/null || true)"
+  case "$BODY" in
+    *"FlowServer is alive"*) break ;;
+    *) [ "$attempt" -lt 3 ] && sleep 4 ;;
+  esac
+done
 case "$BODY" in
   *"FlowServer is alive"*)
     echo "FLOWSERVER-DAEMON: PASS — launchd entry [$ENTRY], health on :17777 green"
     exit 0
     ;;
   *)
-    fail "port 17777 answered: '${BODY:-<silence>}' (KeepAlive should have revived it — check $HOME/.hermes/logs/flowserver/)"
+    fail "port 17777 answered: '${BODY:-<silence>}' after 3 knocks (KeepAlive should have revived it — check $HOME/.hermes/logs/flowserver/)"
     ;;
 esac

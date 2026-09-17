@@ -150,12 +150,41 @@ enum AMORRemoteSyncEngine {
             return .failure("Invalid FlowServer URL")
         }
 
-        let data: Data
-        let response: URLResponse
-        do {
-            (data, response) = try await URLSession.shared.data(from: url)
-        } catch {
+        // v6.2.0 THE PATIENT VEIN: one knock is not a verdict. A
+        // daemon waking under load (or a phone on cellular) can
+        // miss the first beat — dark only after three knocks, with
+        // a breath between (the daemon gate knocks the same way).
+        // Every caller inherits this.
+        var fetchedData: Data?
+        var fetchedResponse: URLResponse?
+        var lastError: Error?
+        // Graduated knocks (v6.2.0): 30s → 60s → 90s. Measured: the
+        // evidence pass scans a 671 MB state.db and takes ~9s on a
+        // semi-idle 4GB box (9% free memory) — under the harness's
+        // own swiftc -O storms it can lawfully take a minute. The
+        // daemon is SLOW under pressure, not dead; /health answers
+        // in milliseconds while /evidence starves. Dark only after
+        // all three knocks (~3 min of true patience).
+        let knockTimeouts: [TimeInterval] = [30, 60, 90]
+        for (index, attempt) in (1...3).enumerated() {
+            do {
+                var request = URLRequest(url: url)
+                request.timeoutInterval = knockTimeouts[index]
+                (fetchedData, fetchedResponse) = try await URLSession.shared.data(for: request)
+                lastError = nil
+                break
+            } catch {
+                lastError = error
+                if attempt < 3 {
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                }
+            }
+        }
+        if let error = lastError {
             return .failure("FlowServer unreachable: \(error.localizedDescription)")
+        }
+        guard let data = fetchedData, let response = fetchedResponse else {
+            return .failure("FlowServer returned no evidence")
         }
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
             return .failure("FlowServer rejected evidence: HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")

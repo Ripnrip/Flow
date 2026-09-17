@@ -93,7 +93,9 @@ check("daily note mirrored", fm.fileExists(atPath: notePath.path), "wiki/daily/\
 // ── 6. Idempotence: a second sync writes the same truth ────────────
 let second = await AMORRemoteSyncEngine.sync(base: "http://127.0.0.1:17777", home: tmpHome)
 check("vein idempotent", second.ok && second.filesMaterialized == result.filesMaterialized,
-      "second pass materialized \(second.filesMaterialized)/\(result.filesMaterialized)")
+      second.ok
+        ? "second pass materialized \(second.filesMaterialized)/\(result.filesMaterialized)"
+        : "second pulse FAILED: \(second.error ?? "unknown") — the vein went dark mid-leg")
 
 // ── 7. The write vein: brain append + LEDGER LAW restore ──────────
 let realNote = fm.homeDirectoryForCurrentUser.appendingPathComponent("wiki/daily/\(today).md")

@@ -33,7 +33,14 @@
 #  15. The Honest Ledger  (v6.1.0 — provider list prices over the conserved
 #                        breath splits → estimated dollars; longest-fragment
 #                        matching, cent conservation, unpriced honesty)
-set -e
+#  16. The Daily Ledger  (v6.2.0 — the ledger's conserved cents decomposed
+#                        per day; ARC ≡ LEDGER via largest-remainder
+#                        apportionment, ZERO-TOKEN LAW, deterministic ties)
+#
+# v6.2.0: set -e REMOVED — it made the final status aggregation dead
+# code (one leg's failure aborted the run; later legs never fired;
+# the verdict `if` never governed). Every leg fires now; the exit
+# code is the honest OR of all sixteen.
 cd "$(dirname "$0")"
 SDK="$(xcrun --show-sdk-path)"
 TMP="$(mktemp -d)"
@@ -165,7 +172,15 @@ echo ""
 sh leg15-run.sh
 status15=$?
 
-if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ] || [ $status12 -ne 0 ] || [ $status13 -ne 0 ] || [ $status14 -ne 0 ] || [ $status15 -ne 0 ]; then
+# Leg 16 (v6.2.0): THE DAILY LEDGER — the Honest Ledger's Next
+# thread, burned. The same conserved cents, decomposed per day:
+# largest-remainder apportionment keeps ARC ≡ LEDGER exactly, and
+# the ZERO-TOKEN LAW keeps silent days honest. Fires against the
+# real vein-mirrored index.
+sh leg16-run.sh
+status16=$?
+
+if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ] || [ $status12 -ne 0 ] || [ $status13 -ne 0 ] || [ $status14 -ne 0 ] || [ $status15 -ne 0 ] || [ $status16 -ne 0 ]; then
   exit 1
 fi
 exit 0

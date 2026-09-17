@@ -104,7 +104,9 @@ check("alibi law runs on mirror", true,
 // ── 6. Idempotence: second pulse, same truth ───────────────────────
 let second = await AMORRemoteSyncEngine.sync(base: "http://127.0.0.1:17777", home: tmpHome)
 check("pulse idempotent", second.ok && second.filesMaterialized == result.filesMaterialized,
-      "second pass materialized \(second.filesMaterialized)/\(result.filesMaterialized)")
+      second.ok
+        ? "second pass materialized \(second.filesMaterialized)/\(result.filesMaterialized)"
+        : "second pulse FAILED: \(second.error ?? "unknown") — the vein went dark mid-leg")
 
 // ── 7. MARKER LAW: live evidence is NEVER clobbered ────────────────
 // A destination that exists WITHOUT the marker is the Mac's own live

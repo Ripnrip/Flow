@@ -1,5 +1,34 @@
 # Changelog
 
+## September 17, 2026: 💸 AMOR v6.2.0 "The Daily Ledger" — The Fortnight's Cents, Day by Day (All 16 Legs GREEN)
+
+### Steps Taken
+- Cron fired. Tree clean at `dbdf595` (v6.1.0 shipped Sep 16). Baseline first — and the baseline itself fought back: the FlowServer daemon (up 2d23h) was LISTENING but wedged (swap-thrash: 4GB box, 1.6GB swap in use, PAGE_OUT_ANON firehose, a battalion of system daemons in U-state). Killed the corpse; launchd's KeepAlive relit the Flame; the newborn was slow through dyld under the same memory storm but came up answering.
+- The v6.1.0 "Next" thread named today's forge: **per-day cost arc — the cents are conserved per model; bucketing by day is mechanical.** Mechanical, yes — but naive per-day rounding silently breaks conservation (14 independent roundings drift from the priced rows above them). The Daily Ledger needed its own law.
+- **The Daily Ledger architecture**: `AMORCostLedger.dailyArc(sessions:days:)` decomposes the SAME conserved cents per day. **ARC ≡ LEDGER LAW**: each priced model's window cents are computed ONCE with byte-identical arithmetic to `estimate(from:)`, then apportioned across its days by largest remainder — Σ days ≡ ledger total, exactly, by construction. **ZERO-TOKEN LAW**: only days that breathed carry fractional claims — a day with no tokens for a model can never receive that model's remainder cents. Ties break largest-remainder-first, then earlier day — deterministic, leg-verified.
+- **First fire caught my own float fantasy**: the leg's synthetic tie (555,555 vs 55,555 tokens) assumed the two fractional remainders tie in Double — they differ at the 15th digit, and the engine legitimately broke the tie the other way. The engine was lawful; the test was fantasy. Re-forged with a bitwise-exact tie (2 × 105,000 tokens = 10.5¢ each, binary-representable): 15/15 GREEN.
+- **The harness's own rot, burned**: (1) `run.sh` carried `set -e` since birth — one leg's failure aborted the run, later legs never fired, and the final status `if` was DEAD CODE (the exact class leg 8's header once documented). Removed; every leg fires; exit = honest OR of all sixteen. (2) The vein-reachability checks swallowed `sync.error` — a dark pulse masqueraded as "materialized 0/15". Now every dark pulse NAMES its error.
+- **THE PATIENT VEIN**: the evidence pass scans a 671 MB state.db (~9s semi-idle on this 4GB/9%-free box; a minute under the harness's own swiftc -O storms). The client engine (`AMORRemoteSyncEngine.sync`) now knocks GRADUATED — 30s/60s/90s — dark only after all three. Leg 10's daemon gate knocks the same way (3 × curl). Phones on cellular inherit the patience for free.
+- **REWRITE ≡ CHANGE** (leg 13): the old idempotence check demanded a stable mtime across two pulses — but the index spans 14 days of LIVE sessions; any active Hermes session (other crons, the harness itself, the user) legitimately changes state.db between pulses. "The machine was quiet" is undecidable on a live system. The true law: a rewrite is lawful IFF bytes changed; same-bytes-new-mtime is the phantom. The leg now compares bytes, not mtime.
+- Ten full-harness fires total (each ~10 min on the starved box), each failure diagnosed to root cause and lawed. Final fire: **ALL 16 LEGS GREEN, 142 checks, EXIT 0** — including the new leg 16 (15 checks) over the REAL 14-day window: **$101.59 estimated, ARC ≡ LEDGER exact (arc=10159¢ = ledger=10159¢), peak day $14.13 on Sep 6, all 14 days priced**.
+
+### What Changed
+- `Flow/Flow/AMORCostLedger.swift` — The Daily Ledger: `AMORDayCost`, `AMORCostArc`, `dailyArc(sessions:days:)` (largest-remainder apportionment, ARC ≡ LEDGER, ZERO-TOKEN LAW, deterministic ties).
+- `Flow/Flow/AMORTokenBreathView.swift` — takes `sessions` directly (one source of truth for breath + ledger + arc); "Daily Ledger" section: 14 sage-green cost bars, peak day named, "Σ ≡ ledger" conservation line.
+- `Flow/Flow/AMORRemoteSyncEngine.swift` — THE PATIENT VEIN: graduated knocks 30/60/90s, URLRequest-level timeouts, honest failure naming.
+- `Flow/Flow/AMORInsightsView.swift` — breath view call site rewired to sessions.
+- `Flow/Flow/AMORSettings.swift` — About v6.2.0.
+- `Scripts/amor-livefire/leg16-main.swift` + `leg16-run.sh` — NEW: Daily Ledger e2e gate (15 checks: ARC ≡ LEDGER, zero-token, window, bitwise-tie determinism, unpriced honesty, peak law).
+- `Scripts/amor-livefire/run.sh` — `set -e` removed (aggregation was dead code); leg 16 wired; master gate 15 → **16 legs**.
+- `Scripts/amor-livefire/leg10-run.sh` — daemon gate knocks 3× with breath between.
+- `Scripts/amor-livefire/leg11-main.swift`, `leg12-main.swift` — dark pulses NAME their errors.
+- `Scripts/amor-livefire/leg13-main.swift` — REWRITE ≡ CHANGE (bytes, not mtime).
+
+### Next
+- Physical-iPhone smoke (standing thread): the Daily Ledger rides the Insight window — first launch shows the per-day cost arc.
+- Optional: provider-tier pricing (cache-hit rates) for a tighter estimate; per-day breath-weight arc (in:out shape per day) now that per-day cells exist.
+- The box itself: 4GB / 9% free / 1.4GB swap is the harness's worst enemy — a memory bailout (closing Chrome / UI-TARS during runs) would cut run time nearly in half.
+
 ## September 16, 2026: 💰 AMOR v6.1.0 "The Honest Ledger" — The Breath, Priced (All 15 Legs GREEN)
 
 ### Steps Taken

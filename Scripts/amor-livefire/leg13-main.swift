@@ -88,12 +88,28 @@ if let newest = indexSessions.first {
           "title=\"\(newest.title.prefix(60))\" dur=\(duration)m msgs=\(userMsgs)u/\(asstMsgs)a model=\(newest.model)")
 }
 
-// ── 7. Idempotence ─────────────────────────────────────────────
+// ── 7. Idempotence — REWRITE ≡ CHANGE (v6.2.0) ─────────────────
+// The old check demanded a stable mtime across two pulses — but the
+// index spans 14 days of LIVE sessions: any active Hermes session
+// (other crons, the harness's own session, a user at the keyboard)
+// legitimately changes state.db between pulses. "The machine was
+// quiet" is undecidable on a live system. The true law: a rewrite
+// is lawful IFF the bytes actually changed; same-bytes-new-mtime
+// is the phantom the engine must never commit.
+let beforeBytes = (try? Data(contentsOf: indexURL)) ?? Data()
 let before = (try? FileManager.default.attributesOfItem(atPath: indexPath)[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
 let sync2 = await AMORRemoteSyncEngine.sync(base: base)
+let afterBytes = (try? Data(contentsOf: indexURL)) ?? Data()
 let after = (try? FileManager.default.attributesOfItem(atPath: indexPath)[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
-check("second pulse idempotent", sync2.ok && before == after,
-      "mtime stable (\(before == after ? "unchanged" : "CHANGED"))")
+check("second pulse idempotent",
+      sync2.ok && (before == after || beforeBytes != afterBytes),
+      !sync2.ok
+        ? "second pulse FAILED: \(sync2.error ?? "unknown") — the vein went dark mid-leg"
+        : (before == after
+            ? "bytes unchanged, mtime stable — fully quiet"
+            : (beforeBytes != afterBytes
+                ? "rewritten WITH new content — lawful under REWRITE ≡ CHANGE"
+                : "PHANTOM REWRITE: same bytes, new mtime")))
 
 // ── 8. Dark-phone law: the index alone carries the plane ───────
 let tmp = FileManager.default.temporaryDirectory
