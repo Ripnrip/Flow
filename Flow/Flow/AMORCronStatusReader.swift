@@ -296,6 +296,9 @@ final class AMORCronStatusReader {
     /// Historical storms from the trailing week (v4.9.0) — resolved
     /// truth, rendered neutral. Single-job incidents stay on their row.
     var resolvedStorms: [AMORIncident] { incidents.filter { $0.isStorm && !$0.isActive } }
+    /// v6.3.0 — the plane's own story: is the scheduler heartbeat
+    /// itself alive? Per-job health is noise below a dark verdict.
+    var planeReport: AMORPlaneReport?
 
     // MARK: - Configuration
 
@@ -373,6 +376,11 @@ final class AMORCronStatusReader {
             lastNonFailureByJob: execResult.lastNonFailureByJob,
             knownJobIDs: Set(jobs.map { $0.id })
         )
+
+        // v6.3.0 — the plane's own verdict, from the same ledger the
+        // run-truth engine reads. A dark plane reframes every per-job
+        // "missed" chip below it as casualty, not cause.
+        planeReport = AMORPlaneSentinel.read(hermesHome: hermesHome)
 
         lastRefresh = Date()
     }

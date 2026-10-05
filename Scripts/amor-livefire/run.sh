@@ -36,6 +36,11 @@
 #  16. The Daily Ledger  (v6.2.0 — the ledger's conserved cents decomposed
 #                        per day; ARC ≡ LEDGER via largest-remainder
 #                        apportionment, ZERO-TOKEN LAW, deterministic ties)
+#  17. The Dead Plane Detector (v6.3.0 — the plane's own verdict from the
+#                        executions day-histogram: alive/dark/unknown,
+#                        outages, restart scars. MIRROR ≡ REALITY for the
+#                        evidence legs: a dead plane's missing dumps/notes
+#                        are casualties, not parser failures)
 #
 # v6.2.0: set -e REMOVED — it made the final status aggregation dead
 # code (one leg's failure aborted the run; later legs never fired;
@@ -78,7 +83,7 @@ if [ -f "$HOME/wiki/daily/$TODAY.md" ]; then
 fi
 BIN4="$TMP/secondbrain"
 cp secondbrain-main.swift "$TMP/main.swift"
-swiftc -O -sdk "$SDK" AMORSecondBrainManager.swift "$TMP/main.swift" -o "$BIN4"
+swiftc -O -sdk "$SDK" AMORSecondBrainManager.swift ../../Flow/Flow/AMORPlaneSentinel.swift "$TMP/main.swift" -lsqlite3 -o "$BIN4"
 "$BIN4"
 status=$?
 
@@ -180,7 +185,16 @@ status15=$?
 sh leg16-run.sh
 status16=$?
 
-if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ] || [ $status12 -ne 0 ] || [ $status13 -ne 0 ] || [ $status14 -ne 0 ] || [ $status15 -ne 0 ] || [ $status16 -ne 0 ]; then
+# Leg 17 (v6.3.0): THE DEAD PLANE DETECTOR — the plane's own verdict
+# from the executions day-histogram. Twelve "missed" jobs is a lie
+# when the scheduler itself is a corpse; the sentinel names the
+# outage, the restart scars, and stays silent when there is no
+# evidence. Also recasts the evidence legs' plane-blind asserts
+# (MIRROR ≡ REALITY).
+sh leg17-run.sh
+status17=$?
+
+if [ $status -ne 0 ] || [ $status8 -ne 0 ] || [ $status9 -ne 0 ] || [ $status10 -ne 0 ] || [ $status11 -ne 0 ] || [ $status12 -ne 0 ] || [ $status13 -ne 0 ] || [ $status14 -ne 0 ] || [ $status15 -ne 0 ] || [ $status16 -ne 0 ] || [ $status17 -ne 0 ]; then
   exit 1
 fi
 exit 0

@@ -11,6 +11,7 @@
 // between harness and shipped client is impossible by construction.
 // ═══════════════════════════════════════════════════════════════════
 import Foundation
+import SQLite3
 
 var pass = 0, fail = 0
 func check(_ name: String, _ cond: Bool, _ detail: String) {
@@ -28,6 +29,16 @@ let dayFormatter = DateFormatter()
 dayFormatter.dateFormat = "yyyy-MM-dd"
 dayFormatter.timeZone = .current
 let today = dayFormatter.string(from: Date())
+
+// v6.3.0 — the plane's verdict governs the evidence checks below
+// (MIRROR ≡ REALITY: a dark plane's missing note is casualty, not
+// failure). EOD slot: the dump job fires 1AM UTC; before that, the
+// absence of today's note is simply "not yet authored".
+let planeReportHome = FileManager.default.homeDirectoryForCurrentUser
+    .appendingPathComponent(".hermes", isDirectory: true)
+let planeReport = AMORPlaneSentinel.read(hermesHome: planeReportHome)
+var eodSlotPassed = false
+if let hour = Calendar.current.dateComponents([.hour], from: Date()).hour { eodSlotPassed = hour >= 1 }
 
 // ── 1. The read vein: real client against the real daemon ─────────
 let result = await AMORRemoteSyncEngine.sync(base: "http://127.0.0.1:17777", home: tmpHome)
@@ -87,8 +98,48 @@ if let newest = dumps.first {
 }
 
 // ── 5. The daily note is part of the evidence plane ────────────────
+// v6.3.0 MIRROR ≡ REALITY: the note exists only if the EOD job fired.
+// The EOD job fires 1AM UTC; the note is REQUIRED only when the plane
+// was alive AT that slot — a plane that revived after the slot (as on
+// Oct 5: revival 08:37, slot 01:00) never gave the job its chance.
+// Absence then is casualty, not failure.
+var planeAliveAtEODSlot = false
+if planeReport.verdict == .alive {
+    // Earliest run claimed today, straight from the ledger.
+    var db: OpaquePointer?
+    let dbPath = planeReportHome.appendingPathComponent("cron/executions.db").path
+    if sqlite3_open_v2(dbPath, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK, let d = db {
+        sqlite3_exec(d, "PRAGMA query_only=ON; PRAGMA busy_timeout=2000;", nil, nil, nil)
+        let todayKey = AMORPlaneSentinel.dayKey(from: Date())
+        var stmt: OpaquePointer?
+        if sqlite3_prepare_v2(d, "SELECT min(claimed_at) FROM executions WHERE substr(claimed_at,1,10) = ?", -1, &stmt, nil) == SQLITE_OK, let s = stmt {
+            sqlite3_bind_text(s, 1, todayKey, -1, nil)
+            if sqlite3_step(s) == SQLITE_ROW, let c = sqlite3_column_text(s, 0) {
+                let earliest = String(cString: c)
+                // Alive at the slot iff a run was claimed at or before
+                // 01:59 UTC today (the slot + grace).
+                planeAliveAtEODSlot = earliest < "\(todayKey)T02:00:00"
+            }
+            sqlite3_finalize(s)
+        }
+        sqlite3_close(d)
+    }
+}
 let notePath = tmpHome.appendingPathComponent("wiki/daily/\(today).md")
-check("daily note mirrored", fm.fileExists(atPath: notePath.path), "wiki/daily/\(today).md")
+if fm.fileExists(atPath: notePath.path) {
+    check("daily note mirrored", true, "wiki/daily/\(today).md")
+} else {
+    let lawfulAbsence = planeReport.verdict == .dark
+        || planeReport.verdict == .unknown
+        || !eodSlotPassed
+        || (planeReport.verdict == .alive && !planeAliveAtEODSlot)
+    check("daily note mirrored (plane-aware)", lawfulAbsence,
+          planeReport.verdict == .dark
+            ? "plane dark \(planeReport.openOutage?.spanText ?? "") — no note today is the corpse's testimony"
+            : (planeAliveAtEODSlot
+                ? "EOD slot passed with plane alive but no note — REAL failure (job fired, note missing)"
+                : "plane revived after the 1AM EOD slot — the job never got its chance (casualty, not failure)"))
+}
 
 // ── 6. Idempotence: a second sync writes the same truth ────────────
 let second = await AMORRemoteSyncEngine.sync(base: "http://127.0.0.1:17777", home: tmpHome)

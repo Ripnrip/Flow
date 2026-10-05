@@ -1,5 +1,37 @@
 # Changelog
 
+## October 5, 2026: 🌑 AMOR v6.3.0 "The Dead Plane Detector" — Naming the Sixteen Days of Silence (All 17 Legs GREEN)
+
+### Steps Taken
+- Cron fired for the first time since Sep 17 — and the firing itself was the story. Executions.db (the run-truth) showed the truth jobs.json never could: last completed run Sep 17 20:00, then **ZERO executions for 16 days** (Sep 19 – Oct 4), revival Oct 5 08:37 UTC. The gateway.log.1 death certificate: `2026-09-18 01:21 CRITICAL gateway.shutdown_watchdog: event loop missed 3 consecutive liveness probes; exiting code 75` — the GIL-storm watchdog fired, the restart wedged on a webhook port bind conflict (`:8644 address already in use`, retry loop every 300s), and the process stayed "alive" — logging, reconnecting, and scheduling nothing — until this morning's Mac reboot (kern.boottime Oct 5 08:54) cleared the corpse. The morning's 08:37 AMOR run was reaped `unknown` by that same reboot mid-flight; tonight's run is the first completed breath since Sep 17.
+- Baseline harness on v6.2.0: **4 legs RED** — but all four failures were the same wound wearing different masks: leg 3's dump parser ("no session dumps parsed" — last dump Sep 18, now 17 days back), leg 11's daily-note mirror, leg 12's row floor (≥900 rows in a 7d window holding only 233), leg 13's 14-file evidence floor. The engines were honest; **the harness's laws demanded a living plane** and the plane had been a corpse. Plane-blind asserts — the same disease the v4.4.0 crying-wolf cure fixed for per-job health, now at the system scale.
+- **The Dead Plane Detector architecture**: new Foundation-only engine `AMORPlaneSentinel` reads the executions ledger's UTC day-histogram (28-day horizon) and derives the PLANE's verdict — `alive` / `dark` / `unknown` — the truth beneath per-job health. Five laws, all leg-verified:
+  - **QUIET-DAY LAW**: one quiet day is weather (a day can be legitimately idle); ≥2 consecutive quiet days name an outage. Anti-wolf by construction.
+  - **OPEN ≡ DARK**: a quiet stretch of ≥2 days still reaching today is the corpse signature — the scheduler heartbeat itself stopped. Per-job "missed" chips below a dark verdict are casualties, not causes.
+  - **NO-EVIDENCE ≡ UNKNOWN**: a missing ledger or zero claimed rows yields `.unknown` — silence about silence. The sentinel never invents a verdict.
+  - **PRE-HISTORY LAW**: quiet days before the ledger's first-ever recorded day are not outages — the ledger did not exist. Live-caught during the forge: this Mac's ledger was born 2026-09-16; without the trim, Sep 7–15 would render as a phantom 9-day outage. A newborn ledger renders alive, not dark.
+  - **RESTART SCARS**: days with reaped (`unknown`) clusters name the supervisor kills — the Sep 18 GIL watchdog and the Oct 5 reboot reap (6 rows) both visible as scars.
+- **Leg 17 first fire: 25/25 GREEN.** Against the REAL ledger: verdict `alive`, Σ=1001 histogram rows (byte-exact with independent recon), and the September outage named precisely — `2026-09-19 → 2026-10-04 (16 days, closed)`. Synthetic fixtures proved the corpse (16 dark days → open outage, `dark`), the living plane, the single-quiet-day anti-wolf, newborn-ledger pre-history, restart scars (4 reaped on a living day), empty ledger → unknown, missing ledger → unknown, and two-read determinism.
+- **MIRROR ≡ REALITY recasts** — the four plane-blind asserts now judge the plane before the evidence: leg 3 (dark plane + no dumps = the corpse's testimony, SKIP not FAIL; alive plane + no dumps = the REAL red — the EOD job itself broke), leg 11 (daily note absence lawful when the plane is dark or the 1AM UTC EOD slot hasn't arrived), leg 12 (row floor scales with living days: `max(40, 2×living)`, not an absolute 900), leg 13 (evidence floor scales the same way). The floors keep their teeth: a living plane that stops producing evidence still trips them.
+- Dashboard gains the plane verdict as the FIRST card above per-job health: headline + subline naming the outage, the open-outage callout, a 28-day quiet/living histogram, past-outage history, and restart scars — rendered in the app's contemplative palette (deepIndigo corpse, sageGreen life). Reader computes `planeReport` in the same refresh pass that reads jobs.json.
+- Also committed the reaped morning-run's work: `Scripts/flowserver-daemon.sh` `ProcessType: Background → Adaptive` (the Sep 17 changelog documented the newborn daemon "slow through dyld under the memory storm" — launchd `Background` is the lowest CPU/IO priority tier; `Adaptive` lets the Flame breathe under pressure). The plist on disk already carried it (daemon running under it 11h); only the source never got committed before the run was reaped.
+
+### What Changed
+- `Flow/Flow/AMORPlaneSentinel.swift` — NEW: the Dead Plane Detector engine (day histogram, verdict law, outages, restart scars, PRE-HISTORY trim).
+- `Flow/Flow/AMORCronStatusReader.swift` — `planeReport` published state, computed in refresh() from the same ledger the run-truth engine reads.
+- `Flow/Flow/AMORCronHealthDashboard.swift` — plane verdict hero card (verdict badge, outage callout, 28-day histogram, past outages, restart scars) above per-job health.
+- `Flow/Flow/AMORSettings.swift` — About v6.3.0.
+- `Scripts/amor-livefire/leg17-main.swift` + `leg17-run.sh` — NEW: Dead Plane Detector e2e gate (25 checks: real-ledger laws + synthetic corpse/living/anti-wolf/pre-history/scar/empty/missing/determinism fixtures).
+- `Scripts/amor-livefire/secondbrain-main.swift`, `leg11-main.swift`, `leg12-main.swift`, `leg13-main.swift` — MIRROR ≡ REALITY: plane-aware asserts replace plane-blind floors.
+- `Scripts/amor-livefire/run.sh` — leg 17 wired; master gate 16 → **17 legs**.
+- `Scripts/amor-livefire/leg11-run.sh`, `leg12-run.sh`, `leg13-run.sh` — compile the shipped `AMORPlaneSentinel.swift` (drift impossible).
+- `Scripts/flowserver-daemon.sh` — ProcessType Adaptive (the reaped run's uncommitted forge, landed).
+
+### Next
+- Physical-iPhone smoke (standing thread): the plane card rides the evidence vein — first launch shows the verdict + the September outage named.
+- The webhook port wedge is the revival hazard: if the gateway restarts without a reboot, the `:8644 bind conflict` loop can re-kill the scheduler while the process breathes. A pre-bind socket release (or SO_REUSEADDR-style hygiene in the gateway) would close the class; the plane detector now at least NAMES the corpse within a day instead of 16.
+- Optional: push a local notification when the plane goes dark ≥2 days — the phone need not be open to learn the heartbeat died.
+
 ## September 17, 2026: 💸 AMOR v6.2.0 "The Daily Ledger" — The Fortnight's Cents, Day by Day (All 16 Legs GREEN)
 
 ### Steps Taken

@@ -47,7 +47,7 @@ cmd_install() {
     <key>ThrottleInterval</key>
     <integer>10</integer>
     <key>ProcessType</key>
-    <string>Background</string>
+    <string>Adaptive</string>
     <key>WorkingDirectory</key>
     <string>/Users/admin/Developer/Flow</string>
 </dict>

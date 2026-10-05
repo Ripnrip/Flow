@@ -17,6 +17,13 @@ struct AMORCronHealthDashboard: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    // v6.3.0 — the plane's verdict FIRST: is the
+                    // scheduler heartbeat itself alive? Everything
+                    // below is noise below a dark verdict.
+                    if let plane = reader.planeReport {
+                        planeVerdictCard(plane)
+                    }
+
                     // Overall health
                     healthOverviewCard
 
@@ -61,6 +68,128 @@ struct AMORCronHealthDashboard: View {
             }
             .refreshable {
                 reader.refresh()
+            }
+        }
+    }
+
+    // MARK: - Plane Verdict (v6.3.0)
+
+    /// The dark-plane hero: names the scheduler heartbeat's own state
+    /// before any per-job truth. When the plane is dark, the wall of
+    /// "missed" chips below it is casualty, not cause — and this card
+    /// says so in plain language.
+    private func planeVerdictCard(_ plane: AMORPlaneReport) -> some View {
+        AMORComponents.ContemplativeCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    Image(systemName: plane.verdict == .dark ? "moon.stars.fill" : (plane.verdict == .alive ? "sun.max.fill" : "questionmark.circle"))
+                        .foregroundStyle(plane.verdict == .dark ? AnyShapeStyle(AMORColorPalette.deepIndigo) : (plane.verdict == .alive ? AnyShapeStyle(AMORColorPalette.sageGreen) : AnyShapeStyle(.secondary)))
+                    Text("Automation Plane")
+                        .font(AMORTypography.titleFont)
+                        .foregroundStyle(AMORColorPalette.deepIndigo)
+                    Spacer()
+                    Text(plane.verdict == .dark ? "DARK" : (plane.verdict == .alive ? "Alive" : "Unknown"))
+                        .font(AMORTypography.captionFont.weight(.semibold))
+                        .foregroundStyle(plane.verdict == .dark ? AnyShapeStyle(AMORColorPalette.deepIndigo) : (plane.verdict == .alive ? AnyShapeStyle(AMORColorPalette.sageGreen) : AnyShapeStyle(.secondary)))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(
+                            plane.verdict == .dark
+                                ? AnyShapeStyle(AMORColorPalette.deepIndigo.opacity(0.12))
+                                : (plane.verdict == .alive
+                                    ? AnyShapeStyle(AMORColorPalette.sageGreen.opacity(0.15))
+                                    : AnyShapeStyle(Color.secondary.opacity(0.12)))
+                        ))
+                }
+
+                Text(plane.headlineText)
+                    .font(AMORTypography.bodyFont.bold())
+
+                Text(plane.sublineText)
+                    .font(AMORTypography.captionFont)
+                    .foregroundStyle(.secondary)
+
+                // Open outage — the corpse signature, loud.
+                if let open = plane.openOutage {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(open.durationText) of silence")
+                            .font(AMORTypography.bodyFont.bold())
+                            .foregroundStyle(AMORColorPalette.deepIndigo)
+                        Text(open.spanText)
+                            .font(AMORTypography.monospaceFont)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(AMORColorPalette.deepIndigo.opacity(0.08)))
+                }
+
+                // The 28-day histogram — every day visible, quiet days named.
+                if plane.days.count >= 2 {
+                    let maxRuns = max(1, plane.days.map(\.runs).max() ?? 1)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Last \(plane.days.count) days")
+                            .font(AMORTypography.captionFont)
+                            .foregroundStyle(.secondary)
+                        HStack(spacing: 3) {
+                            ForEach(plane.days) { d in
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(d.isQuiet
+                                          ? AnyShapeStyle(Color.secondary.opacity(0.25))
+                                          : AnyShapeStyle(AMORColorPalette.sageGreen.opacity(0.85)))
+                                    .frame(height: 6 + CGFloat(d.runs) / CGFloat(maxRuns) * 22)
+                                    .frame(maxHeight: 28, alignment: .bottom)
+                            }
+                        }
+                        Text("Quiet days are honest zero — a dead stretch shows as dead, a living day as lived.")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+
+                // Historical outages — closed truth, rendered neutral.
+                let closed = plane.closedOutages
+                if !closed.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Past outages")
+                            .font(AMORTypography.captionFont.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        ForEach(closed) { outage in
+                            HStack {
+                                Image(systemName: "moon.zzz")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text("\(outage.spanText) — \(outage.durationText)")
+                                    .font(AMORTypography.captionFont)
+                                Spacer()
+                            }
+                        }
+                    }
+                    .padding(.top, 4)
+                }
+
+                // Restart scars — reaped clusters name the kills.
+                if !plane.restarts.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Restart scars")
+                            .font(AMORTypography.captionFont.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        ForEach(plane.restarts) { scar in
+                            HStack {
+                                Image(systemName: "bolt.trianglebadge.exclamationmark")
+                                    .font(.caption)
+                                    .foregroundStyle(AMORColorPalette.dawnOrange)
+                                Text("\(scar.day) — \(scar.reapedRuns) runs reaped mid-flight")
+                                    .font(AMORTypography.captionFont)
+                                Spacer()
+                            }
+                        }
+                        Text("Reaped runs are the supervisor's kill signature — the pipe broke, not the jobs.")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(.top, 4)
+                }
             }
         }
     }

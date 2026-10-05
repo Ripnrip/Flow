@@ -35,6 +35,7 @@ swiftc -O -sdk "$SDK" \
   "$ROOT/Scripts/amor-livefire/AMORExecutionTruth.swift" \
   "$ROOT/Scripts/amor-livefire/AMORStormSentinel.swift" \
   "$ROOT/Scripts/amor-livefire/AMORAlibiEngine.swift" \
+  "$ROOT/Flow/Flow/AMORPlaneSentinel.swift" \
   "$TMP/main.swift" \
   -lsqlite3 \
   -o "$TMP/leg12"

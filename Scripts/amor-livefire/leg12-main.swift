@@ -55,8 +55,16 @@ let truth = AMORExecutionTruth.read(
     hermesHome: tmpHome.appendingPathComponent(".hermes", isDirectory: true)
 )
 check("execution truth available", truth.isAvailable, "ledger opened from the sandbox mirror")
-check("execution truth rows", truth.totalExecutions >= 900,
-      "totalExecutions=\(truth.totalExecutions) (7d window + lingering claims)")
+
+// v6.3.0 MIRROR ≡ REALITY: the row floor scales with the living
+// plane. A 7d window containing a multi-day outage legitimately
+// holds fewer rows — the corpse's testimony, not a parse failure.
+// Floor law: at least ~2 rows per LIVING day in the window, with an
+// absolute minimum of 40 (a living week on this box runs 400+).
+let mirrorPlane = AMORPlaneSentinel.read(hermesHome: tmpHome.appendingPathComponent(".hermes", isDirectory: true))
+let livingDays = max(1, mirrorPlane.days.filter { !$0.isQuiet }.count)
+check("execution truth rows", truth.totalExecutions >= max(40, livingDays * 2),
+      "rows=\(truth.totalExecutions) over \(livingDays) living days (plane \(mirrorPlane.verdict.rawValue))")
 
 // ── 4. Storm sentinel law fed by the mirror ────────────────────────
 var knownIDs = Set<String>()

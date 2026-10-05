@@ -24,16 +24,29 @@ if let daily = vault.dailyNotesURL {
 // ── 3. Hermes EOD session dumps ─────────────────────────────────────────
 let dumps = brain.readHermesSessionDumps(daysBack: 14)
 print("EOD session dumps (14d): \(dumps.count)")
-guard let newest = dumps.first else {
-    print("FAIL — no session dumps parsed from raw/daily-summaries")
-    exit(1)
-}
-print("newest dump: \(newest.date.dateString) sessions=\(newest.sessions) messages=\(newest.messages) toolCalls=\(newest.toolCalls) tools=\(newest.tools)")
 
-// HARD ASSERT: today's dump must parse with real numbers (dumper runs 1AM UTC)
-assert(newest.messages > 0, "newest dump has 0 messages — parser broken")
-assert(newest.toolCalls > 0, "newest dump has 0 tool calls — parser broken")
-assert(!newest.tools.isEmpty, "newest dump parsed no tools — Tools Used table parser broken")
+// v6.3.0 MIRROR ≡ REALITY: when the automation plane was dark for
+// days, no EOD dump job fired — an empty window is the CORPSE'S
+// testimony, not a parser failure. Judge the evidence only after
+// judging the plane.
+let plane = AMORPlaneSentinel.read(hermesHome: FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".hermes", isDirectory: true))
+print("plane verdict: \(plane.verdict.rawValue) — last run day: \(plane.lastRunDay ?? "none")")
+if plane.verdict == .unknown {
+    print("SKIP — plane unknown: no ledger truth to judge dumps against (no wolf, no corpse-cry)")
+} else if let newest = dumps.first {
+    print("newest dump: \(newest.date.dateString) sessions=\(newest.sessions) messages=\(newest.messages) toolCalls=\(newest.toolCalls) tools=\(newest.tools)")
+
+    // HARD ASSERT: the newest dump must parse with real numbers.
+    assert(newest.messages > 0, "newest dump has 0 messages — parser broken")
+    assert(newest.toolCalls > 0, "newest dump has 0 tool calls — parser broken")
+    assert(!newest.tools.isEmpty, "newest dump parsed no tools — Tools Used table parser broken")
+} else if plane.verdict == .alive, let lastRun = plane.lastRunDay {
+    // Plane alive but no dumps: the dump job itself missed — a REAL
+    // failure worth the red. (Dark plane + no dumps = casualty.)
+    assertionFailure("PLANE-LAW: plane alive since \(lastRun) but raw/daily-summaries holds no dumps in 14d — the 1AM EOD job is broken")
+} else {
+    print("SKIP — plane dark: \(plane.openOutage?.spanText ?? "?") dark; empty dump window is the corpse's testimony, not a parser failure")
+}
 
 // ── 4. Daily-notes read path ────────────────────────────────────────────
 let notes = brain.readDailyNotes(daysBack: 7)

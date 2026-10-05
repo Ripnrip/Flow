@@ -31,6 +31,7 @@ cp leg13-main.swift "$TMP/main.swift"
 swiftc -O -sdk "$SDK" \
   "$ROOT/Flow/Flow/AMORRemoteSyncEngine.swift" \
   "$ROOT/Flow/Flow/AMORSessionIndex.swift" \
+  "$ROOT/Flow/Flow/AMORPlaneSentinel.swift" \
   "$TMP/main.swift" \
   -lsqlite3 \
   -o "$TMP/leg13"

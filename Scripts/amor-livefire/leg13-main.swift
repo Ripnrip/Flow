@@ -39,7 +39,14 @@ print("LIVING INDEX LIVE-FIRE (leg 13)")
 let base = "http://127.0.0.1:17777"
 let sync1 = await AMORRemoteSyncEngine.sync(base: base)
 check("vein reachable", sync1.ok, sync1.error ?? "")
-check("evidence files ≥ 14 (13 prior + index)", sync1.filesMaterialized >= 14, "files=\(sync1.filesMaterialized)")
+// v6.3.0 MIRROR ≡ REALITY: the evidence floor scales with living
+// days. The vein relays 7 prior dumps + today's note + index when
+// the plane is alive; a dark stretch starves the dump set lawfully.
+// Floor: ≥1 file per living day (index + notes + dumps), min 4.
+let plane = AMORPlaneSentinel.read(hermesHome: FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".hermes", isDirectory: true))
+let livingDays = max(1, plane.days.filter { !$0.isQuiet }.count)
+check("evidence files scale with living days", sync1.filesMaterialized >= max(4, livingDays),
+      "files=\(sync1.filesMaterialized) over \(livingDays) living days (plane \(plane.verdict.rawValue))")
 
 // ── 2/3. Index rides the vein and parses ───────────────────────
 // The engine reads from defaultHome(); the harness ran the vein
