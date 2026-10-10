@@ -378,6 +378,19 @@ enum AMORRelay {
         guard request.date.range(of: dayPattern, options: .regularExpression) != nil else {
             throw HTTPError(.badRequest)
         }
+        // CALENDAR LAW (found by AMOR's standing harness, 2026-10-10):
+        // the shape-regex alone admitted impossible dates (2026-13-45
+        // created a garbage note in the vault). Strict, non-lenient
+        // round-trip parse — the date must be a real calendar day.
+        let dayProbe = DateFormatter()
+        dayProbe.locale = Locale(identifier: "en_US_POSIX")
+        dayProbe.dateFormat = "yyyy-MM-dd"
+        dayProbe.timeZone = TimeZone(identifier: "UTC")
+        dayProbe.isLenient = false
+        guard let parsed = dayProbe.date(from: request.date),
+              dayProbe.string(from: parsed) == request.date else {
+            throw HTTPError(.badRequest)
+        }
         guard !request.heading.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !request.markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               request.markdown.count <= 20_000 else {

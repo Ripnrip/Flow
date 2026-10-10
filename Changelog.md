@@ -1,5 +1,13 @@
 # Changelog
 
+## October 10, 2026: 🩹 FlowServer — The Calendar Law (brain-date validation hardened)
+
+### Steps Taken
+- Found by AMOR's new Standing Harness (night one!): `POST /api/v1/amor/brain` validated the date with a shape-regex only (`^\d{4}-\d{2}-\d{2}$`), so impossible dates like `2026-13-45` were ACCEPTED — HTTP 200, garbage note written into the canonical vault (`~/wiki/daily/2026-13-45.md`). The v3.0.0 "server-validated date" claim was half-true: shape yes, calendar no.
+- Fix in `AMORRelay.writeBrain`: CALENDAR LAW — strict non-lenient POSIX UTC round-trip parse (`yyyy-MM-dd` → Date → string must equal input). Malformed calendar dates now 400 before touching the filesystem. Shape-regex retained as a fast pre-filter.
+- Rebuilt release, daemon redeployed (stop/start cycle; brief bind delay observed — health green on retry). Negative-tested live: `2026-13-45` → HTTP 400, no file created. Garbage file removed from the vault.
+- Flow's own 17-leg livefire re-run after the change: **exit 0, all legs green** (incl. leg 17's 24 checks).
+
 ## October 5, 2026: 🌑 AMOR v6.3.0 "The Dead Plane Detector" — Naming the Sixteen Days of Silence (All 17 Legs GREEN)
 
 ### Steps Taken
